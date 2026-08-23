@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Inertia;
 
 class AdminServiceController extends Controller
 {
@@ -42,7 +43,7 @@ class AdminServiceController extends Controller
         $services = $query->latest()->paginate(15)->withQueryString();
         $statuses = Status::forTable('services');
 
-        return view('admin.services.index', [
+        return Inertia::render('Admin/Services/Index', [
             'services' => $services,
             'statuses' => $statuses,
         ]);
@@ -55,7 +56,7 @@ class AdminServiceController extends Controller
     {
         $service->load(['company.user', 'statusRelation', 'offerItems.offer']);
 
-        return view('admin.services.show', [
+        return Inertia::render('Admin/Services/Show', [
             'service' => $service,
         ]);
     }
@@ -68,7 +69,7 @@ class AdminServiceController extends Controller
         $service->load(['company.user', 'statusRelation']);
         $statuses = Status::forTable('services');
 
-        return view('admin.services.edit', [
+        return Inertia::render('Admin/Services/Edit', [
             'service' => $service,
             'statuses' => $statuses,
         ]);

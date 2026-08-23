@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SiteSetting;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AdminSettingsController extends Controller
 {
@@ -15,7 +16,7 @@ class AdminSettingsController extends Controller
     {
         $settings = SiteSetting::allGrouped();
 
-        return view('admin.settings.index', [
+        return Inertia::render('Admin/Settings', [
             'settings' => $settings,
         ]);
     }

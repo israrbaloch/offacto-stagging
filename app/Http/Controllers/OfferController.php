@@ -17,14 +17,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class OfferController extends Controller
 {
     /**
      * Display a listing of the offers.
      */
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -113,7 +114,7 @@ class OfferController extends Controller
         // Paginate results
         $offers = $query->latest()->paginate(15)->withQueryString();
 
-        return view('pages.offers', [
+        return Inertia::render('Offers/Index', [
             'offers' => $offers,
             'statuses' => $statuses,
             'stats' => $stats,
@@ -123,7 +124,7 @@ class OfferController extends Controller
     /**
      * Show the form for creating a new offer.
      */
-    public function create(Request $request): View
+    public function create(Request $request): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -164,7 +165,7 @@ class OfferController extends Controller
         $countries = \App\Models\Country::orderBy('name')->pluck('name', 'id');
         $customerStatuses = Status::forTable('customers')->pluck('name', 'id');
 
-        return view('pages.offers.create', [
+        return Inertia::render('Offers/Create', [
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,
@@ -253,7 +254,7 @@ class OfferController extends Controller
     /**
      * Display the specified offer.
      */
-    public function show(Request $request, $offer): View
+    public function show(Request $request, $offer): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -267,7 +268,7 @@ class OfferController extends Controller
             ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting'])
             ->firstOrFail();
 
-        return view('pages.offers.show', [
+        return Inertia::render('Offers/Show', [
             'offer' => $offer,
         ]);
     }
@@ -275,7 +276,7 @@ class OfferController extends Controller
     /**
      * Show the form for editing the specified offer.
      */
-    public function edit(Request $request, $offer): View
+    public function edit(Request $request, $offer): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -326,7 +327,7 @@ class OfferController extends Controller
             ];
         })->values();
 
-        return view('pages.offers.edit', [
+        return Inertia::render('Offers/Edit', [
             'offer' => $offer,
             'customers' => $customers,
             'services' => $services,

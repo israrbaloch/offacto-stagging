@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class AdminUserController extends Controller
 {
@@ -54,7 +55,7 @@ class AdminUserController extends Controller
         // Exclude admin role from the roles dropdown
         $roles = Role::where('name', '!=', 'admin')->get();
 
-        return view('admin.users.index', [
+        return Inertia::render('Admin/Users/Index', [
             'users' => $users,
             'roles' => $roles,
         ]);
@@ -78,7 +79,7 @@ class AdminUserController extends Controller
             'companies.invoices.statusRelation',
         ]);
 
-        return view('admin.users.show', [
+        return Inertia::render('Admin/Users/Show', [
             'user' => $user,
         ]);
     }
@@ -98,7 +99,7 @@ class AdminUserController extends Controller
         // Exclude admin role from the roles dropdown
         $roles = Role::where('name', '!=', 'admin')->get();
 
-        return view('admin.users.edit', [
+        return Inertia::render('Admin/Users/Edit', [
             'user' => $user,
             'roles' => $roles,
         ]);

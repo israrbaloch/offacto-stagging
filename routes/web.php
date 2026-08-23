@@ -14,6 +14,7 @@ use App\Http\Controllers\OfferController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -95,7 +96,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // Staff-only routes
 Route::middleware(['auth', 'role:staff'])->group(function () {
     Route::get('/staff', function () {
-        return view('staff.dashboard');
+        return Inertia::render('Staff/Dashboard');
     })->name('staff.dashboard');
 });
 

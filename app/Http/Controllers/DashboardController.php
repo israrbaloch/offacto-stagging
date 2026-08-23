@@ -5,20 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Offer;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
     /**
      * Display the dashboard.
      */
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            return view('dashboard', [
+            return Inertia::render('Dashboard', [
                 'user' => $user,
                 'stats' => $this->getEmptyStats(),
                 'openOffers' => collect(),
@@ -60,7 +61,7 @@ class DashboardController extends Controller
             ->take(5)
             ->values();
 
-        return view('dashboard', [
+        return Inertia::render('Dashboard', [
             'user' => $user,
             'stats' => $stats,
             'openOffers' => $openOffers,

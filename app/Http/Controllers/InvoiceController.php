@@ -23,14 +23,15 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class InvoiceController extends Controller
 {
     /**
      * Display a listing of the invoices.
      */
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -134,7 +135,7 @@ class InvoiceController extends Controller
         // Paginate results
         $invoices = $query->latest()->paginate(15)->withQueryString();
 
-        return view('pages.invoices.index', [
+        return Inertia::render('Invoices/Index', [
             'invoices' => $invoices,
             'statuses' => $statuses,
             'stats' => $stats,
@@ -144,7 +145,7 @@ class InvoiceController extends Controller
     /**
      * Show the form for creating a new invoice.
      */
-    public function create(Request $request): View
+    public function create(Request $request): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -185,7 +186,7 @@ class InvoiceController extends Controller
         $countries = \App\Models\Country::orderBy('name')->pluck('name', 'id');
         $customerStatuses = Status::forTable('customers')->pluck('name', 'id');
 
-        return view('pages.invoices.create', [
+        return Inertia::render('Invoices/Create', [
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,
@@ -201,7 +202,7 @@ class InvoiceController extends Controller
     /**
      * Create invoice from an existing offer.
      */
-    public function createFromOffer(Request $request, $offer): View
+    public function createFromOffer(Request $request, $offer): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -257,7 +258,7 @@ class InvoiceController extends Controller
         $countries = \App\Models\Country::orderBy('name')->pluck('name', 'id');
         $customerStatuses = Status::forTable('customers')->pluck('name', 'id');
 
-        return view('pages.invoices.create', [
+        return Inertia::render('Invoices/Create', [
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,
@@ -357,7 +358,7 @@ class InvoiceController extends Controller
     /**
      * Display the specified invoice.
      */
-    public function show(Request $request, $invoice): View
+    public function show(Request $request, $invoice): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -371,7 +372,7 @@ class InvoiceController extends Controller
             ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'payments', 'offer'])
             ->firstOrFail();
 
-        return view('pages.invoices.show', [
+        return Inertia::render('Invoices/Show', [
             'invoice' => $invoice,
             'paymentMethods' => Invoice::getPaymentMethods(),
         ]);
@@ -380,7 +381,7 @@ class InvoiceController extends Controller
     /**
      * Show the form for editing the specified invoice.
      */
-    public function edit(Request $request, $invoice): View
+    public function edit(Request $request, $invoice): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -431,7 +432,7 @@ class InvoiceController extends Controller
             ];
         })->values();
 
-        return view('pages.invoices.edit', [
+        return Inertia::render('Invoices/Edit', [
             'invoice' => $invoice,
             'customers' => $customers,
             'services' => $services,

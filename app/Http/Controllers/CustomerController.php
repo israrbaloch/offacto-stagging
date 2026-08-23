@@ -10,14 +10,15 @@ use App\Models\Status;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class CustomerController extends Controller
 {
     /**
      * Display a listing of the customers.
      */
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -34,7 +35,7 @@ class CustomerController extends Controller
         $statuses = Status::forTable('customers')->pluck('name', 'id');
         $countries = Country::orderBy('name')->pluck('name', 'id');
 
-        return view('pages.customers', [
+        return Inertia::render('Customers/Index', [
             'customers' => $customers,
             'statuses' => $statuses,
             'countries' => $countries,

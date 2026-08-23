@@ -12,9 +12,10 @@ use App\Models\SiteSetting;
 use App\Models\Status;
 use App\Models\User;
 use App\Http\Requests\StoreRegistrationWithCompanyRequest;
-use Illuminate\View\View;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Inertia\Inertia;
+use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -23,15 +24,16 @@ use Illuminate\Auth\Events\Registered;
 
 class RegisteredUserController extends Controller
 {
-    public function create(): View|RedirectResponse
+    public function create(): Response|RedirectResponse
     {
         if (!SiteSetting::getBoolean('allow_user_registration', true)) {
             return redirect()->route('login')->with('error', 'User registration is currently disabled.');
         }
 
         $languages = \App\Models\Language::orderBy('name')->pluck('name', 'id');
-        $title = 'Register';
-        return view('auth.register', compact('title', 'languages'));
+        return Inertia::render('Auth/Register', [
+            'languages' => $languages,
+        ]);
     }
 
     public function store(StoreRegistrationWithCompanyRequest $request): RedirectResponse

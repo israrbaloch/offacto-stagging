@@ -12,24 +12,25 @@ use App\Models\Status;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class UserCompanyController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $user = $request->user();
         $companies = $user->companies()->with('statusRelation')->latest()->get();
-        return view('pages.companies.index', [
+        return Inertia::render('Companies/Index', [
             'companies' => $companies,
             'requireCompanyApproval' => SiteSetting::getBoolean('require_company_approval', false),
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): Response
     {
         $languages = Language::orderBy('name')->pluck('name', 'id');
-        return view('pages.companies.create', [
+        return Inertia::render('Companies/Create', [
             'languages' => $languages,
             'requireCompanyApproval' => SiteSetting::getBoolean('require_company_approval', false),
         ]);

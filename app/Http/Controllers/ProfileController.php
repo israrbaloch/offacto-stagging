@@ -22,14 +22,15 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request): Response
     {
         $user = $request->user();
         $company = $user->activeCompany();
@@ -51,7 +52,7 @@ class ProfileController extends Controller
         // Get languages for dropdown
         $languages = Language::all()->pluck('name', 'id');
 
-        return view('profile.edit', [
+        return Inertia::render('Profile/Edit', [
             'user' => $user,
             'company' => $company,
             'companySettings' => $companySettings,

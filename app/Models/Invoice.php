@@ -11,6 +11,8 @@ class Invoice extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $appends = ['total', 'subtotal', 'tax_amount', 'amount_paid', 'amount_due'];
+
     /**
      * IP Transfer Types
      */

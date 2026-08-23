@@ -12,14 +12,15 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ServiceController extends Controller
 {
     /**
      * Display a listing of the services.
      */
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -33,7 +34,7 @@ class ServiceController extends Controller
             ->latest()
             ->get(); // Soft deletes are automatically excluded by default
 
-        return view('pages.services', [
+        return Inertia::render('Services/Index', [
             'services' => $services,
         ]);
     }

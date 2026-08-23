@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AdminDashboardController extends Controller
 {
@@ -77,7 +78,7 @@ class AdminDashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('admin.dashboard', [
+        return Inertia::render('Admin/Dashboard', [
             'userStats' => $userStats,
             'companyStats' => $companyStats,
             'serviceStats' => $serviceStats,

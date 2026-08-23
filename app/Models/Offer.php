@@ -11,6 +11,8 @@ class Offer extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $appends = ['total', 'subtotal', 'tax_amount'];
+
     /**
      * The attributes that are mass assignable.
      *

@@ -1,3 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --color-brand: var(--company-primary, #4f46e5);
+}
+
+html,
+body,
+#app {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+:root {
+    --company-primary: #4f46e5;
+    --company-secondary: #0f172a;
+}

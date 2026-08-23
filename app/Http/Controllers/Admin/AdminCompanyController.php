@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Inertia;
 
 class AdminCompanyController extends Controller
 {
@@ -47,7 +48,7 @@ class AdminCompanyController extends Controller
         $companies = $query->latest()->paginate(15)->withQueryString();
         $statuses = Status::forTable('companies');
 
-        return view('admin.companies.index', [
+        return Inertia::render('Admin/Companies/Index', [
             'companies' => $companies,
             'statuses' => $statuses,
         ]);
@@ -68,7 +69,7 @@ class AdminCompanyController extends Controller
             'invoices.statusRelation',
         ]);
 
-        return view('admin.companies.show', [
+        return Inertia::render('Admin/Companies/Show', [
             'company' => $company,
         ]);
     }
@@ -81,7 +82,7 @@ class AdminCompanyController extends Controller
         $company->load(['user', 'statusRelation']);
         $statuses = Status::forTable('companies');
 
-        return view('admin.companies.edit', [
+        return Inertia::render('Admin/Companies/Edit', [
             'company' => $company,
             'statuses' => $statuses,
         ]);
