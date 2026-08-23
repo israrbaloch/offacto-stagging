@@ -8,6 +8,7 @@
     <title>New Company Pending Approval</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="margin-bottom: 20px;">@include('emails.partials.logo', ['width' => 150])</div>
     <h2 style="color: #4054B2;">New Company Pending Approval</h2>
     
     <p>A new company has been created and is awaiting your approval.</p>

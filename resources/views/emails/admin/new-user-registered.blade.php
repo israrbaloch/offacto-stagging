@@ -8,6 +8,7 @@
     <title>New User Registered</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="margin-bottom: 20px;">@include('emails.partials.logo', ['width' => 150])</div>
     <h2 style="color: #4054B2;">New User Registered</h2>
     <p>A new user has registered on {{ $siteName }}.</p>
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">

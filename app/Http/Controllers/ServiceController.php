@@ -20,13 +20,13 @@ class ServiceController extends Controller
     /**
      * Display a listing of the services.
      */
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $services = Service::where('company_id', $activeCompany->id)

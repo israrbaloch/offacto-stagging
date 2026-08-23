@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import Logo from '../Components/Logo';
 import Toast from '../Components/Toast';
 
 const orbs = [
@@ -31,12 +32,7 @@ export default function AuthSplitLayout({ title, asideFooter, children }) {
                         />
                     ))}
                     <div className="relative z-10">
-                        <div className="flex items-center gap-2.5">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
-                                O
-                            </span>
-                            <span className="text-lg font-semibold text-slate-900">Offacto</span>
-                        </div>
+                        <Logo className="h-8 w-auto" />
                         <h1 className="mt-14 text-4xl font-semibold leading-tight tracking-tight text-slate-900">
                             Streamline your billing in minutes
                         </h1>

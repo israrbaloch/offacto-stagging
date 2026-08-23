@@ -1,5 +1,6 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import Logo from '../../Components/Logo';
 import AuthSplitLayout from '../../Layouts/AuthSplitLayout';
 
 function secondsUntil(iso) {
@@ -74,7 +75,7 @@ export default function VerifyOtp({ email, expiresAt, resendAt }) {
 
     return (
         <AuthSplitLayout title="Verify email">
-            <p className="text-sm font-medium text-indigo-600">Offacto</p>
+            <Logo className="h-7 w-auto" />
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Verify your email</h2>
             <p className="mt-2 text-sm text-slate-500">
                 We’ve sent a 6-digit code to <span className="font-medium text-slate-700">{email}</span>.

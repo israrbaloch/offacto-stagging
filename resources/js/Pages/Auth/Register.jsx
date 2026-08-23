@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import Logo from '../../Components/Logo';
 import Toast from '../../Components/Toast';
 import { optionsFromMap } from '../../lib/utils';
 
@@ -104,12 +105,7 @@ export default function Register({ languages = {} }) {
                         />
                     ))}
                     <div className="relative">
-                        <div className="flex items-center gap-2.5">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
-                                O
-                            </span>
-                            <span className="text-lg font-semibold text-slate-900">Offacto</span>
-                        </div>
+                        <Logo className="h-8 w-auto" />
                         <h1 className="mt-14 text-4xl font-semibold leading-tight tracking-tight text-slate-900">
                             Streamline your billing in minutes
                         </h1>

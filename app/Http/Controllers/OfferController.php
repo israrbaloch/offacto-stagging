@@ -25,13 +25,13 @@ class OfferController extends Controller
     /**
      * Display a listing of the offers.
      */
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         // Build query with filters
@@ -107,6 +107,14 @@ class OfferController extends Controller
             })->sum(function($offer) {
                 return $offer->total;
             }),
+            'expired' => $allOffers->filter(function ($offer) {
+                $name = strtolower((string) $offer->statusRelation?->name);
+                return $offer->valid_until
+                    && $offer->valid_until->isPast()
+                    && in_array($name, ['draft', 'sent', 'pending', 'open'], true);
+            })->sum(function ($offer) {
+                return $offer->total;
+            }),
         ];
 
         $statuses = Status::forTable('offers')->pluck('name', 'id');
@@ -124,13 +132,13 @@ class OfferController extends Controller
     /**
      * Show the form for creating a new offer.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $customers = Customer::where('company_id', $activeCompany->id)
@@ -174,6 +182,7 @@ class OfferController extends Controller
             'countries' => $countries,
             'customerStatuses' => $customerStatuses,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'nextOfferNumber' => $this->generateOfferNumber($activeCompany->id),
         ]);
     }
 
@@ -254,13 +263,13 @@ class OfferController extends Controller
     /**
      * Display the specified offer.
      */
-    public function show(Request $request, $offer): Response
+    public function show(Request $request, $offer): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $offer = Offer::where('id', $offer)
@@ -276,13 +285,13 @@ class OfferController extends Controller
     /**
      * Show the form for editing the specified offer.
      */
-    public function edit(Request $request, $offer): Response
+    public function edit(Request $request, $offer): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $offer = Offer::where('id', $offer)

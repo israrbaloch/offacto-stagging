@@ -16,8 +16,8 @@
             <td align="center">
                 <table role="presentation" width="520" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;">
                     <tr>
-                        <td align="center" style="padding:36px 32px 12px;color:#4f46e5;font-size:20px;font-weight:700;">
-                            {{ $siteName }}
+                        <td align="center" style="padding:36px 32px 12px;">
+                            @include('emails.partials.logo', ['width' => 150])
                         </td>
                     </tr>
                     <tr>

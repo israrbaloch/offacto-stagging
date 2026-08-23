@@ -52,15 +52,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if ($user && !session('active_company_id') && $user->hasActiveCompany()) {
-            $approvedStatus = \App\Models\Status::where('name', 'Approved')->where('for', 'companies')->first();
-            $query = $user->companies()->where('is_active', true);
-            if ($approvedStatus) {
-                $query->where(function ($q) use ($approvedStatus) {
-                    $q->where('status', $approvedStatus->id)->orWhereNull('status');
-                });
-            }
-            $activeCompany = $query->first();
+        if ($user && !session('active_company_id')) {
+            $activeCompany = $user->activeCompany();
             if ($activeCompany) {
                 $user->setActiveCompanyId($activeCompany->id);
             }

@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import CompanySwitcher from './CompanySwitcher';
+import Logo from './Logo';
 
 function Icon({ name, className = 'h-[18px] w-[18px]' }) {
     const props = {
@@ -122,14 +123,8 @@ export default function Sidebar() {
     return (
         <aside className="hidden w-[250px] shrink-0 flex-col rounded-l-3xl bg-indigo-50 lg:flex">
             <div className="px-5 pt-6">
-                <Link href="/dashboard" className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white">
-                        O
-                    </span>
-                    <span>
-                        <span className="block text-base font-semibold text-slate-900">Offacto</span>
-                        <span className="block text-xs text-slate-400">SaaS Invoicing</span>
-                    </span>
+                <Link href="/dashboard" className="block">
+                    <Logo className="h-8 w-auto" />
                 </Link>
                 <div className="mt-4">
                     <CompanySwitcher />

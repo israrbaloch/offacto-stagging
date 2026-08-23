@@ -21,8 +21,7 @@ class CompanyController extends Controller
     {
         $user = $request->user();
 
-        // Validate that the company belongs to the authenticated user
-        if (!$user->companies()->where('id', $company->id)->exists()) {
+        if (!$user->accessibleCompanies()->where('id', $company->id)->exists()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Company not found or access denied.',

@@ -24,20 +24,20 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
-use Inertia\Response;
+use Inertia\Response as InertiaResponse;
 
 class InvoiceController extends Controller
 {
     /**
      * Display a listing of the invoices.
      */
-    public function index(Request $request): Response
+    public function index(Request $request): InertiaResponse|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         // Build query with filters
@@ -128,6 +128,20 @@ class InvoiceController extends Controller
             })->sum(function($invoice) {
                 return $invoice->amount_due;
             }),
+            'outstanding' => $allInvoices->sum(function ($invoice) {
+                return $invoice->isPaid() ? 0 : $invoice->amount_due;
+            }),
+            'paid_ytd' => $allInvoices->filter(function ($invoice) {
+                return $invoice->payment_status === Invoice::PAYMENT_PAID
+                    && $invoice->invoice_date
+                    && $invoice->invoice_date->year === now()->year;
+            })->sum(function ($invoice) {
+                return $invoice->total;
+            }),
+            'peppol_sent' => $allInvoices->filter(function ($invoice) {
+                $name = strtolower((string) $invoice->statusRelation?->name);
+                return in_array($name, ['sent', 'paid'], true);
+            })->count(),
         ];
 
         $statuses = Status::forTable('invoices')->pluck('name', 'id');
@@ -145,13 +159,13 @@ class InvoiceController extends Controller
     /**
      * Show the form for creating a new invoice.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): InertiaResponse|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $customers = Customer::where('company_id', $activeCompany->id)
@@ -202,13 +216,13 @@ class InvoiceController extends Controller
     /**
      * Create invoice from an existing offer.
      */
-    public function createFromOffer(Request $request, $offer): Response
+    public function createFromOffer(Request $request, $offer): InertiaResponse|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $offer = Offer::where('id', $offer)
@@ -358,13 +372,13 @@ class InvoiceController extends Controller
     /**
      * Display the specified invoice.
      */
-    public function show(Request $request, $invoice): Response
+    public function show(Request $request, $invoice): InertiaResponse|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $invoice = Invoice::where('id', $invoice)
@@ -381,13 +395,13 @@ class InvoiceController extends Controller
     /**
      * Show the form for editing the specified invoice.
      */
-    public function edit(Request $request, $invoice): Response
+    public function edit(Request $request, $invoice): InertiaResponse|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $invoice = Invoice::where('id', $invoice)
@@ -666,13 +680,13 @@ class InvoiceController extends Controller
     /**
      * Download invoice as PDF.
      */
-    public function download(Request $request, $invoice): Response
+    public function download(Request $request, $invoice): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $invoice = Invoice::where('id', $invoice)
@@ -690,13 +704,13 @@ class InvoiceController extends Controller
     /**
      * Download invoice as UBL XML.
      */
-    public function downloadUbl(Request $request, $invoice): Response
+    public function downloadUbl(Request $request, $invoice): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $invoice = Invoice::where('id', $invoice)

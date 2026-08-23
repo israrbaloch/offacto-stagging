@@ -369,6 +369,7 @@
         </div>
 
         <div class="footer">
+            <div style="margin-bottom:12px;display:inline-block;">@include('emails.partials.logo', ['width' => 120])</div>
             <p>This invoice was sent by <strong>{{ $invoice->company->company_name }}</strong></p>
             @if($invoice->company->email)
             <p>For questions, please contact: <a href="mailto:{{ $invoice->company->email }}">{{ $invoice->company->email }}</a></p>

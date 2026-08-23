@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import Logo from '../Components/Logo';
 import Toast from '../Components/Toast';
 
 const nav = [
@@ -19,8 +20,9 @@ export default function AdminLayout({ title, children }) {
             <header className="border-b border-slate-200 bg-slate-900 text-white">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
                     <div className="flex items-center gap-6">
-                        <Link href="/admin" className="font-semibold">
-                            Offacto Admin
+                        <Link href="/admin" className="flex items-center gap-3">
+                            <Logo variant="white" className="h-7 w-auto" />
+                            <span className="text-sm font-medium text-white/80">Admin</span>
                         </Link>
                         <nav className="hidden gap-4 text-sm text-white/80 md:flex">
                             {nav.map((item) => (

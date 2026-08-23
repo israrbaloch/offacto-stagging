@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import Logo from '../Components/Logo';
 import Toast from '../Components/Toast';
 
 export default function GuestLayout({ title, children }) {
@@ -8,7 +9,7 @@ export default function GuestLayout({ title, children }) {
             <Toast />
             <div className="w-full max-w-md">
                 <div className="mb-8 text-center">
-                    <div className="text-2xl font-semibold text-white">Offacto</div>
+                    <Logo variant="white" className="mx-auto h-9 w-auto" />
                     <p className="mt-1 text-sm text-slate-400">Invoices, offers, and your company in one place.</p>
                 </div>
                 <div className="rounded-2xl bg-white p-8 shadow-xl">{children}</div>

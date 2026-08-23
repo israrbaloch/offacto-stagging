@@ -177,13 +177,25 @@ class User extends Authenticatable
     }
 
     /**
+     * Companies the user can work in. Admins can access every company.
+     */
+    public function accessibleCompanies()
+    {
+        if ($this->hasRole('admin')) {
+            return Company::query();
+        }
+
+        return $this->companies();
+    }
+
+    /**
      * Get the user's primary (first) company.
      *
      * @return Company|null
      */
     public function primaryCompany()
     {
-        return $this->companies()->first();
+        return $this->accessibleCompanies()->first();
     }
 
     /**
@@ -197,13 +209,12 @@ class User extends Authenticatable
         $activeCompanyId = $this->getActiveCompanyId();
         
         if ($activeCompanyId) {
-            $company = $this->companies()->find($activeCompanyId);
+            $company = $this->accessibleCompanies()->find($activeCompanyId);
             if ($company) {
                 return $company;
             }
         }
         
-        // Fall back to primary company
         return $this->primaryCompany();
     }
 
@@ -226,7 +237,7 @@ class User extends Authenticatable
     public function setActiveCompanyId(int $companyId): void
     {
         // Validate that the company belongs to this user
-        if ($this->companies()->where('id', $companyId)->exists()) {
+        if ($this->accessibleCompanies()->where('id', $companyId)->exists()) {
             session(['active_company_id' => $companyId]);
         }
     }

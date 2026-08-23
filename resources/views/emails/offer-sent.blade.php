@@ -125,6 +125,7 @@
     </div>
 
     <div class="footer">
+        <div style="margin-bottom:12px;display:inline-block;">@include('emails.partials.logo', ['width' => 120])</div>
         <p>This offer was sent by {{ $offer->company->company_name }}.</p>
         <p>For questions, please contact: {{ $offer->company->email }}</p>
     </div>

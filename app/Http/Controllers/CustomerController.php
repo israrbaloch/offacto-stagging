@@ -18,13 +18,13 @@ class CustomerController extends Controller
     /**
      * Display a listing of the customers.
      */
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
 
         if (!$activeCompany) {
-            abort(404, 'No active company found.');
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
         $customers = Customer::where('company_id', $activeCompany->id)

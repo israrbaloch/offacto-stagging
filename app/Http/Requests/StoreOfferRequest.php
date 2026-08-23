@@ -35,8 +35,8 @@ class StoreOfferRequest extends FormRequest
             ],
             'offer_date' => ['nullable', 'date'],
             'valid_until' => ['nullable', 'date', 'after_or_equal:offer_date'],
-            'intro' => ['required', 'string'],
-            'desc' => ['required', 'string'],
+            'intro' => ['nullable', 'string'],
+            'desc' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'status' => [
                 'required',

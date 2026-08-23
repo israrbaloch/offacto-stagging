@@ -101,7 +101,7 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>{{ $siteName }}</h1>
+            <div style="margin-bottom:12px;">@include('emails.partials.logo', ['variant' => 'white', 'width' => 150])</div>
             <p>Service Status Update</p>
         </div>
 

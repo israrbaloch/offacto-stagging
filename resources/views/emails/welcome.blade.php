@@ -8,6 +8,7 @@
     <title>Welcome to {{ $siteName }}</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="margin-bottom: 20px;">@include('emails.partials.logo', ['width' => 150])</div>
     <h2 style="color: #4054B2;">Welcome to {{ $siteName }}!</h2>
     
     <p>Hi {{ $user->name }},</p>

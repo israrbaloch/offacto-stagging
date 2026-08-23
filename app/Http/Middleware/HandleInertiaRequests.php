@@ -42,7 +42,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'companies' => $user
-                ? $user->companies()->select('id', 'company_name', 'is_active')->get()
+                ? $user->accessibleCompanies()->select('id', 'company_name', 'is_active')->get()
                 : [],
             'activeCompany' => $active ? [
                 'id' => $active->id,
