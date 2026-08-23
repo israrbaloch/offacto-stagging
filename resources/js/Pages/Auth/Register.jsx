@@ -1,7 +1,32 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Toast from '../../Components/Toast';
 import { optionsFromMap } from '../../lib/utils';
+
+const testimonials = [
+    {
+        quote: 'Offacto transformed our chaotic billing process into a smooth, automated workflow. Highly recommended.',
+        author: 'Sarah Jenkins, CEO',
+    },
+    {
+        quote: 'We send offers and invoices in minutes now. The team finally has a single place for every client.',
+        author: 'Marcus Hale, Founder',
+    },
+    {
+        quote: 'Approvals, payments, and follow-up used to live in three tools. Offacto brought it all together.',
+        author: 'Lena Ortiz, Operations',
+    },
+];
+
+const orbs = [
+    { className: '-left-20 top-8 h-56 w-56 bg-indigo-200/45', duration: '32s', x: '22px', y: '-28px', delay: '0s' },
+    { className: '-right-16 top-28 h-72 w-72 bg-violet-200/50', duration: '38s', x: '-26px', y: '20px', delay: '-8s' },
+    { className: 'left-16 bottom-10 h-40 w-40 bg-indigo-300/30', duration: '26s', x: '16px', y: '24px', delay: '-4s' },
+    { className: 'right-10 bottom-32 h-24 w-24 bg-fuchsia-200/40', duration: '22s', x: '-14px', y: '-18px', delay: '-12s' },
+    { className: 'left-1/2 top-1/3 h-16 w-16 bg-sky-200/50', duration: '20s', x: '20px', y: '12px', delay: '-2s' },
+    { className: 'left-8 top-1/2 h-10 w-10 bg-violet-300/35', duration: '18s', x: '-10px', y: '16px', delay: '-6s' },
+    { className: 'right-1/3 top-12 h-14 w-14 bg-indigo-100/80', duration: '30s', x: '12px', y: '-20px', delay: '-10s' },
+];
 
 function Field({ label, error, className = '', children }) {
     return (
@@ -20,6 +45,16 @@ const inputClass = (error) =>
 
 export default function Register({ languages = {} }) {
     const [showPassword, setShowPassword] = useState(false);
+    const [testimonialIndex, setTestimonialIndex] = useState(0);
+    const testimonial = testimonials[testimonialIndex];
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTestimonialIndex((current) => (current + 1) % testimonials.length);
+        }, 5000);
+
+        return () => clearInterval(timer);
+    }, []);
     const { data, setData, post, processing, errors, transform } = useForm({
         name: '',
         email: '',
@@ -56,8 +91,18 @@ export default function Register({ languages = {} }) {
             <Toast />
             <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                 <aside className="relative hidden w-[42%] flex-col justify-between overflow-hidden bg-indigo-50 px-10 py-10 lg:flex">
-                    <div className="pointer-events-none absolute -left-16 top-20 h-64 w-64 rounded-full bg-indigo-200/40" />
-                    <div className="pointer-events-none absolute -right-20 bottom-24 h-72 w-72 rounded-full bg-violet-200/50" />
+                    {orbs.map((orb, index) => (
+                        <div
+                            key={index}
+                            className={`register-orb pointer-events-none absolute rounded-full ${orb.className}`}
+                            style={{
+                                '--float-duration': orb.duration,
+                                '--float-x': orb.x,
+                                '--float-y': orb.y,
+                                animationDelay: orb.delay,
+                            }}
+                        />
+                    ))}
                     <div className="relative">
                         <div className="flex items-center gap-2.5">
                             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
@@ -85,15 +130,14 @@ export default function Register({ languages = {} }) {
                             )}
                         </ul>
                     </div>
-                    <blockquote className="relative mt-10 rounded-xl bg-white p-5 shadow-sm">
-                        <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
-                            “
+                    <blockquote className="relative z-10 mt-10 min-h-[148px] rounded-2xl bg-white p-5 shadow-sm">
+                        <div key={testimonial.author} className="register-quote">
+                            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
+                                “
+                            </div>
+                            <p className="text-sm leading-6 text-slate-600">{testimonial.quote}</p>
+                            <footer className="mt-3 text-xs font-medium text-slate-400">{testimonial.author}</footer>
                         </div>
-                        <p className="text-sm leading-6 text-slate-600">
-                            Offacto transformed our chaotic billing process into a smooth, automated workflow. Highly
-                            recommended.
-                        </p>
-                        <footer className="mt-3 text-xs font-medium text-slate-400">Sarah Jenkins, CEO</footer>
                     </blockquote>
                 </aside>
 

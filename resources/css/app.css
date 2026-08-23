@@ -22,3 +22,41 @@ body {
     --company-primary: #4f46e5;
     --company-secondary: #0f172a;
 }
+
+@keyframes register-float {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(var(--float-x, 18px), var(--float-y, -22px), 0) scale(1.04);
+    }
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+@keyframes register-quote-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.register-orb {
+    animation: register-float var(--float-duration, 28s) ease-in-out infinite;
+}
+
+.register-quote {
+    animation: register-quote-in 700ms ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .register-orb,
+    .register-quote {
+        animation: none;
+    }
+}

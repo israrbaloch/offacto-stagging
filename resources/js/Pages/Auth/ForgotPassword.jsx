@@ -1,30 +1,48 @@
-import { Link, useForm, usePage } from '@inertiajs/react';
-import Button from '../../Components/Button';
-import Input from '../../Components/Input';
-import GuestLayout from '../../Layouts/GuestLayout';
+import { Link, useForm } from '@inertiajs/react';
+import AuthSplitLayout, { inputClass } from '../../Layouts/AuthSplitLayout';
 
 export default function ForgotPassword() {
-    const { flash } = usePage().props;
     const { data, setData, post, processing, errors } = useForm({ email: '' });
 
     return (
-        <GuestLayout title="Forgot password">
-            {flash?.status && <p className="mb-4 text-sm text-emerald-600">{flash.status}</p>}
+        <AuthSplitLayout title="Forgot password">
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Forgot password</h2>
+            <p className="mt-2 text-sm text-slate-500">Enter your email and we’ll send a 6-digit verification code.</p>
+
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
                     post('/forgot-password');
                 }}
-                className="space-y-4"
+                className="mt-8 space-y-5"
             >
-                <Input label="Email" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} error={errors.email} />
-                <Button type="submit" disabled={processing} className="w-full">
-                    Email reset link
-                </Button>
+                <label className="block">
+                    <span className="mb-1.5 block text-sm font-medium text-slate-600">Email Address</span>
+                    <input
+                        type="email"
+                        className={inputClass(errors.email)}
+                        placeholder="jane@company.com"
+                        value={data.email}
+                        onChange={(e) => setData('email', e.target.value)}
+                    />
+                    {errors.email && <span className="mt-1 block text-xs text-rose-600">{errors.email}</span>}
+                </label>
+                <button
+                    type="submit"
+                    disabled={processing}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+                >
+                    Send verification code
+                    <span aria-hidden="true">→</span>
+                </button>
             </form>
-            <Link href="/login" className="mt-4 block text-center text-sm text-slate-500">
-                Back to login
-            </Link>
-        </GuestLayout>
+
+            <p className="mt-6 text-center text-sm text-slate-500">
+                Remembered it?{' '}
+                <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                    Sign in
+                </Link>
+            </p>
+        </AuthSplitLayout>
     );
 }

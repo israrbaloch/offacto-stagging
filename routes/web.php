@@ -30,6 +30,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile/company', [ProfileController::class, 'updateCompany'])->name('profile.company.update');
     Route::patch('/profile/company-settings', [ProfileController::class, 'updateCompanySettings'])->name('profile.company-settings.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/support', fn () => Inertia::render('Support'))->name('support');
+    Route::get('/settings', fn () => Inertia::render('Settings'))->name('settings');
     
     // Company switching
     Route::post('/company/switch/{company}', [CompanyController::class, 'switchCompany'])->name('company.switch');
