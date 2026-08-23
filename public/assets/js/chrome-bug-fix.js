@@ -1,0 +1,1 @@
+//This is an empty file to fix a Chrome bug. A script file inside the <head> prevents CSS transitions on page load.

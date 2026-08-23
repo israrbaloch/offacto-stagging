@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Offer</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 40px;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+    }
+
+    .page {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: 120px 1fr 200px;
+      align-items: start;
+      gap: 20px;
+    }
+
+    .logo img {
+      width: 90px;
+    }
+
+    .title h1 {
+      font-size: 32px;
+      letter-spacing: 1px;
+      margin: 0;
+    }
+
+    .title p {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .meta {
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .meta div {
+      margin-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #7b0033;
+      padding-bottom: 4px;
+    }
+
+    p {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 30px;
+    }
+
+    section {
+      margin-top: 25px;
+    }
+
+    .items {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 25px;
+      font-size: 12px;
+    }
+
+    .items th {
+      text-align: left;
+      border-bottom: 1px solid #000;
+      padding-bottom: 6px;
+    }
+
+    .items td {
+      padding: 10px 0;
+    }
+
+    .items th:nth-child(n+2),
+    .items td:nth-child(n+2) {
+      text-align: right;
+    }
+
+    .summary {
+      margin-top: 20px;
+      font-size: 12px;
+      width: 100%;
+    }
+
+    .summary div {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+
+    .summary .grand {
+      font-weight: bold;
+      color: #7b0033;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <header class="top">
+      <div class="logo">
+        <img src="logo.png" alt="Creative Shelter">
+      </div>
+      <div class="title">
+        <h1>OFFERS</h1>
+        <p>Of pains and duties f</p>
+      </div>
+      <div class="meta">
+        <div><strong>Offer no.</strong><br>536</div>
+        <div><strong>Offered date</strong><br>24/01/2026</div>
+        <div><strong>Valid until</strong><br>27/01/2026</div>
+      </div>
+    </header>
+
+    <section class="two-cols">
+      <div>
+        <h3>Client</h3>
+        <p>
+          Berry Barnes Associates<br>
+          Callum wants offices 518<br>
+          68195 These flee pleasure
+        </p>
+      </div>
+      <div>
+        <h3>Executor</h3>
+        <p>
+          Phandet, Chai<br>
+          Phandet Chai<br>
+          +923113148601<br>
+          israrb294@gmail.com
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h3>Introduction</h3>
+      <p>Things that are owed to you and.</p>
+    </section>
+
+    <section>
+      <h3>Assignment</h3>
+      <p>And as if except for ours.</p>
+    </section>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Performance</th>
+          <th>Number</th>
+          <th>Price</th>
+          <th>Btw</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Oleg Wolf</td>
+          <td>1</td>
+          <td>€ 745,00</td>
+          <td>21 %</td>
+          <td>€ 745,00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="summary">
+      <div>Subtotal <span>€ 745,00</span></div>
+      <div>Btw (21%) <span>€ 156,45</span></div>
+      <div class="grand">Total <span>€ 901,45</span></div>
+    </div>
+
+    <section>
+      <h3>Special conditions</h3>
+      <p>Work as much as you want to</p>
+    </section>
+
+    <footer>
+      <h3>Quotation prepared by</h3>
+      <p>
+        Creative Shelter BV<br>
+        Adolf Boyensstraat 134F<br>
+        9040 Ghent, Belgium<br><br>
+        BE 0584393938 – RPR Gent<br>
+        administratie@creativeshelter.be
+      </p>
+    </footer>
+
+  </div>
+</body>
+
+</html>

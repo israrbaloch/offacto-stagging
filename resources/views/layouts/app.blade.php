@@ -1,36 +1,56 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class='no-js' lang='en'>
+    
+     @include('partials.head')
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+    @php
+        $user = auth()->user();
+        $activeCompany = $user ? $user->activeCompany() : null;
+        $companySettings = $activeCompany?->companySetting;
+        $theme = $companySettings?->theme ?? ['primary' => '#4054B2', 'secondary' => '#454545'];
+        
+        // Ensure theme is an array
+        if (is_string($theme)) {
+            $theme = json_decode($theme, true) ?? ['primary' => '#4054B2', 'secondary' => '#454545'];
+        }
+        
+        $primaryColor = $theme['primary'] ?? '#4054B2';
+        $secondaryColor = $theme['secondary'] ?? '#454545';
+        $hasMultipleCompanies = $user && $user->companies()->count() > 1;
+    @endphp
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --company-primary: {{ $primaryColor }};
+            --company-secondary: {{ $secondaryColor }};
+        }
+        
+        body {
+            background: linear-gradient(117deg, {{ $primaryColor }} 0%, {{ $secondaryColor }} 96%);
+        }
+    </style>
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-            @include('layouts.navigation')
+    <body class="{{ $hasMultipleCompanies ? 'body--user-has-multiple-companies' : '' }}">
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white dark:bg-gray-800 shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
+        @include('partials.header')
+        @include('partials.modals.add-hours')
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
+        <div class="l-flex-wrapper">
+
+            @include('partials.sidebar')
+
+            <main class="l-main">
+                @yield('content')
+
+                <div class="l-bg-waves">
+                    @svg('bg-wave-1')
+                    @svg('bg-wave-2')
+                <div>
             </main>
+
         </div>
+
+        <script src="/js/app.js?v={{ uniqid() }}"></script>
+        @stack('scripts')
     </body>
 </html>
