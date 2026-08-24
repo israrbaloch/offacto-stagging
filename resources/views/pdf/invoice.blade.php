@@ -150,6 +150,8 @@
             font-size: 9pt;
             line-height: 1.6;
         }
+        .section-content ul, .notes-content ul { margin: 4px 0 8px 16px; }
+        .section-content li, .notes-content li { margin: 2px 0; }
 
         /* Items Table */
         .items-table {
@@ -463,7 +465,7 @@
         <div class="intro-section">
             <div class="section-title">Introduction</div>
             <div class="section-content">
-                {!! nl2br(e($invoice->intro)) !!}
+                @include('partials.rich', ['html' => $invoice->intro])
             </div>
         </div>
         @endif
@@ -473,7 +475,7 @@
         <div class="intro-section">
             <div class="section-title">Description</div>
             <div class="section-content">
-                {!! nl2br(e($invoice->desc)) !!}
+                @include('partials.rich', ['html' => $invoice->desc])
             </div>
         </div>
         @endif
@@ -592,7 +594,7 @@
         <div class="notes-section">
             <div class="section-title">Notes</div>
             <div class="notes-content">
-                {!! nl2br(e($invoice->notes)) !!}
+                @include('partials.rich', ['html' => $invoice->notes])
             </div>
         </div>
         @endif

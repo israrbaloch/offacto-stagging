@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import Icon from '../../Components/Icon';
 import Pagination from '../../Components/Pagination';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { customerName, money } from '../../lib/utils';
@@ -77,7 +78,7 @@ function TypePill({ type }) {
     return <StatusPill tone={tone}>{type}</StatusPill>;
 }
 
-function Icon({ name }) {
+function StatIcon({ name }) {
     const common = { className: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: '1.7' };
     if (name === 'wallet') {
         return (
@@ -133,9 +134,10 @@ export default function Index({ invoices, stats = {} }) {
                         </button>
                         <Link
                             href="/invoices/create"
-                            className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
+                            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
                         >
-                            + New Invoice
+                            <Icon name="plus" className="h-4 w-4" />
+                            New Invoice
                         </Link>
                     </div>
                 </div>
@@ -144,7 +146,7 @@ export default function Index({ invoices, stats = {} }) {
                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                         <div className="flex items-start justify-between">
                             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                                <Icon name="wallet" />
+                                <StatIcon name="wallet" />
                             </span>
                         </div>
                         <div className="mt-4 text-sm text-slate-500">Total Outstanding</div>
@@ -152,21 +154,21 @@ export default function Index({ invoices, stats = {} }) {
                     </div>
                     <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-rose-500">
-                            <Icon name="alert" />
+                            <StatIcon name="alert" />
                         </span>
                         <div className="mt-4 text-sm font-medium text-rose-600">Overdue</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.overdue)}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <Icon name="check" />
+                            <StatIcon name="check" />
                         </span>
                         <div className="mt-4 text-sm text-slate-500">Paid YTD</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.paid_ytd ?? stats.paid)}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <Icon name="send" />
+                            <StatIcon name="send" />
                         </span>
                         <div className="mt-4 text-sm text-slate-500">Peppol Sent</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">
@@ -237,8 +239,11 @@ export default function Index({ invoices, stats = {} }) {
                                     return (
                                         <tr key={invoice.id} className="border-b border-slate-50 last:border-0">
                                             <td className="px-5 py-4 sm:px-6">
-                                                <Link href={`/invoices/${invoice.id}`} className="font-medium text-indigo-600 hover:text-indigo-700">
-                                                    {invoice.invoice_number}
+                                                <Link
+                                                    href={status.label === 'Draft' ? `/invoices/${invoice.id}/edit` : `/invoices/${invoice.id}`}
+                                                    className="font-medium text-indigo-600 hover:text-indigo-700"
+                                                >
+                                                    {invoice.invoice_number || 'Untitled draft'}
                                                 </Link>
                                             </td>
                                             <td className="px-3 py-4">
@@ -246,7 +251,7 @@ export default function Index({ invoices, stats = {} }) {
                                                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
                                                         {initials(invoice.customer)}
                                                     </span>
-                                                    <span className="truncate font-medium text-slate-800">{displayName(invoice.customer)}</span>
+                                                    <span className="truncate font-medium text-slate-800">{invoice.customer ? displayName(invoice.customer) : 'Untitled draft'}</span>
                                                 </div>
                                             </td>
                                             <td className="px-3 py-4 text-slate-500">{prettyDate(invoice.invoice_date)}</td>

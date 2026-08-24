@@ -51,6 +51,8 @@ Route::middleware('auth')->group(function () {
     // Offers
     Route::resource('offers', OfferController::class);
     Route::post('offers/{offer}/send', [OfferController::class, 'send'])->name('offers.send');
+    Route::get('offers/{offer}/preview', [OfferController::class, 'preview'])->name('offers.preview');
+    Route::get('offers/{offer}/download', [OfferController::class, 'download'])->name('offers.download');
     
     // Invoices
     Route::get('invoices/from-offer/{offer}', [InvoiceController::class, 'createFromOffer'])->name('invoices.from-offer');

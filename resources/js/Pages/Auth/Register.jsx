@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import Logo from '../../Components/Logo';
+import SelectMenu from '../../Components/SelectMenu';
 import Toast from '../../Components/Toast';
 import { optionsFromMap } from '../../lib/utils';
 
@@ -221,15 +222,16 @@ export default function Register({ languages = {} }) {
                                             />
                                         </Field>
                                         <Field label="Activity Type" error={errors.self_employed_activity}>
-                                            <select
+                                            <SelectMenu
                                                 className={inputClass(errors.self_employed_activity)}
                                                 value={data.self_employed_activity}
                                                 onChange={(e) => setData('self_employed_activity', e.target.value)}
-                                            >
-                                                <option value="">Select activity</option>
-                                                <option value="main_profession">Main profession</option>
-                                                <option value="secondary_profession">Secondary profession</option>
-                                            </select>
+                                                placeholder="Select activity"
+                                                options={[
+                                                    { value: 'main_profession', label: 'Main profession' },
+                                                    { value: 'secondary_profession', label: 'Secondary profession' },
+                                                ]}
+                                            />
                                         </Field>
                                     </div>
                                     <Field label="Company Email" error={errors.email_company}>
@@ -251,18 +253,13 @@ export default function Register({ languages = {} }) {
                                             />
                                         </Field>
                                         <Field label="Language" error={errors.language}>
-                                            <select
+                                            <SelectMenu
                                                 className={inputClass(errors.language)}
                                                 value={data.language}
                                                 onChange={(e) => setData('language', e.target.value)}
-                                            >
-                                                <option value="">Select language</option>
-                                                {optionsFromMap(languages).map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                placeholder="Select language"
+                                                options={optionsFromMap(languages)}
+                                            />
                                         </Field>
                                     </div>
                                     <div className="grid gap-4 sm:grid-cols-3">

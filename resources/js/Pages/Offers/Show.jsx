@@ -1,18 +1,24 @@
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Button from '../../Components/Button';
 import Input from '../../Components/Input';
 import Modal from '../../Components/Modal';
+import OfferPreview from '../../Components/OfferPreview';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
-import { customerName, formatDate, money } from '../../lib/utils';
+import { customerName, formatDate } from '../../lib/utils';
 
 export default function Show({ offer }) {
+    const { activeCompany } = usePage().props;
     const [open, setOpen] = useState(false);
     const form = useForm({
         email: offer.customer?.email || '',
         subject: `Offer ${offer.offer_number}`,
         message: '',
     });
+    const status = String(offer.status_relation?.name || '').toLowerCase();
+    const isSent = ['sent', 'accepted', 'invoiced'].includes(status);
+    const company = offer.company || activeCompany || {};
+    const customer = offer.customer || {};
 
     return (
         <AuthenticatedLayout title={offer.offer_number}>
@@ -24,6 +30,16 @@ export default function Show({ offer }) {
                     </p>
                 </div>
                 <div className="flex gap-2">
+                    {isSent && (
+                        <>
+                            <Button href={`/offers/${offer.id}/preview`} as="a" variant="secondary">
+                                Preview PDF
+                            </Button>
+                            <Button href={`/offers/${offer.id}/download`} as="a" variant="secondary">
+                                Download PDF
+                            </Button>
+                        </>
+                    )}
                     <Button href={`/offers/${offer.id}/edit`} variant="secondary">
                         Edit
                     </Button>
@@ -41,30 +57,46 @@ export default function Show({ offer }) {
                     </Button>
                 </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                <p className="whitespace-pre-wrap text-sm text-slate-600">{offer.intro}</p>
-                <p className="mt-4 whitespace-pre-wrap text-sm">{offer.desc}</p>
-                <table className="mt-6 w-full text-left text-sm">
-                    <thead className="text-slate-500">
-                        <tr>
-                            <th className="py-2">Item</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {(offer.items || []).map((item) => (
-                            <tr key={item.id} className="border-t border-slate-100">
-                                <td className="py-2">{item.service?.name || item.description}</td>
-                                <td>{item.quantity}</td>
-                                <td>{money(item.price)}</td>
-                                <td>{money(item.total)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <div className="mt-4 text-right font-semibold">Total {money(offer.total)}</div>
+            {!isSent && (
+                <p className="mb-3 text-sm text-slate-500">
+                    On-screen preview — the PDF file is created when you send this offer.
+                </p>
+            )}
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <OfferPreview
+                    number={offer.offer_number}
+                    date={offer.offer_date}
+                    validUntil={offer.valid_until}
+                    from={{
+                        name: company.company_name,
+                        street: company.street,
+                        house: company.house,
+                        postal_code: company.postal_code,
+                        city: company.city,
+                        email: company.email,
+                    }}
+                    to={{
+                        name: customer.org_name || [customer.first_name, customer.surname].filter(Boolean).join(' '),
+                        attn: customer.org_name ? [customer.first_name, customer.surname].filter(Boolean).join(' ') : '',
+                        address: customer.office_address,
+                        email: customer.email,
+                    }}
+                    scope={offer.desc || offer.intro}
+                    items={(offer.items || []).map((item) => ({
+                        service_name: item.service?.name,
+                        description: item.description,
+                        quantity: item.quantity,
+                        price: item.price,
+                    }))}
+                    notes={offer.notes}
+                    sender={{
+                        name: [company.first_name, company.surname].filter(Boolean).join(' '),
+                        title: company.self_employed_activity,
+                    }}
+                    client={{
+                        name: [customer.first_name, customer.surname].filter(Boolean).join(' '),
+                    }}
+                />
             </div>
             <Modal
                 open={open}

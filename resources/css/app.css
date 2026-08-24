@@ -54,6 +54,14 @@ body {
     animation: register-quote-in 700ms ease both;
 }
 
+.rich-text p { margin: 0 0 0.5rem; }
+.rich-text ul { margin: 0.25rem 0 0.75rem 1.25rem; list-style: disc; }
+.rich-text ol { margin: 0.25rem 0 0.75rem 1.25rem; list-style: decimal; }
+.rich-text li { margin: 0.15rem 0; }
+.rich-text b, .rich-text strong { font-weight: 700; }
+.rich-text i, .rich-text em { font-style: italic; }
+.rich-text u { text-decoration: underline; }
+
 @media (prefers-reduced-motion: reduce) {
     .register-orb,
     .register-quote {

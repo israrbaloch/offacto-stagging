@@ -224,7 +224,7 @@
         <div class="content">
             @if($customMessage)
             <div class="custom-message">
-                {!! nl2br(e($customMessage)) !!}
+                @include('partials.rich', ['html' => $customMessage])
             </div>
             @endif
 
@@ -362,7 +362,7 @@
             <div style="background: #f5f5f5; border-left: 4px solid #7b0033; padding: 15px; margin-bottom: 20px;">
                 <h4 style="margin: 0 0 10px 0; color: #7b0033;">Notes</h4>
                 <p style="margin: 0; font-size: 14px; color: #666;">
-                    {!! nl2br(e($invoice->notes)) !!}
+                    @include('partials.rich', ['html' => $invoice->notes])
                 </p>
             </div>
             @endif

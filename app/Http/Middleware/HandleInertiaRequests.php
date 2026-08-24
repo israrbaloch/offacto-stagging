@@ -47,6 +47,14 @@ class HandleInertiaRequests extends Middleware
             'activeCompany' => $active ? [
                 'id' => $active->id,
                 'company_name' => $active->company_name,
+                'first_name' => $active->first_name,
+                'surname' => $active->surname,
+                'street' => $active->street,
+                'house' => $active->house,
+                'postal_code' => $active->postal_code,
+                'city' => $active->city,
+                'email' => $active->email,
+                'self_employed_activity' => $active->self_employed_activity,
                 'theme' => [
                     'primary' => $theme['primary'] ?? '#4f46e5',
                     'secondary' => $theme['secondary'] ?? '#0f172a',

@@ -12,9 +12,11 @@ use App\Models\OfferItem;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -132,7 +134,7 @@ class OfferController extends Controller
     /**
      * Show the form for creating a new offer.
      */
-    public function create(Request $request): Response|RedirectResponse
+    public function create(Request $request): RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -141,49 +143,18 @@ class OfferController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
-        $customers = Customer::where('company_id', $activeCompany->id)
-            ->orderBy('first_name')
-            ->get()
-            ->mapWithKeys(function ($customer) {
-                return [$customer->id => $customer->first_name . ' ' . $customer->surname . ($customer->org_name ? ' (' . $customer->org_name . ')' : '')];
-            });
+        $defaultStatus = Status::where('for', 'offers')->where('name', 'Draft')->first()
+            ?? Status::forTable('offers')->first();
 
-        $services = Service::where('company_id', $activeCompany->id)
-            ->orderBy('name')
-            ->get();
-
-        $statuses = Status::forTable('offers')->pluck('name', 'id');
-        
-        // Get default status (first one, typically "Draft")
-        $defaultStatus = Status::forTable('offers')->first();
-        $defaultStatusId = $defaultStatus ? $defaultStatus->id : null;
-
-        // Prepare services data for JavaScript
-        $servicesData = $services->map(function($service) {
-            return [
-                'id' => $service->id,
-                'name' => $service->name,
-                'description' => $service->description ?? '',
-                'price' => (float)$service->price,
-                'unit' => $service->unit ?? '',
-            ];
-        })->values();
-
-        // Get countries for add customer modal
-        $countries = \App\Models\Country::orderBy('name')->pluck('name', 'id');
-        $customerStatuses = Status::forTable('customers')->pluck('name', 'id');
-
-        return Inertia::render('Offers/Create', [
-            'customers' => $customers,
-            'services' => $services,
-            'statuses' => $statuses,
-            'defaultStatusId' => $defaultStatusId,
-            'servicesData' => $servicesData,
-            'countries' => $countries,
-            'customerStatuses' => $customerStatuses,
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
-            'nextOfferNumber' => $this->generateOfferNumber($activeCompany->id),
+        $offer = Offer::create([
+            'company_id' => $activeCompany->id,
+            'customer_id' => null,
+            'offer_number' => $this->generateOfferNumber($activeCompany->id),
+            'offer_date' => now(),
+            'status' => $defaultStatus?->id,
         ]);
+
+        return redirect()->route('offers.edit', $offer);
     }
 
     /**
@@ -330,20 +301,25 @@ class OfferController extends Controller
                 'service_id' => $item->service_id,
                 'service_name' => $item->service->name ?? 'N/A',
                 'description' => $item->description ?? '',
+                'kind' => $item->service_id ? 'product' : ((float) $item->price === 0.0 && (float) $item->quantity === 0.0 ? 'text' : 'custom'),
                 'quantity' => $item->quantity,
                 'price' => (float)$item->price,
                 'total' => (float)$item->total,
             ];
         })->values();
 
-        return Inertia::render('Offers/Edit', [
+        return Inertia::render('Offers/Create', [
             'offer' => $offer,
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,
+            'defaultStatusId' => $offer->status,
             'servicesData' => $servicesData,
             'existingItems' => $existingItems,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'nextOfferNumber' => $offer->offer_number,
+            'customersData' => Customer::where('company_id', $activeCompany->id)
+                ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email']),
         ]);
     }
 
@@ -383,7 +359,7 @@ class OfferController extends Controller
         try {
             // Update offer
             $offer->update([
-                'customer_id' => $request->validated()['customer_id'],
+                'customer_id' => $request->validated()['customer_id'] ?? null,
                 'offer_date' => $request->validated()['offer_date'] ?? $offer->offer_date,
                 'valid_until' => $request->validated()['valid_until'] ?? null,
                 'intro' => $request->validated()['intro'] ?? null,
@@ -392,11 +368,9 @@ class OfferController extends Controller
                 'status' => $request->validated()['status'],
             ]);
 
-            // Delete existing items
             $offer->items()->delete();
 
-            // Create new items
-            foreach ($request->validated()['items'] as $itemData) {
+            foreach ($request->validated()['items'] ?? [] as $itemData) {
                 $item = new OfferItem([
                     'service_id' => $itemData['service_id'],
                     'description' => $itemData['description'] ?? null,
@@ -410,6 +384,10 @@ class OfferController extends Controller
             DB::commit();
 
             $offer->load(['customer', 'statusRelation', 'items.service']);
+
+            if ($request->boolean('autosave')) {
+                return back();
+            }
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -510,7 +488,12 @@ class OfferController extends Controller
         }
 
         try {
-            // Send email
+            $offer->loadMissing(['customer', 'items.service', 'company.companySetting']);
+            $sentStatus = Status::where('for', 'offers')->where('name', 'Sent')->first();
+            if ($sentStatus) {
+                $offer->update(['status' => $sentStatus->id]);
+            }
+
             Mail::to($request->validated()['email'])->send(
                 new OfferSent($offer, $request->validated()['message'] ?? '')
             );
@@ -532,6 +515,47 @@ class OfferController extends Controller
 
             return redirect()->back()->with('error', 'Failed to send offer: ' . $e->getMessage());
         }
+    }
+
+    public function preview(Request $request, $offer): HttpResponse|RedirectResponse
+    {
+        return $this->offerPdf($request, $offer, 'preview');
+    }
+
+    public function download(Request $request, $offer): HttpResponse|RedirectResponse
+    {
+        return $this->offerPdf($request, $offer, 'download');
+    }
+
+    private function offerPdf(Request $request, $offer, string $mode): HttpResponse|RedirectResponse
+    {
+        $user = $request->user();
+        $activeCompany = $user->activeCompany();
+
+        if (!$activeCompany) {
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        $offer = Offer::where('id', $offer)
+            ->where('company_id', $activeCompany->id)
+            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation'])
+            ->firstOrFail();
+
+        $status = strtolower((string) $offer->statusRelation?->name);
+        if (! in_array($status, ['sent', 'accepted', 'invoiced'], true)) {
+            abort(403, 'The PDF is available after the offer is sent.');
+        }
+
+        $pdf = Pdf::loadView('pdf.offer', [
+            'offer' => $offer,
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+        ])->setPaper('a4');
+
+        $filename = 'quotation-'.($offer->offer_number ?? $offer->id).'.pdf';
+
+        return $mode === 'preview'
+            ? $pdf->stream($filename)
+            : $pdf->download($filename);
     }
 
     /**

@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import Icon from '../../Components/Icon';
 import Pagination from '../../Components/Pagination';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { customerName, money } from '../../lib/utils';
@@ -65,7 +66,7 @@ function StatusPill({ tone, children }) {
     );
 }
 
-function Icon({ name }) {
+function StatIcon({ name }) {
     const common = { className: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: '1.7' };
     if (name === 'doc') {
         return (
@@ -119,9 +120,10 @@ export default function Index({ offers, stats = {} }) {
                         </button>
                         <Link
                             href="/offers/create"
-                            className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
+                            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
                         >
-                            + New Offer
+                            <Icon name="plus" className="h-4 w-4" />
+                            New Offer
                         </Link>
                     </div>
                 </div>
@@ -129,28 +131,28 @@ export default function Index({ offers, stats = {} }) {
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <Icon name="doc" />
+                            <StatIcon name="doc" />
                         </span>
                         <div className="mt-4 text-sm text-slate-500">Open</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.open)}</div>
                     </div>
                     <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-rose-500">
-                            <Icon name="alert" />
+                            <StatIcon name="alert" />
                         </span>
                         <div className="mt-4 text-sm font-medium text-rose-600">Expired</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.expired)}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <Icon name="check" />
+                            <StatIcon name="check" />
                         </span>
                         <div className="mt-4 text-sm text-slate-500">Accepted</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.accepted)}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <Icon name="invoice" />
+                            <StatIcon name="invoice" />
                         </span>
                         <div className="mt-4 text-sm text-slate-500">Invoiced</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.invoiced)}</div>
@@ -218,7 +220,10 @@ export default function Index({ offers, stats = {} }) {
                                     return (
                                         <tr key={offer.id} className="border-b border-slate-50 last:border-0">
                                             <td className="px-5 py-4 sm:px-6">
-                                                <Link href={`/offers/${offer.id}`} className="font-medium text-indigo-600 hover:text-indigo-700">
+                                                <Link
+                                                    href={status.label === 'Draft' ? `/offers/${offer.id}/edit` : `/offers/${offer.id}`}
+                                                    className="font-medium text-indigo-600 hover:text-indigo-700"
+                                                >
                                                     {offer.offer_number}
                                                 </Link>
                                             </td>
@@ -227,7 +232,9 @@ export default function Index({ offers, stats = {} }) {
                                                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
                                                         {initials(offer.customer)}
                                                     </span>
-                                                    <span className="truncate font-medium text-slate-800">{displayName(offer.customer)}</span>
+                                                    <span className="truncate font-medium text-slate-800">
+                                                        {offer.customer ? displayName(offer.customer) : 'Untitled draft'}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="px-3 py-4 text-slate-500">{prettyDate(offer.offer_date)}</td>

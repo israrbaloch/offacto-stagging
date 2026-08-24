@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { CashflowChart, DsoBars, PaymentDonut } from '../Components/DashboardCharts';
+import Icon from '../Components/Icon';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 
 const pendingItems = [
@@ -44,9 +45,10 @@ export default function Dashboard() {
                     </div>
                     <Link
                         href="/offers/create"
-                        className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
                     >
-                        + Create Offer
+                        <Icon name="plus" className="h-4 w-4" />
+                        Create Offer
                     </Link>
                 </section>
 

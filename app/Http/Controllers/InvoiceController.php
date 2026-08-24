@@ -159,7 +159,7 @@ class InvoiceController extends Controller
     /**
      * Show the form for creating a new invoice.
      */
-    public function create(Request $request): InertiaResponse|RedirectResponse
+    public function create(Request $request): RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -168,55 +168,26 @@ class InvoiceController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
-        $customers = Customer::where('company_id', $activeCompany->id)
-            ->orderBy('first_name')
-            ->get()
-            ->mapWithKeys(function ($customer) {
-                return [$customer->id => $customer->first_name . ' ' . $customer->surname . ($customer->org_name ? ' (' . $customer->org_name . ')' : '')];
-            });
+        $defaultStatus = Status::where('for', 'invoices')->where('name', 'Draft')->first()
+            ?? Status::forTable('invoices')->first();
 
-        $services = Service::where('company_id', $activeCompany->id)
-            ->orderBy('name')
-            ->get();
-
-        $statuses = Status::forTable('invoices')->pluck('name', 'id');
-        
-        // Get default status (first one, typically "Draft")
-        $defaultStatus = Status::forTable('invoices')->first();
-        $defaultStatusId = $defaultStatus ? $defaultStatus->id : null;
-
-        // Prepare services data for JavaScript
-        $servicesData = $services->map(function($service) {
-            return [
-                'id' => $service->id,
-                'name' => $service->name,
-                'description' => $service->description ?? '',
-                'price' => (float)$service->price,
-                'unit' => $service->unit ?? '',
-            ];
-        })->values();
-
-        // Get countries for add customer modal
-        $countries = \App\Models\Country::orderBy('name')->pluck('name', 'id');
-        $customerStatuses = Status::forTable('customers')->pluck('name', 'id');
-
-        return Inertia::render('Invoices/Create', [
-            'customers' => $customers,
-            'services' => $services,
-            'statuses' => $statuses,
-            'defaultStatusId' => $defaultStatusId,
-            'servicesData' => $servicesData,
-            'countries' => $countries,
-            'customerStatuses' => $customerStatuses,
-            'ipTransferTypes' => Invoice::getIpTransferTypes(),
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+        $invoice = Invoice::create([
+            'company_id' => $activeCompany->id,
+            'customer_id' => null,
+            'invoice_number' => $this->generateInvoiceNumber($activeCompany->id),
+            'invoice_date' => now(),
+            'due_date' => now()->addDays(30),
+            'status' => $defaultStatus?->id,
+            'payment_status' => Invoice::PAYMENT_UNPAID,
         ]);
+
+        return redirect()->route('invoices.edit', $invoice);
     }
 
     /**
      * Create invoice from an existing offer.
      */
-    public function createFromOffer(Request $request, $offer): InertiaResponse|RedirectResponse
+    public function createFromOffer(Request $request, $offer): RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -227,64 +198,38 @@ class InvoiceController extends Controller
 
         $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany->id)
-            ->with(['customer', 'items.service'])
+            ->with(['items.service'])
             ->firstOrFail();
 
-        $customers = Customer::where('company_id', $activeCompany->id)
-            ->orderBy('first_name')
-            ->get()
-            ->mapWithKeys(function ($customer) {
-                return [$customer->id => $customer->first_name . ' ' . $customer->surname . ($customer->org_name ? ' (' . $customer->org_name . ')' : '')];
-            });
+        $defaultStatus = Status::where('for', 'invoices')->where('name', 'Draft')->first()
+            ?? Status::forTable('invoices')->first();
 
-        $services = Service::where('company_id', $activeCompany->id)
-            ->orderBy('name')
-            ->get();
-
-        $statuses = Status::forTable('invoices')->pluck('name', 'id');
-        $defaultStatus = Status::forTable('invoices')->first();
-        $defaultStatusId = $defaultStatus ? $defaultStatus->id : null;
-
-        // Prepare services data for JavaScript
-        $servicesData = $services->map(function($service) {
-            return [
-                'id' => $service->id,
-                'name' => $service->name,
-                'description' => $service->description ?? '',
-                'price' => (float)$service->price,
-                'unit' => $service->unit ?? '',
-            ];
-        })->values();
-
-        // Prepare existing items from offer
-        $existingItems = $offer->items->map(function($item, $index) {
-            return [
-                'id' => $index,
-                'service_id' => $item->service_id,
-                'service_name' => $item->service->name ?? 'N/A',
-                'description' => $item->description ?? '',
-                'quantity' => $item->quantity,
-                'price' => (float)$item->price,
-                'total' => (float)$item->total,
-            ];
-        })->values();
-
-        $countries = \App\Models\Country::orderBy('name')->pluck('name', 'id');
-        $customerStatuses = Status::forTable('customers')->pluck('name', 'id');
-
-        return Inertia::render('Invoices/Create', [
-            'customers' => $customers,
-            'services' => $services,
-            'statuses' => $statuses,
-            'defaultStatusId' => $defaultStatusId,
-            'servicesData' => $servicesData,
-            'countries' => $countries,
-            'customerStatuses' => $customerStatuses,
-            'ipTransferTypes' => Invoice::getIpTransferTypes(),
-            'offer' => $offer,
-            'existingItems' => $existingItems,
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+        $invoice = Invoice::create([
+            'company_id' => $activeCompany->id,
+            'customer_id' => $offer->customer_id,
+            'offer_id' => $offer->id,
+            'invoice_number' => $this->generateInvoiceNumber($activeCompany->id),
+            'invoice_date' => now(),
+            'due_date' => now()->addDays(30),
+            'intro' => $offer->intro,
+            'desc' => $offer->desc,
+            'notes' => $offer->notes,
+            'status' => $defaultStatus?->id,
+            'payment_status' => Invoice::PAYMENT_UNPAID,
         ]);
+
+        foreach ($offer->items as $item) {
+            $invoiceItem = new InvoiceItem([
+                'service_id' => $item->service_id,
+                'description' => $item->description,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+            ]);
+            $invoiceItem->calculateTotal();
+            $invoice->items()->save($invoiceItem);
+        }
+
+        return redirect()->route('invoices.edit', $invoice);
     }
 
     /**
@@ -440,21 +385,26 @@ class InvoiceController extends Controller
                 'service_id' => $item->service_id,
                 'service_name' => $item->service->name ?? 'N/A',
                 'description' => $item->description ?? '',
+                'kind' => $item->service_id ? 'product' : 'custom',
                 'quantity' => $item->quantity,
                 'price' => (float)$item->price,
                 'total' => (float)$item->total,
             ];
         })->values();
 
-        return Inertia::render('Invoices/Edit', [
-            'invoice' => $invoice,
+        return Inertia::render('Invoices/Create', [
+            'invoice' => $invoice->loadMissing('offer'),
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,
+            'defaultStatusId' => $invoice->status,
             'servicesData' => $servicesData,
             'existingItems' => $existingItems,
             'ipTransferTypes' => Invoice::getIpTransferTypes(),
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'nextInvoiceNumber' => $invoice->invoice_number,
+            'customersData' => Customer::where('company_id', $activeCompany->id)
+                ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email']),
         ]);
     }
 
@@ -494,7 +444,7 @@ class InvoiceController extends Controller
         try {
             // Update invoice
             $invoice->update([
-                'customer_id' => $request->validated()['customer_id'],
+                'customer_id' => $request->validated()['customer_id'] ?? null,
                 'invoice_date' => $request->validated()['invoice_date'] ?? $invoice->invoice_date,
                 'due_date' => $request->validated()['due_date'] ?? null,
                 'intro' => $request->validated()['intro'] ?? null,
@@ -508,7 +458,7 @@ class InvoiceController extends Controller
             $invoice->items()->delete();
 
             // Create new items
-            foreach ($request->validated()['items'] as $itemData) {
+            foreach ($request->validated()['items'] ?? [] as $itemData) {
                 $item = new InvoiceItem([
                     'service_id' => $itemData['service_id'],
                     'description' => $itemData['description'] ?? null,
@@ -523,6 +473,10 @@ class InvoiceController extends Controller
 
             $invoice->load(['customer', 'statusRelation', 'items.service']);
 
+            if ($request->boolean('autosave')) {
+                return back();
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Invoice updated successfully.',
@@ -530,7 +484,7 @@ class InvoiceController extends Controller
                 ]);
             }
 
-            return redirect()->route('invoices.show', $invoice->id)->with('status', 'invoice-updated');
+            return redirect()->route('invoices.index')->with('status', 'invoice-updated');
         } catch (\Exception $e) {
             DB::rollBack();
             

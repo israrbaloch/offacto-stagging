@@ -62,7 +62,7 @@
 
     @if($customMessage)
     <div style="margin-bottom: 20px;">
-        {!! nl2br(e($customMessage)) !!}
+        @include('partials.rich', ['html' => $customMessage])
     </div>
     @endif
 
@@ -75,7 +75,7 @@
 
         @if($offer->intro)
         <div style="margin: 20px 0;">
-            {!! nl2br(e($offer->intro)) !!}
+            @include('partials.rich', ['html' => $offer->intro])
         </div>
         @endif
 
@@ -119,7 +119,7 @@
         @if($offer->desc)
         <div style="margin-top: 20px;">
             <h4>Description</h4>
-            {!! nl2br(e($offer->desc)) !!}
+            @include('partials.rich', ['html' => $offer->desc])
         </div>
         @endif
     </div>

@@ -1,8 +1,13 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import DatePicker from '../../Components/DatePicker';
+import Icon from '../../Components/Icon';
 import LineItemsEditor from '../../Components/LineItemsEditor';
+import OfferPreview from '../../Components/OfferPreview';
+import RichTextEditor from '../../Components/RichTextEditor';
+import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
-import { money, optionsFromMap } from '../../lib/utils';
+import { optionsFromMap } from '../../lib/utils';
 
 const fieldClass =
     'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100';
@@ -16,65 +21,58 @@ function Section({ id, title, hint, open, onToggle, children }) {
                     <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
                     <p className="mt-1 text-sm text-slate-400">{hint}</p>
                 </div>
-                <span className={`mt-1 text-slate-400 transition ${open ? 'rotate-180' : ''}`}>⌄</span>
+                <Icon name="chevron" className={`mt-1 h-5 w-5 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && <div className="mt-6">{children}</div>}
         </section>
     );
 }
 
-function EditorToolbar({ onWrap }) {
-    const buttons = [
-        { label: 'B', title: 'Bold', wrap: ['**', '**'] },
-        { label: 'I', title: 'Italic', wrap: ['_', '_'] },
-        { label: 'U', title: 'Underline', wrap: ['<u>', '</u>'] },
-        { label: '•', title: 'List', wrap: ['\n- ', ''] },
-    ];
-
-    return (
-        <div className="flex flex-wrap gap-1 rounded-t-xl border border-b-0 border-slate-200 bg-slate-50 px-2 py-1.5">
-            {buttons.map((button) => (
-                <button
-                    key={button.title}
-                    type="button"
-                    title={button.title}
-                    onClick={() => onWrap(button.wrap[0], button.wrap[1])}
-                    className="rounded-md px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-white"
-                >
-                    {button.label}
-                </button>
-            ))}
-        </div>
-    );
+function dateValue(value) {
+    if (!value) return '';
+    return String(value).slice(0, 10);
 }
 
-function wrapSelected(ref, prefix, suffix, value, onChange) {
-    const el = ref.current;
-    if (!el) return;
-    const start = el.selectionStart ?? value.length;
-    const end = el.selectionEnd ?? value.length;
-    const next = value.slice(0, start) + prefix + value.slice(start, end) + suffix + value.slice(end);
-    onChange(next);
+function parseIntro(value = '') {
+    const [first, ...rest] = String(value).split('\n\n');
+    if (rest.length && first && first.length <= 120 && !first.includes('\n')) {
+        return { title: first, intro: rest.join('\n\n') };
+    }
+    return { title: '', intro: value || '' };
 }
 
-function draftKey(companyId) {
-    return `offacto.offer.draft.${companyId || 'default'}`;
+function parseNotes(value = '') {
+    let notes = String(value || '');
+    let copyright = '';
+    let conditions = '';
+    const copyMatch = notes.match(/^Copyright:\s*(.+)$/m);
+    if (copyMatch) {
+        copyright = copyMatch[1].trim();
+        notes = notes.replace(copyMatch[0], '').trim();
+    }
+    const condMatch = notes.match(/^Special conditions:\s*([\s\S]*)$/m);
+    if (condMatch) {
+        conditions = condMatch[1].trim();
+        notes = notes.replace(condMatch[0], '').trim();
+    }
+    return { copyright, conditions, notes };
 }
 
 export default function Create({
+    offer = null,
     customers = {},
-    statuses = {},
     servicesData = [],
     defaultStatusId,
+    existingItems = [],
     vatRate = 21,
     nextOfferNumber = '',
+    customersData = [],
 }) {
     const { activeCompany } = usePage().props;
-    const restored = useRef(false);
-    const introRef = useRef(null);
-    const descRef = useRef(null);
-    const emailRef = useRef(null);
-    const [items, setItems] = useState([]);
+    const parsed = parseIntro(offer?.intro || '');
+    const parsedNotes = parseNotes(offer?.notes || '');
+    const ready = useRef(false);
+    const [items, setItems] = useState(existingItems);
     const [open, setOpen] = useState({
         basic: true,
         assignment: true,
@@ -83,10 +81,11 @@ export default function Create({
         email: false,
     });
     const [previewOpen, setPreviewOpen] = useState(false);
-    const [savedAt, setSavedAt] = useState(null);
-    const [title, setTitle] = useState('');
-    const [copyright, setCopyright] = useState('');
-    const [conditions, setConditions] = useState('');
+    const [savedAt, setSavedAt] = useState(offer?.updated_at || null);
+    const [saving, setSaving] = useState(false);
+    const [title, setTitle] = useState(parsed.title);
+    const [copyright, setCopyright] = useState(parsedNotes.copyright);
+    const [conditions, setConditions] = useState(parsedNotes.conditions);
     const [emailMessage, setEmailMessage] = useState(
         'Hi #CLIENTNAME#,\n\n#COMPANY# has prepared an offer for you. Please review it here: #OFFERLINK#.\n\nOnce you approve, we can get started.\n\nBest regards,\n#COMPANY#',
     );
@@ -94,101 +93,72 @@ export default function Create({
     const [infoOpen, setInfoOpen] = useState(true);
 
     const form = useForm({
-        customer_id: '',
-        offer_date: new Date().toISOString().slice(0, 10),
-        valid_until: '',
-        intro: '',
-        desc: '',
-        notes: '',
-        status: defaultStatusId || '',
+        customer_id: offer?.customer_id || '',
+        offer_date: dateValue(offer?.offer_date) || new Date().toISOString().slice(0, 10),
+        valid_until: dateValue(offer?.valid_until),
+        intro: parsed.intro,
+        desc: offer?.desc || '',
+        notes: parsedNotes.notes,
+        status: offer?.status || defaultStatusId || '',
+    });
+
+    const payloadFromState = () => ({
+        customer_id: form.data.customer_id || null,
+        offer_date: form.data.offer_date || null,
+        valid_until: form.data.valid_until || null,
+        intro: title ? `${title}\n\n${form.data.intro || ''}`.trim() : form.data.intro,
+        desc: form.data.desc,
+        notes: [copyright && `Copyright: ${copyright}`, conditions && `Special conditions: ${conditions}`, form.data.notes]
+            .filter(Boolean)
+            .join('\n\n'),
+        status: form.data.status,
+        items: items
+            .filter((item) => item.service_id)
+            .map((item) => ({
+                service_id: item.service_id,
+                description: item.description,
+                quantity: item.kind === 'text' ? 1 : item.quantity,
+                price: item.kind === 'text' ? 0 : item.price,
+            })),
     });
 
     useEffect(() => {
-        if (restored.current) return;
-        restored.current = true;
-        try {
-            const raw = localStorage.getItem(draftKey(activeCompany?.id));
-            if (!raw) return;
-            const draft = JSON.parse(raw);
-            form.setData({
-                customer_id: draft.customer_id || '',
-                offer_date: draft.offer_date || form.data.offer_date,
-                valid_until: draft.valid_until || '',
-                intro: draft.intro || '',
-                desc: draft.desc || '',
-                notes: draft.notes || '',
-                status: draft.status || defaultStatusId || '',
-            });
-            setItems(draft.items || []);
-            setTitle(draft.title || '');
-            setCopyright(draft.copyright || '');
-            setConditions(draft.conditions || '');
-            setEmailMessage(draft.emailMessage || emailMessage);
-            if (draft.savedAt) setSavedAt(draft.savedAt);
-        } catch {
-            // ignore a broken local draft
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        const timer = setTimeout(() => ready.current = true, 800);
+        return () => clearTimeout(timer);
     }, []);
 
     useEffect(() => {
+        if (!offer?.id || !ready.current) return;
         const timer = setTimeout(() => {
-            const stamp = new Date().toISOString();
-            const payload = {
-                ...form.data,
-                items,
-                title,
-                copyright,
-                conditions,
-                emailMessage,
-                savedAt: stamp,
-            };
-            localStorage.setItem(draftKey(activeCompany?.id), JSON.stringify(payload));
-            setSavedAt(stamp);
-        }, 1200);
+            setSaving(true);
+            form.transform(() => ({ ...payloadFromState(), autosave: true }));
+            form.put(`/offers/${offer.id}`, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => setSavedAt(new Date().toISOString()),
+                onFinish: () => setSaving(false),
+            });
+        }, 1500);
         return () => clearTimeout(timer);
-    }, [form.data, items, title, copyright, conditions, emailMessage, activeCompany?.id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.data, items, title, copyright, conditions, offer?.id]);
 
     const customerOptions = optionsFromMap(customers);
-    const customerLabel = customerOptions.find((item) => String(item.value) === String(form.data.customer_id))?.label || 'your client';
-
-    const totals = useMemo(() => {
-        const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
-        const vat = subtotal * (Number(vatRate) / 100);
-        return { subtotal, vat, total: subtotal + vat };
-    }, [items, vatRate]);
-
-    const composeNotes = () => {
-        const parts = [];
-        if (copyright) parts.push(`Copyright: ${copyright}`);
-        if (conditions) parts.push(`Special conditions: ${conditions}`);
-        if (form.data.notes) parts.push(form.data.notes);
-        return parts.join('\n\n');
-    };
+    const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
+    const isSent = ['sent', 'accepted', 'invoiced'].includes(String(offer?.status_relation?.name || '').toLowerCase());
 
     const submit = (e) => {
         e.preventDefault();
-        form.transform((data) => ({
-            ...data,
-            intro: title ? `${title}\n\n${data.intro || ''}`.trim() : data.intro,
-            notes: composeNotes(),
-            items: items
-                .filter((item) => item.service_id)
-                .map((item) => ({
-                    service_id: item.service_id,
-                    description: item.description,
-                    quantity: item.kind === 'text' ? 1 : item.quantity,
-                    price: item.kind === 'text' ? 0 : item.price,
-                })),
-        }));
-        form.post('/offers', {
-            onSuccess: () => localStorage.removeItem(draftKey(activeCompany?.id)),
-        });
+        if (!offer?.id) return;
+        form.transform(() => payloadFromState());
+        form.put(`/offers/${offer.id}`);
     };
 
-    const savedLabel = savedAt
-        ? `Draft saved ${new Date(savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-        : 'Auto-draft ready';
+    const savedLabel = saving
+        ? 'Saving draft…'
+        : savedAt
+            ? `Draft saved ${new Date(savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : 'Draft created';
 
     return (
         <AuthenticatedLayout title="New offer">
@@ -196,12 +166,12 @@ export default function Create({
                 <div className="sticky top-0 z-10 -mx-4 mb-6 border-b border-slate-200 bg-slate-50/95 px-4 py-4 backdrop-blur lg:-mx-8 lg:px-8">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-center gap-3">
-                            <Link href="/offers" className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100">
-                                ←
+                            <Link href="/offers" className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100" aria-label="Back">
+                                <Icon name="back" className="h-4 w-4" />
                             </Link>
                             <div>
                                 <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Offer details</h1>
-                                <p className="text-xs text-slate-400">{nextOfferNumber || 'New quotation'}</p>
+                                <p className="text-xs text-slate-400">{offer?.offer_number || nextOfferNumber || 'New quotation'}</p>
                             </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
@@ -216,6 +186,14 @@ export default function Create({
                             >
                                 Preview offer
                             </button>
+                            {isSent && (
+                                <a
+                                    href={`/offers/${offer.id}/download`}
+                                    className="rounded-full border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
+                                >
+                                    Download PDF
+                                </a>
+                            )}
                             <button
                                 type="submit"
                                 disabled={form.processing}
@@ -246,23 +224,23 @@ export default function Create({
                             </label>
                             <label className="block">
                                 <span className={labelClass}>Customer</span>
-                                <select className={fieldClass} value={form.data.customer_id} onChange={(e) => form.setData('customer_id', e.target.value)}>
-                                    <option value="">Select a customer</option>
-                                    {customerOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                <SelectMenu
+                                    className={fieldClass}
+                                    value={form.data.customer_id}
+                                    onChange={(e) => form.setData('customer_id', e.target.value)}
+                                    options={customerOptions}
+                                    placeholder="Select a customer"
+                                    error={form.errors.customer_id}
+                                />
                                 {form.errors.customer_id && <span className="mt-1 block text-xs text-rose-600">{form.errors.customer_id}</span>}
                             </label>
                             <label className="block">
                                 <span className={labelClass}>Quote expiration date</span>
-                                <input className={fieldClass} type="date" value={form.data.valid_until} onChange={(e) => form.setData('valid_until', e.target.value)} />
+                                <DatePicker className={fieldClass} value={form.data.valid_until} onChange={(e) => form.setData('valid_until', e.target.value)} />
                             </label>
                             <label className="block">
                                 <span className={labelClass}>Offer date</span>
-                                <input className={fieldClass} type="date" value={form.data.offer_date} onChange={(e) => form.setData('offer_date', e.target.value)} />
+                                <DatePicker className={fieldClass} value={form.data.offer_date} onChange={(e) => form.setData('offer_date', e.target.value)} />
                             </label>
                             <label className="block">
                                 <span className={labelClass}>Trade name</span>
@@ -279,32 +257,26 @@ export default function Create({
                         onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
                     >
                         <div className="grid gap-5 lg:grid-cols-2">
-                            <label className="block">
+                            <div>
                                 <span className={labelClass}>Introduction</span>
-                                <EditorToolbar onWrap={(a, b) => wrapSelected(introRef, a, b, form.data.intro, (v) => form.setData('intro', v))} />
-                                <textarea
-                                    ref={introRef}
-                                    className={`${fieldClass} rounded-t-none`}
-                                    rows={8}
-                                    placeholder="A short opening your client will read first."
+                                <RichTextEditor
                                     value={form.data.intro}
-                                    onChange={(e) => form.setData('intro', e.target.value)}
+                                    onChange={(html) => form.setData('intro', html)}
+                                    placeholder="A short opening your client will read first."
+                                    error={form.errors.intro}
                                 />
                                 {form.errors.intro && <span className="mt-1 block text-xs text-rose-600">{form.errors.intro}</span>}
-                            </label>
-                            <label className="block">
+                            </div>
+                            <div>
                                 <span className={labelClass}>Description</span>
-                                <EditorToolbar onWrap={(a, b) => wrapSelected(descRef, a, b, form.data.desc, (v) => form.setData('desc', v))} />
-                                <textarea
-                                    ref={descRef}
-                                    className={`${fieldClass} rounded-t-none`}
-                                    rows={8}
-                                    placeholder="Scope, deliverables, and anything the client should know."
+                                <RichTextEditor
                                     value={form.data.desc}
-                                    onChange={(e) => form.setData('desc', e.target.value)}
+                                    onChange={(html) => form.setData('desc', html)}
+                                    placeholder="Scope, deliverables, and anything the client should know."
+                                    error={form.errors.desc}
                                 />
                                 {form.errors.desc && <span className="mt-1 block text-xs text-rose-600">{form.errors.desc}</span>}
-                            </label>
+                            </div>
                         </div>
                     </Section>
 
@@ -321,8 +293,8 @@ export default function Create({
                                 <p className="flex-1">
                                     Pick a saved service for priced lines, or add a free-text note for context. Totals update as you type.
                                 </p>
-                                <button type="button" onClick={() => setInfoOpen(false)} className="text-slate-400">
-                                    ×
+                                <button type="button" onClick={() => setInfoOpen(false)} className="rounded-full p-1 text-slate-400 hover:bg-white hover:text-slate-600" aria-label="Dismiss">
+                                    <Icon name="close" className="h-4 w-4" />
                                 </button>
                             </div>
                         )}
@@ -339,12 +311,17 @@ export default function Create({
                         <div className="grid gap-5 md:grid-cols-2">
                             <label className="block">
                                 <span className={labelClass}>Agreements regarding copyright</span>
-                                <select className={fieldClass} value={copyright} onChange={(e) => setCopyright(e.target.value)}>
-                                    <option value="">Select a regime</option>
-                                    <option value="Full ownership transfer">Full ownership transfer</option>
-                                    <option value="License to use">License to use</option>
-                                    <option value="Rights remain with the company">Rights remain with the company</option>
-                                </select>
+                                <SelectMenu
+                                    className={fieldClass}
+                                    value={copyright}
+                                    onChange={(e) => setCopyright(e.target.value)}
+                                    placeholder="Select a regime"
+                                    options={[
+                                        { value: 'Full ownership transfer', label: 'Full ownership transfer' },
+                                        { value: 'License to use', label: 'License to use' },
+                                        { value: 'Rights remain with the company', label: 'Rights remain with the company' },
+                                    ]}
+                                />
                             </label>
                             <label className="block">
                                 <span className={labelClass}>
@@ -375,15 +352,14 @@ export default function Create({
                                     <button
                                         key={code}
                                         type="button"
-                                        onClick={() => setEmailMessage((value) => `${value}${value.endsWith(' ') || value.endsWith('\n') ? '' : ' '}${code}`)}
+                                        onClick={() => setEmailMessage((value) => `${value || ''}${value ? ' ' : ''}${code}`)}
                                         className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
                                     >
                                         {code}
                                     </button>
                                 ))}
                             </div>
-                            <EditorToolbar onWrap={(a, b) => wrapSelected(emailRef, a, b, emailMessage, setEmailMessage)} />
-                            <textarea ref={emailRef} className={`${fieldClass} rounded-t-none`} rows={7} value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} />
+                            <RichTextEditor value={emailMessage} onChange={setEmailMessage} minHeight="10rem" />
                         </label>
                         <div className="mt-5">
                             <span className={labelClass}>Appendix</span>
@@ -403,31 +379,56 @@ export default function Create({
             </form>
 
             {previewOpen && (
-                <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4">
-                    <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-3xl bg-white p-6 shadow-xl">
-                        <div className="flex items-start justify-between">
+                <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/50 p-4">
+                    <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-slate-100 shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
                             <div>
-                                <div className="text-xs uppercase tracking-wide text-slate-400">Preview</div>
-                                <h3 className="mt-1 text-xl font-semibold text-slate-900">{title || 'Untitled offer'}</h3>
-                                <p className="text-sm text-slate-500">
-                                    {nextOfferNumber} · {customerLabel}
-                                </p>
+                                <div className="text-sm font-semibold text-slate-900">Quotation preview</div>
+                                <div className="text-xs text-slate-400">Live preview — PDF is generated when the offer is sent</div>
                             </div>
-                            <button type="button" onClick={() => setPreviewOpen(false)} className="text-slate-400 hover:text-slate-700">
+                            <button type="button" onClick={() => setPreviewOpen(false)} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-50" aria-label="Close preview">
+                                <Icon name="close" className="h-4 w-4" />
                                 Close
                             </button>
                         </div>
-                        <p className="mt-6 whitespace-pre-wrap text-sm text-slate-600">{form.data.intro || 'No introduction yet.'}</p>
-                        <p className="mt-4 whitespace-pre-wrap text-sm text-slate-600">{form.data.desc}</p>
-                        <ul className="mt-6 space-y-2 text-sm">
-                            {items.map((item, index) => (
-                                <li key={index} className="flex justify-between gap-4 border-b border-slate-100 py-2">
-                                    <span>{item.description || item.service_name}</span>
-                                    <span>{item.kind === 'text' ? '' : money(Number(item.quantity || 0) * Number(item.price || 0))}</span>
-                                </li>
-                            ))}
-                        </ul>
-                        <div className="mt-4 text-right text-lg font-semibold">{money(totals.total)}</div>
+                        <div className="overflow-auto p-4 sm:p-6">
+                            <div className="mx-auto max-w-3xl overflow-hidden rounded-sm bg-white shadow-sm ring-1 ring-slate-200">
+                                <OfferPreview
+                                    number={offer?.offer_number || nextOfferNumber}
+                                    date={form.data.offer_date}
+                                    validUntil={form.data.valid_until}
+                                    from={{
+                                        name: activeCompany?.company_name,
+                                        street: activeCompany?.street,
+                                        house: activeCompany?.house,
+                                        postal_code: activeCompany?.postal_code,
+                                        city: activeCompany?.city,
+                                        email: activeCompany?.email,
+                                    }}
+                                    to={{
+                                        name: selectedCustomer?.org_name || [selectedCustomer?.first_name, selectedCustomer?.surname].filter(Boolean).join(' '),
+                                        attn: selectedCustomer?.org_name
+                                            ? [selectedCustomer.first_name, selectedCustomer.surname].filter(Boolean).join(' ')
+                                            : '',
+                                        address: selectedCustomer?.office_address,
+                                        email: selectedCustomer?.email,
+                                    }}
+                                    scope={form.data.desc || form.data.intro}
+                                    items={items}
+                                    notes={[copyright && `Copyright: ${copyright}`, conditions && `Special conditions: ${conditions}`, form.data.notes]
+                                        .filter(Boolean)
+                                        .join('\n\n')}
+                                    vatRate={vatRate}
+                                    sender={{
+                                        name: [activeCompany?.first_name, activeCompany?.surname].filter(Boolean).join(' '),
+                                        title: activeCompany?.self_employed_activity,
+                                    }}
+                                    client={{
+                                        name: [selectedCustomer?.first_name, selectedCustomer?.surname].filter(Boolean).join(' '),
+                                    }}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

@@ -20,6 +20,13 @@ class UpdateOfferRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        if ($this->customer_id === '' || $this->customer_id === '0') {
+            $this->merge(['customer_id' => null]);
+        }
+    }
+
     public function rules(): array
     {
         $user = $this->user();
@@ -27,7 +34,7 @@ class UpdateOfferRequest extends FormRequest
 
         return [
             'customer_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('customers', 'id')->where(function ($query) use ($activeCompany) {
                     return $query->where('company_id', $activeCompany?->id);
@@ -35,15 +42,16 @@ class UpdateOfferRequest extends FormRequest
             ],
             'offer_date' => ['nullable', 'date'],
             'valid_until' => ['nullable', 'date', 'after_or_equal:offer_date'],
-            'intro' => ['required', 'string'],
-            'desc' => ['required', 'string'],
+            'intro' => ['nullable', 'string'],
+            'desc' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'status' => [
                 'required',
                 'integer',
                 Rule::exists('status', 'id')->where('for', 'offers'),
             ],
-            'items' => ['required', 'array', 'min:1'],
+            'autosave' => ['sometimes', 'boolean'],
+            'items' => ['nullable', 'array'],
             'items.*.service_id' => [
                 'required',
                 'integer',
