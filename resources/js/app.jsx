@@ -1,6 +1,7 @@
 import '../css/app.css';
 import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
+import { setI18n } from './lib/i18n';
 
 createInertiaApp({
     title: (title) => (title ? `${title} — Offacto` : 'Offacto'),
@@ -13,6 +14,7 @@ createInertiaApp({
         return page;
     },
     setup({ el, App, props }) {
+        setI18n(props.initialPage?.props?.locale, props.initialPage?.props?.translations);
         createRoot(el).render(<App {...props} />);
     },
     progress: {

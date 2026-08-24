@@ -1,8 +1,11 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import I18nSync from '../../Components/I18nSync';
+import LocaleSelect from '../../Components/LocaleSelect';
 import Logo from '../../Components/Logo';
 import SelectMenu from '../../Components/SelectMenu';
 import Toast from '../../Components/Toast';
+import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
 const testimonials = [
@@ -89,8 +92,12 @@ export default function Register({ languages = {} }) {
 
     return (
         <div className="min-h-screen bg-slate-100 px-4 py-8">
-            <Head title="Register" />
+            <I18nSync />
+            <Head title={t('auth.register')} />
             <Toast />
+            <div className="mx-auto mb-3 flex max-w-6xl justify-end">
+                <LocaleSelect />
+            </div>
             <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                 <aside className="relative hidden w-[42%] flex-col justify-between overflow-hidden bg-indigo-50 px-10 py-10 lg:flex">
                     {orbs.map((orb, index) => (
@@ -108,20 +115,19 @@ export default function Register({ languages = {} }) {
                     <div className="relative">
                         <Logo className="h-8 w-auto" />
                         <h1 className="mt-14 text-4xl font-semibold leading-tight tracking-tight text-slate-900">
-                            Streamline your billing in minutes
+                            {t('auth.headline')}
                         </h1>
                         <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
-                            Join thousands of modern businesses managing their invoices, tracking expenses, and getting paid
-                            faster with Offacto.
+                            {t('auth.tagline')}
                         </p>
                         <ul className="mt-8 space-y-3 text-sm text-slate-700">
-                            {['Automated recurring invoices', 'Multi-currency support', 'Seamless tax calculations'].map(
+                            {['auth.feature_1', 'auth.feature_2', 'auth.feature_3'].map(
                                 (item) => (
                                     <li key={item} className="flex items-center gap-3">
                                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
                                             ✓
                                         </span>
-                                        {item}
+                                        {t(item)}
                                     </li>
                                 ),
                             )}
@@ -140,17 +146,17 @@ export default function Register({ languages = {} }) {
 
                 <section className="flex w-full flex-1 flex-col justify-center px-6 py-10 sm:px-10 lg:px-14">
                     <div className="mx-auto w-full max-w-lg">
-                        <h2 className="text-3xl font-semibold tracking-tight text-slate-900">Create your account</h2>
-                        <p className="mt-2 text-sm text-slate-500">Start your 14-day free trial. No credit card required.</p>
+                        <h2 className="text-3xl font-semibold tracking-tight text-slate-900">{t('auth.create_your_account')}</h2>
+                        <p className="mt-2 text-sm text-slate-500">{t('auth.trial_hint')}</p>
 
                         <form onSubmit={submit} className="mt-8 space-y-8">
                             <fieldset>
                                 <legend className="mb-4 text-[11px] font-semibold tracking-[0.16em] text-slate-400 uppercase">
-                                    Account info
+                                    {t('auth.account_info')}
                                 </legend>
                                 <div className="space-y-4">
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label="First Name" error={errors.first_name}>
+                                        <Field label={t('auth.first_name')} error={errors.first_name}>
                                             <input
                                                 className={inputClass(errors.first_name)}
                                                 placeholder="Jane"
@@ -158,7 +164,7 @@ export default function Register({ languages = {} }) {
                                                 onChange={(e) => setData('first_name', e.target.value)}
                                             />
                                         </Field>
-                                        <Field label="Last Name" error={errors.surname}>
+                                        <Field label={t('auth.last_name')} error={errors.surname}>
                                             <input
                                                 className={inputClass(errors.surname)}
                                                 placeholder="Doe"
@@ -167,7 +173,7 @@ export default function Register({ languages = {} }) {
                                             />
                                         </Field>
                                     </div>
-                                    <Field label="Email Address" error={errors.email}>
+                                    <Field label={t('auth.email_address')} error={errors.email}>
                                         <input
                                             type="email"
                                             className={inputClass(errors.email)}
@@ -177,12 +183,12 @@ export default function Register({ languages = {} }) {
                                         />
                                     </Field>
                                     <div>
-                                        <span className="mb-1.5 block text-sm font-medium text-slate-600">Password</span>
+                                        <span className="mb-1.5 block text-sm font-medium text-slate-600">{t('auth.password')}</span>
                                         <div className="relative">
                                             <input
                                                 type={showPassword ? 'text' : 'password'}
                                                 className={`${inputClass(errors.password)} pr-14`}
-                                                placeholder="Create a password"
+                                                placeholder={t('auth.create_password')}
                                                 value={data.password}
                                                 onChange={(e) => setData('password', e.target.value)}
                                             />
@@ -191,7 +197,7 @@ export default function Register({ languages = {} }) {
                                                 className="absolute inset-y-0 right-3 text-xs font-medium text-slate-400 hover:text-slate-600"
                                                 onClick={() => setShowPassword((v) => !v)}
                                             >
-                                                {showPassword ? 'Hide' : 'Show'}
+                                                {showPassword ? t('auth.hide') : t('auth.show')}
                                             </button>
                                         </div>
                                         {errors.password && <span className="mt-1 block text-xs text-rose-600">{errors.password}</span>}
@@ -201,10 +207,10 @@ export default function Register({ languages = {} }) {
 
                             <fieldset>
                                 <legend className="mb-4 text-[11px] font-semibold tracking-[0.16em] text-slate-400 uppercase">
-                                    Company setup
+                                    {t('auth.company_setup')}
                                 </legend>
                                 <div className="space-y-4">
-                                    <Field label="Company Name" error={errors.company_name}>
+                                    <Field label={t('auth.company_name')} error={errors.company_name}>
                                         <input
                                             className={inputClass(errors.company_name)}
                                             placeholder="Acme Corp"
@@ -213,7 +219,7 @@ export default function Register({ languages = {} }) {
                                         />
                                     </Field>
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label="VAT Number (Optional)" error={errors.vat_number}>
+                                        <Field label={t('auth.vat_optional')} error={errors.vat_number}>
                                             <input
                                                 className={inputClass(errors.vat_number)}
                                                 placeholder="BE0123456789"
@@ -221,20 +227,20 @@ export default function Register({ languages = {} }) {
                                                 onChange={(e) => setData('vat_number', e.target.value)}
                                             />
                                         </Field>
-                                        <Field label="Activity Type" error={errors.self_employed_activity}>
+                                        <Field label={t('auth.activity_type')} error={errors.self_employed_activity}>
                                             <SelectMenu
                                                 className={inputClass(errors.self_employed_activity)}
                                                 value={data.self_employed_activity}
                                                 onChange={(e) => setData('self_employed_activity', e.target.value)}
-                                                placeholder="Select activity"
+                                                placeholder={t('auth.select_activity')}
                                                 options={[
-                                                    { value: 'main_profession', label: 'Main profession' },
-                                                    { value: 'secondary_profession', label: 'Secondary profession' },
+                                                    { value: 'main_profession', label: t('companies.main_profession') },
+                                                    { value: 'secondary_profession', label: t('companies.secondary_profession') },
                                                 ]}
                                             />
                                         </Field>
                                     </div>
-                                    <Field label="Company Email" error={errors.email_company}>
+                                    <Field label={t('auth.company_email')} error={errors.email_company}>
                                         <input
                                             type="email"
                                             className={inputClass(errors.email_company)}
@@ -244,7 +250,7 @@ export default function Register({ languages = {} }) {
                                         />
                                     </Field>
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label="Phone" error={errors.phone}>
+                                        <Field label={t('common.phone')} error={errors.phone}>
                                             <input
                                                 className={inputClass(errors.phone)}
                                                 placeholder="+32 470 00 00 00"
@@ -252,18 +258,18 @@ export default function Register({ languages = {} }) {
                                                 onChange={(e) => setData('phone', e.target.value)}
                                             />
                                         </Field>
-                                        <Field label="Language" error={errors.language}>
+                                        <Field label={t('auth.language')} error={errors.language}>
                                             <SelectMenu
                                                 className={inputClass(errors.language)}
                                                 value={data.language}
                                                 onChange={(e) => setData('language', e.target.value)}
-                                                placeholder="Select language"
+                                                placeholder={t('auth.select_language')}
                                                 options={optionsFromMap(languages)}
                                             />
                                         </Field>
                                     </div>
                                     <div className="grid gap-4 sm:grid-cols-3">
-                                        <Field label="Street" className="sm:col-span-2" error={errors.street}>
+                                        <Field label={t('auth.street')} className="sm:col-span-2" error={errors.street}>
                                             <input
                                                 className={inputClass(errors.street)}
                                                 placeholder="Main Street"
@@ -271,7 +277,7 @@ export default function Register({ languages = {} }) {
                                                 onChange={(e) => setData('street', e.target.value)}
                                             />
                                         </Field>
-                                        <Field label="No." error={errors.house}>
+                                        <Field label={t('auth.house_no')} error={errors.house}>
                                             <input
                                                 className={inputClass(errors.house)}
                                                 placeholder="12"
@@ -281,7 +287,7 @@ export default function Register({ languages = {} }) {
                                         </Field>
                                     </div>
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label="Postal code" error={errors.postal_code}>
+                                        <Field label={t('auth.postal')} error={errors.postal_code}>
                                             <input
                                                 className={inputClass(errors.postal_code)}
                                                 placeholder="1000"
@@ -289,7 +295,7 @@ export default function Register({ languages = {} }) {
                                                 onChange={(e) => setData('postal_code', e.target.value)}
                                             />
                                         </Field>
-                                        <Field label="City" error={errors.city}>
+                                        <Field label={t('auth.city')} error={errors.city}>
                                             <input
                                                 className={inputClass(errors.city)}
                                                 placeholder="Brussels"
@@ -308,20 +314,20 @@ export default function Register({ languages = {} }) {
                                 disabled={processing}
                                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
                             >
-                                Start 14-Day Free Trial
+                                {t('auth.start_trial')}
                                 <span aria-hidden="true">→</span>
                             </button>
                         </form>
 
                         <p className="mt-4 text-center text-xs text-slate-400">
-                            By registering, you agree to our{' '}
-                            <span className="font-medium text-slate-600">Terms of Service</span> and{' '}
-                            <span className="font-medium text-slate-600">Privacy Policy</span>.
+                            {t('auth.terms_agree')}{' '}
+                            <span className="font-medium text-slate-600">{t('profile.terms')}</span> {t('auth.and')}{' '}
+                            <span className="font-medium text-slate-600">{t('auth.privacy')}</span>.
                         </p>
                         <p className="mt-6 text-center text-sm text-slate-500">
-                            Already have an account?{' '}
+                            {t('auth.have_account')}{' '}
                             <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-                                Sign in
+                                {t('auth.sign_in')}
                             </Link>
                         </p>
                     </div>

@@ -21,6 +21,16 @@ use Inertia\Inertia;
 Route::get('/b/{token}', [PublicBriefingController::class, 'show'])->name('briefings.public');
 Route::post('/b/{token}', [PublicBriefingController::class, 'submit'])->name('briefings.public.submit');
 
+Route::post('/locale', function (\Illuminate\Http\Request $request) {
+    $locale = $request->validate([
+        'locale' => ['required', 'in:en,fr,nl'],
+    ])['locale'];
+    $request->session()->put('locale', $locale);
+    app()->setLocale($locale);
+
+    return back();
+})->name('locale.update');
+
 Route::get('/', function () {
     return redirect()->route('dashboard');
 })->middleware('auth');
@@ -42,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/support', fn () => Inertia::render('Support'))->name('support');
     Route::get('/settings', [ProfileController::class, 'edit'])->name('settings');
     Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
+
     Route::post('/theme', function (\Illuminate\Http\Request $request) {
         $theme = $request->validate([
             'theme' => ['required', 'in:light,dark'],

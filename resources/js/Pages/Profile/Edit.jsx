@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Icon from '../../Components/Icon';
 import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
 const fieldClass =
@@ -131,63 +132,63 @@ export default function Edit({
     };
 
     const typeLabel = {
-        terms: 'Terms of Service',
-        contract: 'Contract',
-        other: 'Other',
+        terms: t('profile.terms'),
+        contract: t('profile.contract'),
+        other: t('profile.other'),
     };
 
     return (
-        <AuthenticatedLayout title="Profile & Settings">
+        <AuthenticatedLayout title={t('profile.title')}>
             <div className="mb-6">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Profile & Settings</h1>
-                <p className="mt-1 text-sm text-slate-500">Manage your account, company branding, and legal documents.</p>
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{t('profile.title')}</h1>
+                <p className="mt-1 text-sm text-slate-500">{t('profile.subtitle')}</p>
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
                 <div className="space-y-6">
-                    <Card icon="user" title="Account Settings">
+                    <Card icon="user" title={t('profile.account')}>
                         <form onSubmit={saveAccount} className="space-y-5">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <label className="block">
-                                    <span className={labelClass}>Full Name</span>
+                                    <span className={labelClass}>{t('profile.full_name')}</span>
                                     <input className={fieldClass} value={profile.data.name} onChange={(e) => profile.setData('name', e.target.value)} />
                                     {profile.errors.name && <span className="mt-1 block text-xs text-rose-600">{profile.errors.name}</span>}
                                 </label>
                                 <label className="block">
-                                    <span className={labelClass}>Email Address</span>
+                                    <span className={labelClass}>{t('profile.email')}</span>
                                     <input type="email" className={fieldClass} value={profile.data.email} onChange={(e) => profile.setData('email', e.target.value)} />
                                     {profile.errors.email && <span className="mt-1 block text-xs text-rose-600">{profile.errors.email}</span>}
                                 </label>
                             </div>
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <button type="submit" disabled={profile.processing} className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                                    Save account
+                                    {t('profile.save_account')}
                                 </button>
                             </div>
                             <div className="border-t border-slate-100 pt-5">
-                                <h3 className="text-sm font-semibold text-slate-900">Password Reset</h3>
-                                <p className="mt-1 text-sm text-slate-500">We will send a secure code to your email to reset your password.</p>
+                                <h3 className="text-sm font-semibold text-slate-900">{t('profile.password_reset')}</h3>
+                                <p className="mt-1 text-sm text-slate-500">{t('profile.password_reset_hint')}</p>
                                 <button
                                     type="button"
                                     onClick={() => router.post('/profile/password-reset')}
                                     className="mt-3 rounded-full bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
                                 >
-                                    Send Reset Link
+                                    {t('profile.send_reset')}
                                 </button>
                             </div>
                         </form>
                     </Card>
 
-                    <Card icon="building" title="Company Information">
+                    <Card icon="building" title={t('profile.company_info')}>
                         {company ? (
                             <form onSubmit={saveCompany} className="space-y-4">
                                 <label className="block">
-                                    <span className={labelClass}>Company Name</span>
+                                    <span className={labelClass}>{t('companies.name')}</span>
                                     <input className={fieldClass} value={companyForm.data.company_name} onChange={(e) => companyForm.setData('company_name', e.target.value)} />
                                     {companyForm.errors.company_name && <span className="mt-1 block text-xs text-rose-600">{companyForm.errors.company_name}</span>}
                                 </label>
                                 <label className="block">
-                                    <span className={labelClass}>Business Address</span>
+                                    <span className={labelClass}>{t('companies.address')}</span>
                                     <textarea
                                         rows={3}
                                         className={fieldClass}
@@ -197,40 +198,40 @@ export default function Edit({
                                 </label>
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <label className="block">
-                                        <span className={labelClass}>VAT / Tax Number</span>
+                                        <span className={labelClass}>{t('companies.vat')}</span>
                                         <input className={fieldClass} value={companyForm.data.vat_number} onChange={(e) => companyForm.setData('vat_number', e.target.value)} />
                                     </label>
                                     <label className="block">
-                                        <span className={labelClass}>Default Language</span>
+                                        <span className={labelClass}>{t('companies.language')}</span>
                                         <SelectMenu
                                             value={companyForm.data.language}
                                             onChange={(e) => companyForm.setData('language', e.target.value)}
                                             options={optionsFromMap(languages)}
-                                            placeholder="Select"
+                                            placeholder={t('common.select')}
                                             className={fieldClass}
                                         />
                                     </label>
                                 </div>
                                 <div className="flex justify-end pt-2">
                                     <button type="submit" disabled={companyForm.processing} className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                                        Save Company Details
+                                        {t('profile.save_company')}
                                     </button>
                                 </div>
                             </form>
                         ) : (
                             <p className="text-sm text-slate-500">
-                                Create a company first to edit company details.{' '}
-                                <a href="/companies/create" className="font-medium text-indigo-600">Add company</a>
+                                {t('profile.no_company')}{' '}
+                                <a href="/companies/create" className="font-medium text-indigo-600">{t('profile.add_company')}</a>
                             </p>
                         )}
                     </Card>
                 </div>
 
                 <div className="space-y-6">
-                    <Card icon="palette" title="Branding">
+                    <Card icon="palette" title={t('profile.branding')}>
                         <div className="space-y-5">
                             <div>
-                                <span className={labelClass}>Company Logo</span>
+                                <span className={labelClass}>{t('profile.logo')}</span>
                                 <label className="mt-1 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 px-4 py-8 text-center hover:border-indigo-300 hover:bg-indigo-50">
                                     {logoPreview ? (
                                         <img src={logoPreview} alt="Company logo" className="mb-3 max-h-16 w-auto object-contain" />
@@ -239,8 +240,8 @@ export default function Edit({
                                             <Icon name="upload" className="h-5 w-5" />
                                         </span>
                                     )}
-                                    <span className="text-sm font-medium text-indigo-700">Click to upload</span>
-                                    <span className="mt-1 text-xs text-slate-400">SVG, PNG, JPG (max 2MB)</span>
+                                    <span className="text-sm font-medium text-indigo-700">{t('profile.upload')}</span>
+                                    <span className="mt-1 text-xs text-slate-400">{t('profile.upload_hint')}</span>
                                     <input
                                         type="file"
                                         accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif"
@@ -256,11 +257,11 @@ export default function Edit({
                                 </label>
                             </div>
                             <div>
-                                <span className={labelClass}>Theme Colors</span>
+                                <span className={labelClass}>{t('profile.theme_colors')}</span>
                                 <div className="mt-2 space-y-3">
                                     {[
-                                        { key: 'primary', label: 'Primary Color' },
-                                        { key: 'secondary', label: 'Accent Color' },
+                                        { key: 'primary', label: t('profile.primary') },
+                                        { key: 'secondary', label: t('profile.accent') },
                                     ].map((item) => (
                                         <label key={item.key} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
                                             <span className="text-sm text-slate-700">{item.label}</span>
@@ -284,16 +285,16 @@ export default function Edit({
 
                     <Card
                         icon="scale"
-                        title="Legal Docs"
+                        title={t('profile.legal')}
                         action={
                             company ? (
-                                <button type="button" onClick={() => setAddingLegal((open) => !open)} className="text-indigo-600 hover:text-indigo-700" aria-label="Add legal document">
+                                <button type="button" onClick={() => setAddingLegal((open) => !open)} className="text-indigo-600 hover:text-indigo-700" aria-label={t('profile.add_legal')}>
                                     <Icon name="plus" className="h-5 w-5" />
                                 </button>
                             ) : null
                         }
                     >
-                        {!company && <p className="text-sm text-slate-500">Add a company to upload legal documents.</p>}
+                        {!company && <p className="text-sm text-slate-500">{t('profile.no_legal_company')}</p>}
                         <ul className="space-y-3">
                             {legalDocuments.map((doc) => (
                                 <li key={doc.id} className="rounded-2xl bg-indigo-50/80 px-4 py-3">
@@ -304,13 +305,13 @@ export default function Edit({
                                         </div>
                                         <div className="flex items-center gap-2 text-slate-400">
                                             <Icon name="document" className="h-4 w-4 text-indigo-400" />
-                                            <button type="button" className="hover:text-rose-600" onClick={() => router.delete(`/profile/legal-documents/${doc.id}`)} aria-label="Delete">
+                                            <button type="button" className="hover:text-rose-600" onClick={() => router.delete(`/profile/legal-documents/${doc.id}`)} aria-label={t('common.delete')}>
                                                 <Icon name="trash" className="h-4 w-4" />
                                             </button>
                                         </div>
                                     </div>
                                     <div className="mt-3 flex items-center justify-between">
-                                        <span className="text-xs font-medium text-slate-600">Attach to quotes</span>
+                                        <span className="text-xs font-medium text-slate-600">{t('profile.attach_quotes')}</span>
                                         <Toggle
                                             checked={!!doc.attach_to_quotes_default}
                                             onChange={(checked) => router.patch(`/profile/legal-documents/${doc.id}`, { attach_to_quotes_default: checked })}
@@ -339,17 +340,17 @@ export default function Edit({
                                 }}
                             >
                                 <select name="type" className={fieldClass} defaultValue="terms">
-                                    <option value="terms">Terms</option>
-                                    <option value="contract">Contract</option>
-                                    <option value="other">Other</option>
+                                    <option value="terms">{t('profile.terms')}</option>
+                                    <option value="contract">{t('profile.contract')}</option>
+                                    <option value="other">{t('profile.other')}</option>
                                 </select>
                                 <input name="file" type="file" accept="application/pdf" required className={fieldClass} />
                                 <label className="flex items-center gap-2 text-sm text-slate-600">
                                     <input type="checkbox" name="attach_to_quotes_default" value="1" defaultChecked />
-                                    Attach to quotes by default
+                                    {t('profile.attach_default')}
                                 </label>
                                 <button type="submit" className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white">
-                                    Upload PDF
+                                    {t('profile.upload_pdf')}
                                 </button>
                             </form>
                         )}
@@ -365,11 +366,11 @@ export default function Edit({
                 className="mt-6 flex flex-col gap-4 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
             >
                 <div>
-                    <h2 className="font-semibold text-rose-700">Danger Zone</h2>
-                    <p className="mt-1 text-sm text-rose-600/80">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                    <h2 className="font-semibold text-rose-700">{t('profile.danger')}</h2>
+                    <p className="mt-1 text-sm text-rose-600/80">{t('profile.danger_body')}</p>
                     <input
                         type="password"
-                        placeholder="Confirm password"
+                        placeholder={t('profile.confirm_password')}
                         className="mt-3 w-full max-w-xs rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm"
                         value={destroy.data.password}
                         onChange={(e) => destroy.setData('password', e.target.value)}
@@ -377,7 +378,7 @@ export default function Edit({
                     {destroy.errors.password && <span className="mt-1 block text-xs text-rose-600">{destroy.errors.password}</span>}
                 </div>
                 <button type="submit" disabled={destroy.processing} className="shrink-0 rounded-full border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-100">
-                    Delete Account
+                    {t('profile.delete_account')}
                 </button>
             </form>
         </AuthenticatedLayout>

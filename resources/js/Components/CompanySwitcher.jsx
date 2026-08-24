@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { t } from '../lib/i18n';
 import Icon from './Icon';
 
 function initials(name = '') {
@@ -49,8 +50,8 @@ export default function CompanySwitcher() {
                     {initials(current?.company_name)}
                 </span>
                 <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-slate-800">{current?.company_name || 'Select company'}</span>
-                    <span className="block text-[11px] text-slate-400">{current?.is_active === false ? 'Inactive' : 'Workspace'}</span>
+                    <span className="block truncate text-sm font-semibold text-slate-800">{current?.company_name || t('company.switcher.select')}</span>
+                    <span className="block text-[11px] text-slate-400">{current?.is_active === false ? t('common.inactive') : t('common.workspace')}</span>
                 </span>
                 <Icon name="chevron" className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
             </button>
@@ -90,7 +91,7 @@ export default function CompanySwitcher() {
                     <div className="mt-1 border-t border-slate-100 px-2.5 py-2">
                         <Link href="/companies/create" className="flex items-center gap-2 text-xs font-medium text-indigo-600 hover:text-indigo-700">
                             <Icon name="plus" className="h-3.5 w-3.5" />
-                            Add company
+                            {t('company.switcher.add')}
                         </Link>
                     </div>
                 </div>

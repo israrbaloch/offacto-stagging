@@ -1,7 +1,9 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
+import I18nSync from '../Components/I18nSync';
 import Logo from '../Components/Logo';
 import Toast from '../Components/Toast';
+import { t } from '../lib/i18n';
 
 const orbs = [
     { className: '-left-20 top-8 h-56 w-56 bg-indigo-200/45', duration: '32s', x: '22px', y: '-28px', delay: '0s' },
@@ -22,6 +24,7 @@ export default function AuthSplitLayout({ title, asideFooter, children }) {
 
     return (
         <div className="min-h-screen bg-slate-100 px-4 py-8">
+            <I18nSync />
             <Head title={title} />
             <Toast />
             <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -41,20 +44,19 @@ export default function AuthSplitLayout({ title, asideFooter, children }) {
                     <div className="relative z-10">
                         <Logo className="h-8 w-auto" />
                         <h1 className="mt-14 text-4xl font-semibold leading-tight tracking-tight text-slate-900">
-                            Streamline your billing in minutes
+                            {t('auth.headline')}
                         </h1>
                         <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
-                            Join thousands of modern businesses managing their invoices, tracking expenses, and getting paid
-                            faster with Offacto.
+                            {t('auth.tagline')}
                         </p>
                         <ul className="mt-8 space-y-3 text-sm text-slate-700">
-                            {['Automated recurring invoices', 'Multi-currency support', 'Seamless tax calculations'].map(
+                            {['auth.feature_1', 'auth.feature_2', 'auth.feature_3'].map(
                                 (item) => (
                                     <li key={item} className="flex items-center gap-3">
                                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
                                             ✓
                                         </span>
-                                        {item}
+                                        {t(item)}
                                     </li>
                                 ),
                             )}

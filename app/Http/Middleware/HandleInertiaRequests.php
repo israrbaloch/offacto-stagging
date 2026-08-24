@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Middleware\SetLocale;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -70,10 +71,25 @@ class HandleInertiaRequests extends Middleware
                 'trial_expired' => $active->isTrialExpired(),
             ] : null,
             'appearance' => $request->session()->get('appearance', 'light'),
+            'locale' => app()->getLocale(),
+            'locales' => SetLocale::LOCALES,
+            'translations' => $this->translations(app()->getLocale()),
             'flash' => [
                 'status' => $request->session()->get('status'),
                 'error' => $request->session()->get('error'),
             ],
         ];
+    }
+
+    private function translations(string $locale): array
+    {
+        $path = lang_path($locale.'.json');
+        if (! is_file($path)) {
+            $path = lang_path('en.json');
+        }
+
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 }

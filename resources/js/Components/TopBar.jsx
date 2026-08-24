@@ -1,6 +1,8 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { t } from '../lib/i18n';
 import Icon from './Icon';
+import LocaleSelect from './LocaleSelect';
 
 function SearchIcon() {
     return (
@@ -91,7 +93,7 @@ export default function TopBar() {
                 </span>
                 <input
                     type="search"
-                    placeholder="Search invoices, customers, or offers..."
+                    placeholder={t('topbar.search')}
                     className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
                 />
             </form>
@@ -102,8 +104,8 @@ export default function TopBar() {
                         activeCompany.trial_expired ? 'bg-rose-50 text-rose-700' : 'bg-indigo-50 text-indigo-700'
                     }`}>
                         {activeCompany.trial_expired
-                            ? 'Trial ended'
-                            : `Trial · ${activeCompany.trial_days_left ?? 0} days left`}
+                            ? t('topbar.trial_ended')
+                            : t('topbar.trial_left', { days: activeCompany.trial_days_left ?? 0 })}
                     </span>
                 )}
                 <button
@@ -114,11 +116,12 @@ export default function TopBar() {
                         router.post('/theme', { theme: next }, { preserveScroll: true, preserveState: true });
                     }}
                     className="rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
-                    aria-label={appearance === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-                    title={appearance === 'dark' ? 'Light theme' : 'Dark theme'}
+                    aria-label={appearance === 'dark' ? t('theme.to_light') : t('theme.to_dark')}
+                    title={appearance === 'dark' ? t('theme.light') : t('theme.dark')}
                 >
                     <Icon name={appearance === 'dark' ? 'sun' : 'moon'} className="h-5 w-5" />
                 </button>
+                <LocaleSelect />
                 <div className="relative" ref={notificationsRef}>
                     <button
                         type="button"
@@ -127,7 +130,7 @@ export default function TopBar() {
                             setOpen(false);
                         }}
                         className="relative rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
-                        aria-label="Notifications"
+                        aria-label={t('topbar.notifications')}
                     >
                         <BellIcon />
                         <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-400" />
@@ -135,8 +138,8 @@ export default function TopBar() {
                     {notificationsOpen && (
                         <div className="absolute right-0 z-20 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
                             <div className="border-b border-slate-100 px-4 py-3">
-                                <div className="text-sm font-semibold text-slate-900">Notifications</div>
-                                <div className="text-xs text-slate-400">2 unread</div>
+                                <div className="text-sm font-semibold text-slate-900">{t('topbar.notifications')}</div>
+                                <div className="text-xs text-slate-400">{t('topbar.unread', { count: 2 })}</div>
                             </div>
                             <ul>
                                 {notifications.map((item) => (
@@ -164,7 +167,7 @@ export default function TopBar() {
                 <Link
                     href="/support"
                     className="rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
-                    aria-label="Help"
+                    aria-label={t('topbar.help')}
                 >
                     <HelpIcon />
                 </Link>
@@ -209,7 +212,7 @@ export default function TopBar() {
                                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                                         <Icon name="user" className="h-4 w-4" />
                                     </span>
-                                    Profile
+                                    {t('topbar.profile')}
                                 </Link>
                                 <Link
                                     href="/settings"
@@ -219,7 +222,7 @@ export default function TopBar() {
                                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                                         <Icon name="settings" className="h-4 w-4" />
                                     </span>
-                                    Settings
+                                    {t('topbar.settings')}
                                 </Link>
                             </div>
                             <div className="border-t border-slate-100 p-1.5">
@@ -233,7 +236,7 @@ export default function TopBar() {
                                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
                                         <Icon name="logout" className="h-4 w-4" />
                                     </span>
-                                    Log out
+                                    {t('topbar.logout')}
                                 </Link>
                             </div>
                         </div>

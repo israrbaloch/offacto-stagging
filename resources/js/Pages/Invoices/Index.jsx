@@ -3,13 +3,14 @@ import { useState } from 'react';
 import Icon from '../../Components/Icon';
 import Pagination from '../../Components/Pagination';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { localeTag, t } from '../../lib/i18n';
 import { customerName, money } from '../../lib/utils';
 
 function prettyDate(value) {
     if (!value) return '—';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString(localeTag(), { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function initials(customer) {
@@ -31,21 +32,21 @@ function displayName(customer) {
 function invoiceType(invoice) {
     const number = String(invoice.invoice_number || '');
     if (number.toUpperCase().startsWith('CRN') || Number(invoice.total) < 0) {
-        return 'Credit Note';
+        return 'credit';
     }
-    return 'Standard';
+    return 'standard';
 }
 
 function statusMeta(invoice) {
     if (invoice.is_overdue || (invoice.due_date && invoice.payment_status !== 'paid' && new Date(invoice.due_date) < new Date())) {
-        return { label: 'Overdue', tone: 'overdue' };
+        return { label: t('invoices.overdue'), tone: 'overdue' };
     }
     const payment = String(invoice.payment_status || '').toLowerCase();
-    if (payment === 'paid') return { label: 'Paid', tone: 'paid' };
+    if (payment === 'paid') return { label: t('invoices.paid'), tone: 'paid' };
     const name = String(invoice.status_relation?.name || 'Draft');
     const key = name.toLowerCase();
-    if (key === 'sent') return { label: 'Sent', tone: 'sent' };
-    if (key === 'applied') return { label: 'Applied', tone: 'paid' };
+    if (key === 'sent') return { label: t('invoices.sent'), tone: 'sent' };
+    if (key === 'applied') return { label: t('invoices.applied'), tone: 'paid' };
     return { label: name, tone: 'draft' };
 }
 
@@ -74,8 +75,9 @@ function StatusPill({ tone, children }) {
 }
 
 function TypePill({ type }) {
-    const tone = type === 'Credit Note' ? 'credit' : type === 'Recurring' ? 'recurring' : 'draft';
-    return <StatusPill tone={tone}>{type}</StatusPill>;
+    const tone = type === 'credit' ? 'credit' : type === 'recurring' ? 'recurring' : 'draft';
+    const label = type === 'credit' ? t('invoices.credit_note') : t('invoices.standard');
+    return <StatusPill tone={tone}>{label}</StatusPill>;
 }
 
 function StatIcon({ name }) {
@@ -118,26 +120,26 @@ export default function Index({ invoices, stats = {} }) {
     const [filtersOpen, setFiltersOpen] = useState(false);
 
     return (
-        <AuthenticatedLayout title="Invoices">
+        <AuthenticatedLayout title={t('invoices.title')}>
             <div className="space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Invoices</h1>
-                        <p className="mt-1 text-sm text-slate-500">Manage and track your billing operations.</p>
+                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{t('invoices.title')}</h1>
+                        <p className="mt-1 text-sm text-slate-500">{t('invoices.subtitle')}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <button
                             type="button"
                             className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
                         >
-                            Export ZIP (PDFs)
+                            {t('offers.export')}
                         </button>
                         <Link
                             href="/invoices/create"
                             className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
                         >
                             <Icon name="plus" className="h-4 w-4" />
-                            New Invoice
+                            {t('invoices.new')}
                         </Link>
                     </div>
                 </div>
@@ -149,30 +151,30 @@ export default function Index({ invoices, stats = {} }) {
                                 <StatIcon name="wallet" />
                             </span>
                         </div>
-                        <div className="mt-4 text-sm text-slate-500">Total Outstanding</div>
+                        <div className="mt-4 text-sm text-slate-500">{t('invoices.outstanding')}</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.outstanding)}</div>
                     </div>
                     <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-rose-500">
                             <StatIcon name="alert" />
                         </span>
-                        <div className="mt-4 text-sm font-medium text-rose-600">Overdue</div>
+                        <div className="mt-4 text-sm font-medium text-rose-600">{t('invoices.overdue')}</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.overdue)}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                             <StatIcon name="check" />
                         </span>
-                        <div className="mt-4 text-sm text-slate-500">Paid YTD</div>
+                        <div className="mt-4 text-sm text-slate-500">{t('invoices.paid_ytd')}</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.paid_ytd ?? stats.paid)}</div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                             <StatIcon name="send" />
                         </span>
-                        <div className="mt-4 text-sm text-slate-500">Peppol Sent</div>
+                        <div className="mt-4 text-sm text-slate-500">{t('invoices.peppol')}</div>
                         <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">
-                            {stats.peppol_sent ?? 0} <span className="text-base font-sans font-medium text-slate-400">invoices</span>
+                            {stats.peppol_sent ?? 0} <span className="text-base font-sans font-medium text-slate-400">{t('invoices.invoices_unit')}</span>
                         </div>
                     </div>
                 </div>
@@ -180,24 +182,24 @@ export default function Index({ invoices, stats = {} }) {
                 <section className="rounded-3xl border border-slate-200 bg-white">
                     <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-semibold text-slate-900">Recent Invoices</h2>
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{total} total</span>
+                            <h2 className="text-lg font-semibold text-slate-900">{t('invoices.recent')}</h2>
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{t('common.total_count', { count: total })}</span>
                         </div>
                         <button
                             type="button"
                             onClick={() => setFiltersOpen((value) => !value)}
                             className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
                         >
-                            Filter
+                            {t('common.filter')}
                         </button>
                     </div>
 
                     {filtersOpen && (
                         <div className="flex flex-wrap gap-2 border-t border-slate-100 px-5 py-3 sm:px-6">
                             {[
-                                { label: 'All', params: {} },
-                                { label: 'Paid', params: { payment_status: 'paid' } },
-                                { label: 'Unpaid', params: { payment_status: 'unpaid' } },
+                                { label: t('common.all'), params: {} },
+                                { label: t('invoices.paid'), params: { payment_status: 'paid' } },
+                                { label: t('invoices.unpaid'), params: { payment_status: 'unpaid' } },
                             ].map((item) => (
                                 <button
                                     key={item.label}
@@ -215,20 +217,20 @@ export default function Index({ invoices, stats = {} }) {
                         <table className="w-full min-w-[820px] text-left text-sm">
                             <thead>
                                 <tr className="border-y border-slate-100 text-[11px] uppercase tracking-wide text-slate-400">
-                                    <th className="px-5 py-3 font-medium sm:px-6">Invoice #</th>
-                                    <th className="px-3 py-3 font-medium">Customer</th>
-                                    <th className="px-3 py-3 font-medium">Issue Date</th>
-                                    <th className="px-3 py-3 font-medium">Due Date</th>
-                                    <th className="px-3 py-3 font-medium">Type</th>
-                                    <th className="px-3 py-3 font-medium">Status</th>
-                                    <th className="px-5 py-3 text-right font-medium sm:px-6">Amount</th>
+                                    <th className="px-5 py-3 font-medium sm:px-6">{t('invoices.number')}</th>
+                                    <th className="px-3 py-3 font-medium">{t('dashboard.customer')}</th>
+                                    <th className="px-3 py-3 font-medium">{t('invoices.issue_date')}</th>
+                                    <th className="px-3 py-3 font-medium">{t('invoices.due_date')}</th>
+                                    <th className="px-3 py-3 font-medium">{t('common.type')}</th>
+                                    <th className="px-3 py-3 font-medium">{t('common.status')}</th>
+                                    <th className="px-5 py-3 text-right font-medium sm:px-6">{t('offers.amount')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {rows.length === 0 && (
                                     <tr>
                                         <td colSpan="7" className="px-6 py-10 text-center text-slate-400">
-                                            No invoices yet.
+                                            {t('invoices.empty')}
                                         </td>
                                     </tr>
                                 )}
@@ -240,10 +242,10 @@ export default function Index({ invoices, stats = {} }) {
                                         <tr key={invoice.id} className="border-b border-slate-50 last:border-0">
                                             <td className="px-5 py-4 sm:px-6">
                                                 <Link
-                                                    href={status.label === 'Draft' ? `/invoices/${invoice.id}/edit` : `/invoices/${invoice.id}`}
+                                                    href={String(invoice.status_relation?.name || 'draft').toLowerCase() === 'draft' ? `/invoices/${invoice.id}/edit` : `/invoices/${invoice.id}`}
                                                     className="font-medium text-indigo-600 hover:text-indigo-700"
                                                 >
-                                                    {invoice.invoice_number || 'Untitled draft'}
+                                                    {invoice.invoice_number || t('offers.untitled')}
                                                 </Link>
                                             </td>
                                             <td className="px-3 py-4">
@@ -251,7 +253,7 @@ export default function Index({ invoices, stats = {} }) {
                                                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
                                                         {initials(invoice.customer)}
                                                     </span>
-                                                    <span className="truncate font-medium text-slate-800">{invoice.customer ? displayName(invoice.customer) : 'Untitled draft'}</span>
+                                                    <span className="truncate font-medium text-slate-800">{invoice.customer ? displayName(invoice.customer) : t('offers.untitled')}</span>
                                                 </div>
                                             </td>
                                             <td className="px-3 py-4 text-slate-500">{prettyDate(invoice.invoice_date)}</td>
