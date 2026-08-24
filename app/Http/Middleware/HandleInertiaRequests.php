@@ -23,11 +23,12 @@ class HandleInertiaRequests extends Middleware
 
         $active = $user?->activeCompany();
         if ($active) {
-            $active->loadMissing('companySetting');
+            $active->loadMissing(['companySetting', 'statusRelation']);
         }
 
         $settings = $active?->companySetting;
         $theme = is_array($settings?->theme) ? $settings->theme : [];
+        $daysLeft = $active?->trialDaysLeft();
 
         return [
             ...parent::share($request),
@@ -56,12 +57,17 @@ class HandleInertiaRequests extends Middleware
                 'email' => $active->email,
                 'self_employed_activity' => $active->self_employed_activity,
                 'theme' => [
-                    'primary' => $theme['primary'] ?? '#4f46e5',
+                    'primary' => $theme['primary'] ?? '#4054b2',
                     'secondary' => $theme['secondary'] ?? '#0f172a',
                 ],
                 'invoice_logo_url' => $settings?->invoice_logo
                     ? asset('storage/'.$settings->invoice_logo)
                     : null,
+                'is_active' => (bool) $active->is_active,
+                'pending_approval' => $active->isPendingApproval(),
+                'trial_ends_at' => $active->trial_ends_at?->toIso8601String(),
+                'trial_days_left' => $daysLeft,
+                'trial_expired' => $active->isTrialExpired(),
             ] : null,
             'flash' => [
                 'status' => $request->session()->get('status'),

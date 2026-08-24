@@ -14,11 +14,13 @@
             padding: 20px;
         }
         .header {
-            background: #f5f5f5;
+            background: {{ $primaryColor ?? '#4054b2' }};
+            color: #fff;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
         }
+        .header p { color: #e2e8f0; }
         .offer-details {
             background: white;
             border: 1px solid #ddd;
@@ -55,6 +57,11 @@
 </head>
 <body>
     <div class="header">
+        @php
+            $logoPath = $offer->company?->companySetting?->invoice_logo;
+            $logoUrl = $logoPath ? asset('storage/'.$logoPath) : null;
+        @endphp
+        <div style="margin-bottom:12px;">@include('emails.partials.logo', ['width' => 140, 'companyLogo' => $logoUrl])</div>
         <h2>{{ $offer->company->company_name }}</h2>
         <p>{{ $offer->company->street }} {{ $offer->company->house }}</p>
         <p>{{ $offer->company->postal_code }} {{ $offer->company->city }}</p>

@@ -1,3 +1,10 @@
+@php
+    $company = $offer->company;
+    $settings = $company?->companySetting;
+    $theme = is_array($settings?->theme) ? $settings->theme : [];
+    $primary = $theme['primary'] ?? '#4054b2';
+    $secondary = $theme['secondary'] ?? '#0f172a';
+@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,15 +15,15 @@
         body { font-family: DejaVu Sans, sans-serif; font-size: 10pt; color: #334155; line-height: 1.45; }
         .page { padding: 28px 32px; }
         .top { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
-        .title { font-size: 26pt; font-weight: bold; color: #4f46e5; letter-spacing: -0.5px; }
+        .title { font-size: 26pt; font-weight: bold; color: {{ $primary ?? '#4054b2' }}; letter-spacing: -0.5px; }
         .meta { margin-top: 8px; font-size: 8.5pt; color: #64748b; }
-        .meta strong { color: #0f172a; }
+        .meta strong { color: {{ $secondary }}; }
         .party-label { font-size: 7.5pt; letter-spacing: 1.2px; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
-        .party-name { font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 3px; }
+        .party-name { font-size: 10pt; font-weight: bold; color: {{ $secondary }}; margin-bottom: 3px; }
         .party-detail { font-size: 8.5pt; color: #64748b; line-height: 1.55; }
         .right { text-align: left; width: 58%; }
         .section { margin-bottom: 22px; }
-        .section-title { font-size: 11pt; font-weight: bold; color: #0f172a; margin-bottom: 8px; }
+        .section-title { font-size: 11pt; font-weight: bold; color: {{ $secondary }}; margin-bottom: 8px; }
         .section-body { font-size: 9pt; color: #475569; line-height: 1.6; }
         .section-body ul { margin: 4px 0 8px 16px; }
         .section-body li { margin: 2px 0; }
@@ -25,18 +32,18 @@
         table.items th.num { text-align: right; }
         table.items td { padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 9pt; vertical-align: top; }
         table.items td.num { text-align: right; white-space: nowrap; }
-        .item-name { font-weight: bold; color: #0f172a; }
+        .item-name { font-weight: bold; color: {{ $secondary }}; }
         .item-desc { font-size: 8pt; color: #94a3b8; margin-top: 2px; }
         .bottom { width: 100%; border-collapse: collapse; }
-        .terms { background: #eef2ff; padding: 12px 14px; font-size: 8pt; color: #4338ca; line-height: 1.5; }
+        .terms { background: #f8fafc; padding: 12px 14px; font-size: 8pt; color: {{ $secondary }}; line-height: 1.5; border-left: 3px solid {{ $primary }}; }
         .totals { width: 230px; margin-left: auto; }
         .totals td { padding: 5px 0; font-size: 9pt; }
         .totals .label { color: #64748b; }
-        .totals .value { text-align: right; font-weight: bold; color: #0f172a; }
-        .totals .grand .label, .totals .grand .value { font-size: 13pt; color: #4f46e5; padding-top: 8px; }
+        .totals .value { text-align: right; font-weight: bold; color: {{ $secondary }}; }
+        .totals .grand .label, .totals .grand .value { font-size: 13pt; color: {{ $primary }}; padding-top: 8px; }
         .auth-label { font-size: 7.5pt; letter-spacing: 1.2px; text-transform: uppercase; color: #94a3b8; margin: 28px 0 12px; }
         .sign { width: 100%; border-collapse: collapse; }
-        .sign-name { font-weight: bold; color: #0f172a; }
+        .sign-name { font-weight: bold; color: {{ $secondary }}; }
         .sign-line { border-bottom: 1px solid #cbd5e1; height: 28px; margin-bottom: 6px; color: #94a3b8; font-size: 8pt; }
         .muted { color: #94a3b8; font-size: 8pt; }
         .logo { max-height: 28px; margin-bottom: 10px; }
@@ -44,13 +51,11 @@
 </head>
 <body>
 @php
-    $company = $offer->company;
-    $settings = $company?->companySetting;
     $customer = $offer->customer;
     $fromName = $company?->company_name ?: trim(($company?->first_name.' '.$company?->surname));
     $toName = $customer?->org_name ?: trim(($customer?->first_name.' '.$customer?->surname)) ?: 'Client to be selected';
     $vatRate = $vatRate ?? 21;
-    $logo = $settings?->invoice_logo ? public_path('storage/'.$settings->invoice_logo) : public_path('assets/images/logo-offacto.svg');
+    $logo = $settings?->invoice_logo ? public_path('storage/'.$settings->invoice_logo) : null;
     $scope = trim(preg_replace('/^.*\n\n/s', '', (string) $offer->intro, 1)) ?: $offer->intro;
     $scope = $offer->desc ?: $scope;
     $sender = trim(($company?->first_name.' '.$company?->surname));
@@ -60,7 +65,7 @@
     <table class="top">
         <tr>
             <td style="width:42%; vertical-align:top;">
-                @if(is_file($logo) && !str_ends_with($logo, '.svg'))
+                @if($logo && is_file($logo))
                     <img src="{{ $logo }}" class="logo" alt="Logo">
                 @endif
                 <div class="title">Quotation</div>

@@ -1,4 +1,4 @@
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import DatePicker from '../../Components/DatePicker';
 import Icon from '../../Components/Icon';
@@ -67,6 +67,7 @@ export default function Create({
     vatRate = 21,
     nextOfferNumber = '',
     customersData = [],
+    legalDocuments = [],
 }) {
     const { activeCompany } = usePage().props;
     const parsed = parseIntro(offer?.intro || '');
@@ -87,9 +88,12 @@ export default function Create({
     const [copyright, setCopyright] = useState(parsedNotes.copyright);
     const [conditions, setConditions] = useState(parsedNotes.conditions);
     const [emailMessage, setEmailMessage] = useState(
-        'Hi #CLIENTNAME#,\n\n#COMPANY# has prepared an offer for you. Please review it here: #OFFERLINK#.\n\nOnce you approve, we can get started.\n\nBest regards,\n#COMPANY#',
+        offer?.email_message ||
+            'Hi #CLIENTNAME#,\n\n#COMPANY# has prepared an offer for you. Please review it here: #OFFERLINK#.\n\nOnce you approve, we can get started.\n\nBest regards,\n#COMPANY#',
     );
-    const [attachmentName, setAttachmentName] = useState('');
+    const [selectedLegal, setSelectedLegal] = useState(
+        legalDocuments.filter((doc) => doc.attach_to_quotes_default).map((doc) => doc.id),
+    );
     const [infoOpen, setInfoOpen] = useState(true);
 
     const form = useForm({
@@ -112,6 +116,7 @@ export default function Create({
             .filter(Boolean)
             .join('\n\n'),
         status: form.data.status,
+        email_message: emailMessage,
         items: items
             .filter((item) => item.service_id)
             .map((item) => ({
@@ -141,7 +146,7 @@ export default function Create({
         }, 1500);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.data, items, title, copyright, conditions, offer?.id]);
+    }, [form.data, items, title, copyright, conditions, emailMessage, offer?.id]);
 
     const customerOptions = optionsFromMap(customers);
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
@@ -152,6 +157,29 @@ export default function Create({
         if (!offer?.id) return;
         form.transform(() => payloadFromState());
         form.put(`/offers/${offer.id}`);
+    };
+
+    const sendQuote = () => {
+        if (!offer?.id) return;
+        if (!form.data.customer_id) {
+            window.alert('Select a customer before sending.');
+            return;
+        }
+        if (!selectedCustomer?.email) {
+            window.alert('The selected customer needs an email address.');
+            return;
+        }
+        form.transform(() => payloadFromState());
+        form.put(`/offers/${offer.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                router.post(`/offers/${offer.id}/send`, {
+                    email: selectedCustomer.email,
+                    message: emailMessage,
+                    legal_document_ids: selectedLegal,
+                });
+            },
+        });
     };
 
     const savedLabel = saving
@@ -197,6 +225,14 @@ export default function Create({
                             <button
                                 type="submit"
                                 disabled={form.processing}
+                                className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                            >
+                                Save draft
+                            </button>
+                            <button
+                                type="button"
+                                disabled={form.processing || activeCompany?.trial_expired || activeCompany?.pending_approval}
+                                onClick={sendQuote}
                                 className="rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
                             >
                                 Send quote
@@ -204,6 +240,17 @@ export default function Create({
                         </div>
                     </div>
                 </div>
+
+                {offer?.briefing_response?.briefing && (
+                    <div className="mb-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+                        Generated from briefing <span className="font-semibold">{offer.briefing_response.briefing.title}</span>
+                        {' — '}
+                        review before sending.
+                        <Link href={`/briefings/${offer.briefing_response.briefing.id}/responses`} className="ml-2 font-medium underline">
+                            View response
+                        </Link>
+                    </div>
+                )}
 
                 <div className="rounded-3xl border border-slate-200 bg-white px-5 sm:px-8">
                     <Section
@@ -341,7 +388,7 @@ export default function Create({
                     <Section
                         id="email"
                         title="Email and attachments"
-                        hint="Prepare the message and attach a PDF appendix."
+                        hint="Prepare the message, attach PDFs, and choose legal documents."
                         open={open.email}
                         onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
                     >
@@ -362,18 +409,61 @@ export default function Create({
                             <RichTextEditor value={emailMessage} onChange={setEmailMessage} minHeight="10rem" />
                         </label>
                         <div className="mt-5">
-                            <span className={labelClass}>Appendix</span>
+                            <span className={labelClass}>Attachments</span>
+                            <ul className="mb-3 space-y-2">
+                                {(offer?.attachments || []).map((file) => (
+                                    <li key={file.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                                        <span className="truncate">{file.original_name}</span>
+                                        <button
+                                            type="button"
+                                            className="text-rose-600 hover:underline"
+                                            onClick={() => router.delete(`/offers/${offer.id}/attachments/${file.id}`)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
                             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm font-medium text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/50">
                                 <input
                                     type="file"
                                     accept="application/pdf"
                                     className="hidden"
-                                    onChange={(e) => setAttachmentName(e.target.files?.[0]?.name || '')}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file || !offer?.id) return;
+                                        const data = new FormData();
+                                        data.append('file', file);
+                                        router.post(`/offers/${offer.id}/attachments`, data, { forceFormData: true });
+                                        e.target.value = '';
+                                    }}
                                 />
-                                {attachmentName || 'Choose your file'}
+                                Choose a PDF
                             </label>
-                            <p className="mt-2 text-xs text-slate-400">You can only upload a .pdf</p>
                         </div>
+                        {legalDocuments.length > 0 && (
+                            <div className="mt-5">
+                                <span className={labelClass}>Legal documents</span>
+                                <ul className="space-y-2">
+                                    {legalDocuments.map((doc) => (
+                                        <li key={doc.id}>
+                                            <label className="flex items-center gap-2 text-sm text-slate-700">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedLegal.includes(doc.id)}
+                                                    onChange={(e) => {
+                                                        setSelectedLegal((ids) =>
+                                                            e.target.checked ? [...ids, doc.id] : ids.filter((id) => id !== doc.id),
+                                                        );
+                                                    }}
+                                                />
+                                                {doc.original_name} ({doc.type})
+                                            </label>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </Section>
                 </div>
             </form>
@@ -426,6 +516,8 @@ export default function Create({
                                     client={{
                                         name: [selectedCustomer?.first_name, selectedCustomer?.surname].filter(Boolean).join(' '),
                                     }}
+                                    theme={activeCompany?.theme}
+                                    logoUrl={activeCompany?.invoice_logo_url}
                                 />
                             </div>
                         </div>

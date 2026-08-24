@@ -21,6 +21,7 @@ class Offer extends Model
     protected $fillable = [
         'company_id',
         'customer_id',
+        'briefing_response_id',
         'offer_number',
         'offer_date',
         'valid_until',
@@ -28,6 +29,7 @@ class Offer extends Model
         'desc',
         'attachment',
         'notes',
+        'email_message',
         'status',
     ];
 
@@ -60,6 +62,11 @@ class Offer extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function briefingResponse()
+    {
+        return $this->belongsTo(BriefingResponse::class);
+    }
+
     /**
      * Get the status for the offer.
      */
@@ -74,6 +81,11 @@ class Offer extends Model
     public function items()
     {
         return $this->hasMany(OfferItem::class);
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(OfferAttachment::class);
     }
 
     /**
@@ -99,5 +111,25 @@ class Offer extends Model
     public function getTotalAttribute(): float
     {
         return $this->subtotal + $this->tax_amount;
+    }
+
+    public static function nextNumber(int $companyId): string
+    {
+        $year = now()->format('Y');
+        $prefix = SiteSetting::get('offer_prefix', 'OFF-');
+        $prefixPattern = rtrim($prefix, '-');
+
+        $lastOffer = static::where('company_id', $companyId)
+            ->where('offer_number', 'like', "{$prefixPattern}{$year}-%")
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($lastOffer && preg_match('/'.preg_quote($prefixPattern, '/').'\d{4}-(\d+)/', $lastOffer->offer_number, $matches)) {
+            $nextNumber = (int) $matches[1] + 1;
+        } else {
+            $nextNumber = 1;
+        }
+
+        return $prefixPattern.$year.'-'.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 }

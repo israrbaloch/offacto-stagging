@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Briefing;
+use App\Models\BriefingResponse;
 use App\Models\Customer;
 use App\Models\Offer;
 use Illuminate\Http\Request;
@@ -24,6 +26,9 @@ class DashboardController extends Controller
                 'stats' => $this->getEmptyStats(),
                 'openOffers' => collect(),
                 'topCustomers' => collect(),
+                'awaitingBriefings' => collect(),
+                'recentResponses' => collect(),
+                'hasCompany' => false,
             ]);
         }
 
@@ -61,11 +66,29 @@ class DashboardController extends Controller
             ->take(5)
             ->values();
 
+        $awaitingBriefings = Briefing::where('company_id', $activeCompany->id)
+            ->where('status', Briefing::STATUS_ACTIVE)
+            ->with('customer')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $recentResponses = BriefingResponse::whereHas('briefing', function ($query) use ($activeCompany) {
+            $query->where('company_id', $activeCompany->id);
+        })
+            ->with(['briefing', 'offer'])
+            ->latest('submitted_at')
+            ->take(5)
+            ->get();
+
         return Inertia::render('Dashboard', [
             'user' => $user,
             'stats' => $stats,
             'openOffers' => $openOffers,
             'topCustomers' => $topCustomers,
+            'awaitingBriefings' => $awaitingBriefings,
+            'recentResponses' => $recentResponses,
+            'hasCompany' => true,
         ]);
     }
 

@@ -32,7 +32,7 @@
                     </tr>
                     <tr>
                         <td align="center" style="padding:0 32px 28px;">
-                            <div style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:32px;letter-spacing:8px;font-weight:700;padding:18px 28px;border-radius:12px;">
+                            <div style="display:inline-block;background:#4054b2;color:#ffffff;font-size:32px;letter-spacing:8px;font-weight:700;padding:18px 28px;border-radius:12px;">
                                 {{ $formatted }}
                             </div>
                         </td>

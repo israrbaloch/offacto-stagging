@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class SubmitBriefingRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'respondent_name' => ['required', 'string', 'max:255'],
+            'respondent_email' => ['required', 'email', 'max:255'],
+            'answers' => ['nullable', 'array'],
+        ];
+    }
+}

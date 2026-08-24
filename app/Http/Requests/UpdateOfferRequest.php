@@ -45,6 +45,7 @@ class UpdateOfferRequest extends FormRequest
             'intro' => ['nullable', 'string'],
             'desc' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'email_message' => ['nullable', 'string'],
             'status' => [
                 'required',
                 'integer',

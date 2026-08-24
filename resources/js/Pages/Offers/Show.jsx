@@ -13,7 +13,7 @@ export default function Show({ offer }) {
     const form = useForm({
         email: offer.customer?.email || '',
         subject: `Offer ${offer.offer_number}`,
-        message: '',
+        message: offer.email_message || '',
     });
     const status = String(offer.status_relation?.name || '').toLowerCase();
     const isSent = ['sent', 'accepted', 'invoiced'].includes(status);
@@ -96,6 +96,9 @@ export default function Show({ offer }) {
                     client={{
                         name: [customer.first_name, customer.surname].filter(Boolean).join(' '),
                     }}
+                    theme={activeCompany?.theme}
+                    logoUrl={activeCompany?.invoice_logo_url}
+                    vatRate={21}
                 />
             </div>
             <Modal

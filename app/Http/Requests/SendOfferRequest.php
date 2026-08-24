@@ -25,6 +25,8 @@ class SendOfferRequest extends FormRequest
             'email' => ['required', 'email', 'max:255'],
             'message' => ['nullable', 'string'],
             'template' => ['nullable', 'string'],
+            'legal_document_ids' => ['nullable', 'array'],
+            'legal_document_ids.*' => ['integer', 'exists:company_legal_documents,id'],
         ];
     }
 }

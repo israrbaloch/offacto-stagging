@@ -8,20 +8,22 @@ const mainNav = [
     { href: '/companies', label: 'Companies', icon: 'building' },
     { href: '/customers', label: 'Customers', icon: 'customers' },
     { href: '/services', label: 'Services', icon: 'wrench' },
+    { href: '/briefings', label: 'Briefings', icon: 'clipboard' },
     { href: '/offers', label: 'Offers', icon: 'document' },
     { href: '/invoices', label: 'Invoices', icon: 'invoice' },
 ];
 
 const footerNav = [
     { href: '/support', label: 'Support', icon: 'help' },
-    { href: '/settings', label: 'Settings', icon: 'settings' },
+    { href: '/settings', label: 'Settings', icon: 'settings', aliases: ['/profile'] },
 ];
 
 function isActive(url, item) {
     if (item.exact) {
         return url === item.href;
     }
-    return url === item.href || url.startsWith(`${item.href}/`);
+    const matches = [item.href, ...(item.aliases || [])];
+    return matches.some((href) => url === href || url.startsWith(`${href}/`));
 }
 
 function NavLink({ item, url }) {
@@ -52,10 +54,10 @@ export default function Sidebar() {
     return (
         <aside className="hidden w-[250px] shrink-0 flex-col rounded-l-3xl bg-indigo-50 lg:flex">
             <div className="px-5 pt-6">
-                <Link href="/dashboard" className="block">
+                <Link href="/dashboard" className="flex justify-center">
                     <Logo className="h-8 w-auto" />
                 </Link>
-                <div className="mt-4">
+                <div className="mt-5">
                     <CompanySwitcher />
                 </div>
                 <Link

@@ -23,7 +23,7 @@ class UpdateCompanySettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'invoice_logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'invoice_logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
             'theme' => ['nullable', 'array'],
             'theme.primary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'theme.secondary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],

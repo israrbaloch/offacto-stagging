@@ -37,9 +37,44 @@ class CustomerController extends Controller
 
         return Inertia::render('Customers/Index', [
             'customers' => $customers,
-            'statuses' => $statuses,
-            'countries' => $countries,
         ]);
+    }
+
+    public function create(Request $request): Response|RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        if (! $activeCompany) {
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        return Inertia::render('Customers/Create', $this->formProps());
+    }
+
+    public function edit(Request $request, $customer): Response|RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        if (! $activeCompany) {
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        $customer = Customer::where('id', $customer)
+            ->where('company_id', $activeCompany->id)
+            ->firstOrFail();
+
+        return Inertia::render('Customers/Edit', [
+            ...$this->formProps(),
+            'customer' => $customer,
+        ]);
+    }
+
+    private function formProps(): array
+    {
+        return [
+            'statuses' => Status::forTable('customers')->pluck('name', 'id'),
+            'countries' => Country::orderBy('name')->pluck('name', 'id'),
+            'defaultStatusId' => Status::forTable('customers')->where('name', 'Active')->value('id')
+                ?? Status::forTable('customers')->value('id'),
+        ];
     }
 
     /**

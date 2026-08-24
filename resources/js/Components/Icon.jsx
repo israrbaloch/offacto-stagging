@@ -34,6 +34,14 @@ export default function Icon({ name, className = 'h-[18px] w-[18px]' }) {
                 <path d="M9 21v-6h6v6" />
             </>
         ),
+        clipboard: (
+            <>
+                <rect x="8" y="3" width="8" height="4" rx="1" />
+                <path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                <path d="M9 12h6" />
+                <path d="M9 16h4" />
+            </>
+        ),
         document: (
             <>
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -94,6 +102,43 @@ export default function Icon({ name, className = 'h-[18px] w-[18px]' }) {
         chevronLeft: <path d="m15 18-6-6 6-6" />,
         chevronRight: <path d="m9 18 6-6-6-6" />,
         check: <path d="m5 13 4 4L19 7" />,
+        user: (
+            <>
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c1.5-3.2 4.4-5 8-5s6.5 1.8 8 5" />
+            </>
+        ),
+        palette: (
+            <>
+                <path d="M12 3a9 9 0 1 0 0 18h1.2a2.2 2.2 0 0 0 0-4.4H12" />
+                <circle cx="7.5" cy="10" r=".8" fill="currentColor" />
+                <circle cx="10" cy="7" r=".8" fill="currentColor" />
+                <circle cx="14" cy="7" r=".8" fill="currentColor" />
+                <circle cx="16.5" cy="10" r=".8" fill="currentColor" />
+            </>
+        ),
+        scale: (
+            <>
+                <path d="M12 3v18" />
+                <path d="M5 8h14" />
+                <path d="M5 8 2 14h6L5 8z" />
+                <path d="M19 8l-3 6h6l-3-6z" />
+            </>
+        ),
+        upload: (
+            <>
+                <path d="M12 16V6" />
+                <path d="m8 9 4-4 4 4" />
+                <path d="M4 18h16" />
+            </>
+        ),
+        logout: (
+            <>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <path d="M16 17l5-5-5-5" />
+                <path d="M21 12H9" />
+            </>
+        ),
         trash: (
             <>
                 <path d="M3 6h18" />

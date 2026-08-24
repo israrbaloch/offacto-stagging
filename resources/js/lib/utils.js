@@ -29,6 +29,10 @@ export function customerName(customer) {
 export function flashLabel(status) {
     const map = {
         'profile-updated': 'Profile updated.',
+        'password-reset-sent': 'We sent a reset code to your email.',
+        'legal-document-uploaded': 'Legal document uploaded.',
+        'legal-document-updated': 'Legal document updated.',
+        'legal-document-deleted': 'Legal document deleted.',
         'company-updated': 'Company updated.',
         'company-settings-updated': 'Company settings updated.',
         'company-created': 'Company created.',
@@ -56,6 +60,9 @@ export function flashLabel(status) {
         'company-rejected': 'Company rejected.',
         'service-approved': 'Service approved.',
         'service-rejected': 'Service rejected.',
+        'briefing-updated': 'Briefing saved.',
+        'briefing-deleted': 'Briefing deleted.',
+        'briefing-submitted': 'Thank you — we will send your quotation.',
     };
     return map[status] || String(status);
 }

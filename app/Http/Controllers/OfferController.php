@@ -6,12 +6,17 @@ use App\Http\Requests\SendOfferRequest;
 use App\Http\Requests\StoreOfferRequest;
 use App\Http\Requests\UpdateOfferRequest;
 use App\Mail\OfferSent;
+use App\Models\CompanyLegalDocument;
 use App\Models\Customer;
 use App\Models\Offer;
+use App\Models\OfferAttachment;
 use App\Models\OfferItem;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
+use App\Support\CompanyAccess;
+use App\Support\OfferMessage;
+use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -143,6 +148,10 @@ class OfferController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany)) {
+            return $deny;
+        }
+
         $defaultStatus = Status::where('for', 'offers')->where('name', 'Draft')->first()
             ?? Status::forTable('offers')->first();
 
@@ -245,7 +254,7 @@ class OfferController extends Controller
 
         $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany->id)
-            ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting'])
+            ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'attachments'])
             ->firstOrFail();
 
         return Inertia::render('Offers/Show', [
@@ -267,7 +276,7 @@ class OfferController extends Controller
 
         $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany->id)
-            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting'])
+            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'briefingResponse.briefing', 'attachments'])
             ->firstOrFail();
 
         $customers = Customer::where('company_id', $activeCompany->id)
@@ -320,6 +329,7 @@ class OfferController extends Controller
             'nextOfferNumber' => $offer->offer_number,
             'customersData' => Customer::where('company_id', $activeCompany->id)
                 ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email']),
+            'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
         ]);
     }
 
@@ -365,6 +375,7 @@ class OfferController extends Controller
                 'intro' => $request->validated()['intro'] ?? null,
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
+                'email_message' => $request->validated()['email_message'] ?? $offer->email_message,
                 'status' => $request->validated()['status'],
             ]);
 
@@ -472,9 +483,13 @@ class OfferController extends Controller
             return redirect()->back()->with('error', 'No active company found.');
         }
 
+        if ($deny = CompanyAccess::denySend($user, $activeCompany)) {
+            return $deny;
+        }
+
         $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany->id)
-            ->with(['customer', 'items.service', 'company'])
+            ->with(['customer', 'items.service', 'company', 'attachments'])
             ->first();
 
         if (!$offer) {
@@ -488,14 +503,27 @@ class OfferController extends Controller
         }
 
         try {
-            $offer->loadMissing(['customer', 'items.service', 'company.companySetting']);
+            if (! $offer->customer_id) {
+                return redirect()->back()->with('error', 'Select a customer before sending.');
+            }
+
+            $offer->loadMissing(['customer', 'items.service', 'company.companySetting', 'attachments']);
             $sentStatus = Status::where('for', 'offers')->where('name', 'Sent')->first();
             if ($sentStatus) {
                 $offer->update(['status' => $sentStatus->id]);
             }
 
+            $rawMessage = $request->validated()['message'] ?? $offer->email_message ?? '';
+            $body = OfferMessage::merge($rawMessage, $offer);
+
+            $legalIds = $request->validated()['legal_document_ids'] ?? null;
+            $legalQuery = CompanyLegalDocument::where('company_id', $activeCompany->id);
+            $legalDocs = $legalIds === null
+                ? $legalQuery->where('attach_to_quotes_default', true)->get()
+                : $legalQuery->whereIn('id', $legalIds)->get();
+
             Mail::to($request->validated()['email'])->send(
-                new OfferSent($offer, $request->validated()['message'] ?? '')
+                new OfferSent($offer, $body, $legalDocs->all())
             );
 
             if ($request->expectsJson()) {
@@ -515,6 +543,46 @@ class OfferController extends Controller
 
             return redirect()->back()->with('error', 'Failed to send offer: ' . $e->getMessage());
         }
+    }
+
+    public function storeAttachment(Request $request, $offer): RedirectResponse
+    {
+        $user = $request->user();
+        $activeCompany = $user->activeCompany();
+        if (! $activeCompany) {
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        $offer = Offer::where('id', $offer)->where('company_id', $activeCompany->id)->firstOrFail();
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+        ]);
+
+        $path = $request->file('file')->store('offer-attachments/'.$offer->id, 'public');
+
+        OfferAttachment::create([
+            'offer_id' => $offer->id,
+            'file_path' => $path,
+            'original_name' => $request->file('file')->getClientOriginalName(),
+        ]);
+
+        return back()->with('status', 'attachment-uploaded');
+    }
+
+    public function destroyAttachment(Request $request, $offer, OfferAttachment $attachment): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $offer = Offer::where('id', $offer)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        if ($attachment->offer_id !== $offer->id) {
+            abort(404);
+        }
+
+        Storage::disk('public')->delete($attachment->file_path);
+        $attachment->delete();
+
+        return back()->with('status', 'attachment-deleted');
     }
 
     public function preview(Request $request, $offer): HttpResponse|RedirectResponse

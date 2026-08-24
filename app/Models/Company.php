@@ -32,6 +32,8 @@ class Company extends Model
         'status',
         'approved_at',
         'approved_by',
+        'trial_starts_at',
+        'trial_ends_at',
     ];
 
     /**
@@ -42,6 +44,8 @@ class Company extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'approved_at' => 'datetime',
+        'trial_starts_at' => 'datetime',
+        'trial_ends_at' => 'datetime',
     ];
 
     /**
@@ -58,6 +62,11 @@ class Company extends Model
     public function companySetting()
     {
         return $this->hasOne(CompanySetting::class);
+    }
+
+    public function legalDocuments()
+    {
+        return $this->hasMany(CompanyLegalDocument::class);
     }
 
     /**
@@ -268,5 +277,58 @@ class Company extends Model
     public function isApproved(): bool
     {
         return $this->statusRelation && $this->statusRelation->name === 'Approved';
+    }
+
+    public function startTrial(int $days = 14): void
+    {
+        if ($this->trial_starts_at) {
+            return;
+        }
+
+        $this->forceFill([
+            'trial_starts_at' => now(),
+            'trial_ends_at' => now()->addDays($days),
+        ])->save();
+    }
+
+    public function isTrialExpired(): bool
+    {
+        return $this->trial_ends_at && $this->trial_ends_at->isPast();
+    }
+
+    public function trialDaysLeft(): ?int
+    {
+        if (! $this->trial_ends_at) {
+            return null;
+        }
+
+        return max(0, (int) now()->startOfDay()->diffInDays($this->trial_ends_at->copy()->startOfDay(), false));
+    }
+
+    public function ensureDefaults(): void
+    {
+        $this->startTrial();
+
+        $series = $this->numberingSeries()->first();
+        if (! $series) {
+            $series = NumberingSeries::create([
+                'company_id' => $this->id,
+                'name' => 'Default-'.$this->id,
+                'type' => 'both',
+                'prefix' => 'OFF',
+                'year_month' => 'year',
+                'separator' => '-',
+                'digits' => '4',
+                'next_number' => '1',
+            ]);
+        }
+
+        if (! $this->companySetting) {
+            CompanySetting::create([
+                'company_id' => $this->id,
+                'numbering_series' => $series->id,
+                'theme' => ['primary' => '#4054b2', 'secondary' => '#0f172a'],
+            ]);
+        }
     }
 }

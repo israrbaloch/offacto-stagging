@@ -38,14 +38,14 @@ export function CashflowChart() {
             })}
             <polyline
                 fill="none"
-                stroke="#4f46e5"
+                stroke="#4054b2"
                 strokeWidth="3"
                 strokeLinejoin="round"
                 points={actualRevenue}
             />
             <polyline
                 fill="none"
-                stroke="#4f46e5"
+                stroke="#4054b2"
                 strokeWidth="3"
                 strokeDasharray="7 6"
                 strokeLinejoin="round"
@@ -74,7 +74,7 @@ export function PaymentDonut() {
     const radius = 68;
     const circumference = 2 * Math.PI * radius;
     const segments = [
-        { color: '#4f46e5', value: 0.65 },
+        { color: '#4054b2', value: 0.65 },
         { color: '#cbd5e1', value: 0.25 },
         { color: '#fb7185', value: 0.1 },
     ];

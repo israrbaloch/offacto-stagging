@@ -15,6 +15,7 @@ use App\Models\Offer;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
+use App\Support\CompanyAccess;
 use App\Services\UblInvoiceService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -168,6 +169,10 @@ class InvoiceController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany)) {
+            return $deny;
+        }
+
         $defaultStatus = Status::where('for', 'invoices')->where('name', 'Draft')->first()
             ?? Status::forTable('invoices')->first();
 
@@ -194,6 +199,10 @@ class InvoiceController extends Controller
 
         if (!$activeCompany) {
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany)) {
+            return $deny;
         }
 
         $offer = Offer::where('id', $offer)
@@ -558,6 +567,10 @@ class InvoiceController extends Controller
                 ], 422);
             }
             return redirect()->back()->with('error', 'No active company found.');
+        }
+
+        if ($deny = CompanyAccess::denySend($user, $activeCompany)) {
+            return $deny;
         }
 
         $invoice = Invoice::where('id', $invoice)

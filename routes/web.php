@@ -9,12 +9,17 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\UserCompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\BriefingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\PublicBriefingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::get('/b/{token}', [PublicBriefingController::class, 'show'])->name('briefings.public');
+Route::post('/b/{token}', [PublicBriefingController::class, 'submit'])->name('briefings.public.submit');
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -30,9 +35,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile/company', [ProfileController::class, 'updateCompany'])->name('profile.company.update');
     Route::patch('/profile/company-settings', [ProfileController::class, 'updateCompanySettings'])->name('profile.company-settings.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/legal-documents', [ProfileController::class, 'storeLegalDocument'])->name('profile.legal.store');
+    Route::patch('/profile/legal-documents/{document}', [ProfileController::class, 'updateLegalDocument'])->name('profile.legal.update');
+    Route::delete('/profile/legal-documents/{document}', [ProfileController::class, 'destroyLegalDocument'])->name('profile.legal.destroy');
 
     Route::get('/support', fn () => Inertia::render('Support'))->name('support');
-    Route::get('/settings', fn () => Inertia::render('Settings'))->name('settings');
+    Route::get('/settings', [ProfileController::class, 'edit'])->name('settings');
+    Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
     
     // Company switching
     Route::post('/company/switch/{company}', [CompanyController::class, 'switchCompany'])->name('company.switch');
@@ -48,9 +57,18 @@ Route::middleware('auth')->group(function () {
     // Customers
     Route::resource('customers', CustomerController::class);
     
+    Route::get('briefings', [BriefingController::class, 'index'])->name('briefings.index');
+    Route::get('briefings/create', [BriefingController::class, 'create'])->name('briefings.create');
+    Route::get('briefings/{briefing}/edit', [BriefingController::class, 'edit'])->name('briefings.edit');
+    Route::put('briefings/{briefing}', [BriefingController::class, 'update'])->name('briefings.update');
+    Route::delete('briefings/{briefing}', [BriefingController::class, 'destroy'])->name('briefings.destroy');
+    Route::get('briefings/{briefing}/responses', [BriefingController::class, 'responses'])->name('briefings.responses');
+
     // Offers
     Route::resource('offers', OfferController::class);
     Route::post('offers/{offer}/send', [OfferController::class, 'send'])->name('offers.send');
+    Route::post('offers/{offer}/attachments', [OfferController::class, 'storeAttachment'])->name('offers.attachments.store');
+    Route::delete('offers/{offer}/attachments/{attachment}', [OfferController::class, 'destroyAttachment'])->name('offers.attachments.destroy');
     Route::get('offers/{offer}/preview', [OfferController::class, 'preview'])->name('offers.preview');
     Route::get('offers/{offer}/download', [OfferController::class, 'download'])->name('offers.download');
     

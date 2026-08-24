@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import Icon from './Icon';
 
 function SearchIcon() {
     return (
@@ -58,7 +59,7 @@ const notifications = [
 ];
 
 export default function TopBar() {
-    const { auth } = usePage().props;
+    const { auth, activeCompany } = usePage().props;
     const user = auth?.user;
     const [open, setOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -96,6 +97,15 @@ export default function TopBar() {
             </form>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                {activeCompany && !auth?.user?.is_admin && (
+                    <span className={`hidden rounded-full px-3 py-1 text-xs font-medium sm:inline ${
+                        activeCompany.trial_expired ? 'bg-rose-50 text-rose-700' : 'bg-indigo-50 text-indigo-700'
+                    }`}>
+                        {activeCompany.trial_expired
+                            ? 'Trial ended'
+                            : `Trial · ${activeCompany.trial_days_left ?? 0} days left`}
+                    </span>
+                )}
                 <div className="relative" ref={notificationsRef}>
                     <button
                         type="button"
@@ -167,23 +177,52 @@ export default function TopBar() {
                     </button>
 
                     {open && (
-                        <div className="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-lg">
-                            <Link
-                                href="/profile"
-                                onClick={() => setOpen(false)}
-                                className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-                            >
-                                Profile
-                            </Link>
-                            <Link
-                                href="/logout"
-                                method="post"
-                                as="button"
-                                onClick={() => setOpen(false)}
-                                className="block w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
-                            >
-                                Log out
-                            </Link>
+                        <div className="absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                            <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
+                                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
+                                    {initials(user?.name)}
+                                </span>
+                                <div className="min-w-0">
+                                    <div className="truncate text-sm font-semibold text-slate-900">{user?.name}</div>
+                                    <div className="truncate text-xs text-slate-400">{user?.email}</div>
+                                </div>
+                            </div>
+                            <div className="p-1.5">
+                                <Link
+                                    href="/profile"
+                                    onClick={() => setOpen(false)}
+                                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
+                                >
+                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                                        <Icon name="user" className="h-4 w-4" />
+                                    </span>
+                                    Profile
+                                </Link>
+                                <Link
+                                    href="/settings"
+                                    onClick={() => setOpen(false)}
+                                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
+                                >
+                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                                        <Icon name="settings" className="h-4 w-4" />
+                                    </span>
+                                    Settings
+                                </Link>
+                            </div>
+                            <div className="border-t border-slate-100 p-1.5">
+                                <Link
+                                    href="/logout"
+                                    method="post"
+                                    as="button"
+                                    onClick={() => setOpen(false)}
+                                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50"
+                                >
+                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                                        <Icon name="logout" className="h-4 w-4" />
+                                    </span>
+                                    Log out
+                                </Link>
+                            </div>
                         </div>
                     )}
                 </div>

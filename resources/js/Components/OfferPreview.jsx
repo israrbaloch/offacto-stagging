@@ -20,7 +20,11 @@ export default function OfferPreview({
     vatRate = 21,
     sender = {},
     client = {},
+    theme = {},
+    logoUrl,
 }) {
+    const primary = theme.primary || '#4054b2';
+    const secondary = theme.secondary || '#0f172a';
     const priced = items.filter((item) => item.kind !== 'text');
     const subtotal = priced.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
     const vat = subtotal * (Number(vatRate) / 100);
@@ -32,7 +36,8 @@ export default function OfferPreview({
         <div className="bg-white px-8 py-10 text-slate-700 sm:px-10">
             <div className="flex flex-col gap-8 lg:flex-row lg:justify-between">
                 <div>
-                    <div className="text-4xl font-semibold tracking-tight text-indigo-600">Quotation</div>
+                    {logoUrl && <img src={logoUrl} alt="" className="mb-3 h-8 w-auto object-contain" />}
+                    <div className="text-4xl font-semibold tracking-tight" style={{ color: primary }}>Quotation</div>
                     <div className="mt-3 text-sm text-slate-500">
                         <div className="font-semibold text-slate-900">#{number || '—'}</div>
                         <div>Date: {prettyDate(date)}</div>
@@ -42,7 +47,7 @@ export default function OfferPreview({
                 <div className="grid min-w-[280px] grid-cols-2 gap-8 text-sm">
                     <div>
                         <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">From</div>
-                        <div className="mt-1 font-semibold text-slate-900">{from.name || 'Your company'}</div>
+                        <div className="mt-1 font-semibold" style={{ color: secondary }}>{from.name || 'Your company'}</div>
                         <div className="mt-1 text-slate-500">
                             {fromLine && <div>{fromLine}</div>}
                             {fromCity && <div>{fromCity}</div>}
@@ -63,7 +68,7 @@ export default function OfferPreview({
 
             {scope && (
                 <div className="mt-10">
-                    <h3 className="text-lg font-semibold text-slate-900">Project Scope</h3>
+                    <h3 className="text-lg font-semibold" style={{ color: secondary }}>Project Scope</h3>
                     <SafeHtml value={scope} className="mt-2 text-sm leading-6 text-slate-600" />
                 </div>
             )}
@@ -103,7 +108,7 @@ export default function OfferPreview({
             </table>
 
             <div className="mt-8 grid gap-6 md:grid-cols-2">
-                <div className="rounded-xl bg-indigo-50 px-4 py-3 text-sm leading-6 text-indigo-800">
+                <div className="rounded-xl px-4 py-3 text-sm leading-6" style={{ backgroundColor: '#f8fafc', color: secondary, borderLeft: `3px solid ${primary}` }}>
                     Payment is due according to the terms in this quotation. 50% may be requested upon approval, with the
                     remainder on delivery, unless otherwise agreed in writing.
                     {notes && <SafeHtml value={notes} className="mt-3 text-indigo-700" />}
@@ -117,7 +122,7 @@ export default function OfferPreview({
                         <span>VAT ({vatRate}%)</span>
                         <span className="font-semibold text-slate-900">{money(vat)}</span>
                     </div>
-                    <div className="flex justify-between pt-1 text-lg font-semibold text-indigo-600">
+                    <div className="flex justify-between pt-1 text-lg font-semibold" style={{ color: primary }}>
                         <span>Total</span>
                         <span>{money(total)}</span>
                     </div>

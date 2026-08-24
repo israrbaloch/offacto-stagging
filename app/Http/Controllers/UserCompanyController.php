@@ -73,6 +73,7 @@ class UserCompanyController extends Controller
         }
 
         $company = Company::create($companyData);
+        $company->ensureDefaults();
 
         if ($requiresApproval) {
             $adminEmail = SiteSetting::get('admin_email');

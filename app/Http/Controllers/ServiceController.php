@@ -39,6 +39,31 @@ class ServiceController extends Controller
         ]);
     }
 
+    public function create(Request $request): Response|RedirectResponse
+    {
+        if (! $request->user()?->activeCompany()) {
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        return Inertia::render('Services/Create');
+    }
+
+    public function edit(Request $request, $service): Response|RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        if (! $activeCompany) {
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        $service = Service::where('id', $service)
+            ->where('company_id', $activeCompany->id)
+            ->firstOrFail();
+
+        return Inertia::render('Services/Edit', [
+            'service' => $service,
+        ]);
+    }
+
     /**
      * Store a newly created service in storage.
      */

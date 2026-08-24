@@ -88,6 +88,7 @@ class RegisteredUserController extends Controller
         }
 
         $company = Company::create($companyData);
+        $company->ensureDefaults();
 
         if (SiteSetting::getBoolean('send_welcome_email', true)) {
             Mail::to($user->email)->send(new WelcomeEmail($user));
