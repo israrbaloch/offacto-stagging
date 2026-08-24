@@ -50,12 +50,13 @@ function NavLink({ item, url }) {
 export default function Sidebar() {
     const { url, props } = usePage();
     const user = props.auth?.user;
+    const appearance = props.appearance;
 
     return (
         <aside className="hidden w-[250px] shrink-0 flex-col rounded-l-3xl bg-indigo-50 lg:flex">
             <div className="px-5 pt-6">
                 <Link href="/dashboard" className="flex justify-center">
-                    <Logo className="h-8 w-auto" />
+                    <Logo variant={appearance === 'dark' ? 'white' : 'dark'} className="h-8 w-auto" />
                 </Link>
                 <div className="mt-5">
                     <CompanySwitcher />

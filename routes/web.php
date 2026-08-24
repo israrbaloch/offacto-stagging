@@ -42,6 +42,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/support', fn () => Inertia::render('Support'))->name('support');
     Route::get('/settings', [ProfileController::class, 'edit'])->name('settings');
     Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
+    Route::post('/theme', function (\Illuminate\Http\Request $request) {
+        $theme = $request->validate([
+            'theme' => ['required', 'in:light,dark'],
+        ])['theme'];
+        $request->session()->put('appearance', $theme);
+
+        return back();
+    })->name('theme.update');
     
     // Company switching
     Route::post('/company/switch/{company}', [CompanyController::class, 'switchCompany'])->name('company.switch');

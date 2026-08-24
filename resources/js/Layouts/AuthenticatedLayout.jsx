@@ -5,14 +5,15 @@ import Toast from '../Components/Toast';
 import TopBar from '../Components/TopBar';
 
 export default function AuthenticatedLayout({ title, children }) {
-    const { activeCompany, auth, flash } = usePage().props;
+    const { activeCompany, auth, flash, appearance } = usePage().props;
     const primary = activeCompany?.theme?.primary || '#4054b2';
     const secondary = activeCompany?.theme?.secondary || '#0f172a';
 
     useEffect(() => {
         document.documentElement.style.setProperty('--company-primary', primary);
         document.documentElement.style.setProperty('--company-secondary', secondary);
-    }, [primary, secondary]);
+        document.documentElement.classList.toggle('dark', appearance === 'dark');
+    }, [primary, secondary, appearance]);
 
     return (
         <div className="min-h-screen bg-slate-100">

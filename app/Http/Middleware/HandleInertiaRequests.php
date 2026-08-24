@@ -69,6 +69,7 @@ class HandleInertiaRequests extends Middleware
                 'trial_days_left' => $daysLeft,
                 'trial_expired' => $active->isTrialExpired(),
             ] : null,
+            'appearance' => $request->session()->get('appearance', 'light'),
             'flash' => [
                 'status' => $request->session()->get('status'),
                 'error' => $request->session()->get('error'),

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
     --color-brand: var(--company-primary, #4054b2);
@@ -33,6 +35,35 @@ body {
     --company-primary: #4054b2;
     --company-secondary: #0f172a;
 }
+
+html.dark {
+    color-scheme: dark;
+}
+
+html.dark body {
+    background: #0b1220;
+    color: #e2e8f0;
+}
+
+html.dark .bg-white { background-color: #111827; }
+html.dark .bg-white\/80 { background-color: rgb(17 24 39 / 0.8); }
+html.dark .bg-slate-50 { background-color: #1e293b; }
+html.dark .bg-slate-50\/95 { background-color: rgb(30 41 59 / 0.95); }
+html.dark .bg-slate-100 { background-color: #0f172a; }
+html.dark .bg-indigo-50 { background-color: #1e293b; }
+html.dark .bg-indigo-50\/80 { background-color: rgb(30 41 59 / 0.85); }
+html.dark .bg-indigo-50\/50 { background-color: rgb(30 41 59 / 0.5); }
+html.dark .border-slate-50 { border-color: #1e293b; }
+html.dark .border-slate-100 { border-color: #1e293b; }
+html.dark .border-slate-200 { border-color: #334155; }
+html.dark .border-indigo-100 { border-color: #334155; }
+html.dark .border-indigo-100\/80 { border-color: rgb(51 65 85 / 0.8); }
+html.dark .text-slate-900 { color: #f1f5f9; }
+html.dark .text-slate-800 { color: #e2e8f0; }
+html.dark .text-slate-700 { color: #cbd5e1; }
+html.dark .text-slate-600 { color: #94a3b8; }
+html.dark .divide-slate-100 > :not(:last-child) { border-color: #1e293b; }
+html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 
 @keyframes register-float {
     0% {

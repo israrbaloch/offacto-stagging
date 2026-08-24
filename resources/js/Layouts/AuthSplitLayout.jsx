@@ -1,4 +1,5 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 import Logo from '../Components/Logo';
 import Toast from '../Components/Toast';
 
@@ -13,6 +14,12 @@ const orbs = [
 ];
 
 export default function AuthSplitLayout({ title, asideFooter, children }) {
+    const { appearance } = usePage().props;
+
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', appearance === 'dark');
+    }, [appearance]);
+
     return (
         <div className="min-h-screen bg-slate-100 px-4 py-8">
             <Head title={title} />

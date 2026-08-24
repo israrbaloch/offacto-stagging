@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 
@@ -59,7 +59,7 @@ const notifications = [
 ];
 
 export default function TopBar() {
-    const { auth, activeCompany } = usePage().props;
+    const { auth, activeCompany, appearance } = usePage().props;
     const user = auth?.user;
     const [open, setOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -106,6 +106,19 @@ export default function TopBar() {
                             : `Trial · ${activeCompany.trial_days_left ?? 0} days left`}
                     </span>
                 )}
+                <button
+                    type="button"
+                    onClick={() => {
+                        const next = appearance === 'dark' ? 'light' : 'dark';
+                        document.documentElement.classList.toggle('dark', next === 'dark');
+                        router.post('/theme', { theme: next }, { preserveScroll: true, preserveState: true });
+                    }}
+                    className="rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
+                    aria-label={appearance === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                    title={appearance === 'dark' ? 'Light theme' : 'Dark theme'}
+                >
+                    <Icon name={appearance === 'dark' ? 'sun' : 'moon'} className="h-5 w-5" />
+                </button>
                 <div className="relative" ref={notificationsRef}>
                     <button
                         type="button"
