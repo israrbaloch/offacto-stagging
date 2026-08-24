@@ -19,6 +19,15 @@ const footerNav = [
     { href: '/settings', label: 'nav.settings', icon: 'settings', aliases: ['/profile'] },
 ];
 
+const orbs = [
+    { className: '-left-16 -top-8 h-40 w-40 bg-indigo-200/50', duration: '32s', x: '16px', y: '22px', delay: '0s' },
+    { className: '-right-12 top-36 h-48 w-48 bg-violet-200/45', duration: '38s', x: '-18px', y: '-16px', delay: '-8s' },
+    { className: 'left-10 bottom-24 h-28 w-28 bg-indigo-300/30', duration: '26s', x: '12px', y: '18px', delay: '-4s' },
+    { className: 'right-4 bottom-8 h-16 w-16 bg-fuchsia-200/40', duration: '22s', x: '-10px', y: '-14px', delay: '-12s' },
+    { className: 'left-1/2 top-1/2 h-12 w-12 bg-sky-200/50', duration: '20s', x: '14px', y: '10px', delay: '-2s' },
+    { className: 'left-3 top-2/3 h-8 w-8 bg-violet-300/40', duration: '18s', x: '-8px', y: '12px', delay: '-6s' },
+];
+
 function isActive(url, item) {
     if (item.exact) {
         return url === item.href;
@@ -55,8 +64,20 @@ export default function Sidebar() {
     void props.locale;
 
     return (
-        <aside className="hidden h-full w-[250px] shrink-0 flex-col overflow-y-auto rounded-l-3xl bg-indigo-50 lg:flex">
-            <div className="px-5 pt-6">
+        <aside className="relative hidden h-full w-[250px] shrink-0 flex-col overflow-hidden rounded-l-3xl bg-indigo-50 lg:flex">
+            {orbs.map((orb, index) => (
+                <div
+                    key={index}
+                    className={`register-orb pointer-events-none absolute rounded-full ${orb.className}`}
+                    style={{
+                        '--float-duration': orb.duration,
+                        '--float-x': orb.x,
+                        '--float-y': orb.y,
+                        animationDelay: orb.delay,
+                    }}
+                />
+            ))}
+            <div className="relative z-10 px-5 pt-6">
                 <Link href="/dashboard" className="flex justify-center">
                     <Logo variant={appearance === 'dark' ? 'white' : 'dark'} className="h-8 w-auto" />
                 </Link>
@@ -72,7 +93,7 @@ export default function Sidebar() {
                 </Link>
             </div>
 
-            <nav className="mt-6 space-y-1 px-3 pb-6">
+            <nav className="relative z-10 mt-6 space-y-1 px-3 pb-6">
                 {mainNav.map((item) => (
                     <NavLink key={item.href} item={item} url={url} />
                 ))}
