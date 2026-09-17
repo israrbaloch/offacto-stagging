@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\SiteSetting;
+use Illuminate\Support\Str;
 
 class Offer extends Model
 {
@@ -31,6 +32,11 @@ class Offer extends Model
         'notes',
         'email_message',
         'status',
+        'share_token',
+        'accepted_at',
+        'declined_at',
+        'signature_data',
+        'voice_note_path',
     ];
 
     /**
@@ -43,7 +49,18 @@ class Offer extends Model
         return [
             'offer_date' => 'date',
             'valid_until' => 'date',
+            'accepted_at' => 'datetime',
+            'declined_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Offer $offer) {
+            if (! $offer->share_token) {
+                $offer->share_token = Str::random(40);
+            }
+        });
     }
 
     /**
@@ -86,6 +103,21 @@ class Offer extends Model
     public function attachments()
     {
         return $this->hasMany(OfferAttachment::class);
+    }
+
+    public function blocks()
+    {
+        return $this->hasMany(OfferBlock::class)->orderBy('sort_order');
+    }
+
+    public function publicUrl(): string
+    {
+        if (! $this->share_token) {
+            $this->update(['share_token' => Str::random(40)]);
+            $this->refresh();
+        }
+
+        return url('/q/'.$this->share_token);
     }
 
     /**

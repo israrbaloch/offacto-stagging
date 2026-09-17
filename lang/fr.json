@@ -354,5 +354,20 @@
     "flash.service-rejected": "Service refusé.",
     "flash.briefing-updated": "Briefing enregistré.",
     "flash.briefing-deleted": "Briefing supprimé.",
-    "flash.briefing-submitted": "Merci — nous vous enverrons votre devis."
+    "flash.briefing-submitted": "Merci — nous vous enverrons votre devis.",
+
+    "offers.blocks_title": "Blocs du devis",
+    "offers.blocks_hint": "Ajoutez texte, images, vidéos ou tableaux à la page publique.",
+    "offers.email_attachments": "E-mail et pièces jointes",
+    "offers.email_attachments_hint": "Préparez le message, joignez des PDF et choisissez les documents légaux.",
+
+    "invoices.new_title": "Nouvelle facture",
+    "invoices.edit_title": "Modifier la facture",
+    "invoices.section_basic": "Informations de base",
+    "invoices.section_assignment": "Mission",
+    "invoices.section_lines": "Lignes de facture",
+    "invoices.section_copyright": "Droits d'auteur",
+    "invoices.section_comments": "Commentaires",
+    "invoices.section_attachments": "Pièces jointes",
+    "invoices.section_attachments_hint": "Fichiers PDF inclus à l'envoi ou au téléchargement."
 }

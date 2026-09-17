@@ -20,6 +20,7 @@ class Service extends Model
         'name',
         'description',
         'price',
+        'billing_mode',
         'unit',
         'status',
     ];

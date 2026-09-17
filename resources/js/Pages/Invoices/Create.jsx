@@ -1,4 +1,4 @@
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import DatePicker from '../../Components/DatePicker';
 import Icon from '../../Components/Icon';
@@ -7,6 +7,7 @@ import LineItemsEditor from '../../Components/LineItemsEditor';
 import RichTextEditor from '../../Components/RichTextEditor';
 import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
 const fieldClass =
@@ -157,7 +158,7 @@ export default function Create({
             : 'Draft created';
 
     return (
-        <AuthenticatedLayout title="New invoice">
+        <AuthenticatedLayout title={invoice ? t('invoices.edit_title') : t('invoices.new_title')}>
             <form onSubmit={submit}>
                 <div className="sticky top-0 z-10 -mx-4 mb-6 border-b border-slate-200 bg-slate-50/95 px-4 py-4 backdrop-blur lg:-mx-8 lg:px-8">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -204,7 +205,7 @@ export default function Create({
                 <div className="rounded-3xl border border-slate-200 bg-white px-5 sm:px-8">
                     <Section
                         id="basic"
-                        title="Basic information"
+                        title={t('invoices.section_basic')}
                         hint="All basic information of your invoice."
                         open={open.basic}
                         onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
@@ -247,7 +248,7 @@ export default function Create({
 
                     <Section
                         id="assignment"
-                        title="Assignment"
+                        title={t('invoices.section_assignment')}
                         hint="Briefly describe what this invoice covers."
                         open={open.assignment}
                         onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
@@ -278,7 +279,7 @@ export default function Create({
 
                     <Section
                         id="lines"
-                        title="Invoice lines"
+                        title={t('invoices.section_lines')}
                         hint="List the products and services included on this invoice."
                         open={open.lines}
                         onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
@@ -299,7 +300,7 @@ export default function Create({
 
                     <Section
                         id="copyright"
-                        title="Copyright"
+                        title={t('invoices.section_copyright')}
                         hint="Choose how you assign rights for this work."
                         open={open.copyright}
                         onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
@@ -332,7 +333,7 @@ export default function Create({
 
                     <Section
                         id="comments"
-                        title="Comments"
+                        title={t('invoices.section_comments')}
                         hint="Internal or client-facing remarks shown on the invoice."
                         open={open.comments}
                         onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
@@ -347,6 +348,47 @@ export default function Create({
                             />
                         </div>
                     </Section>
+
+                    {invoice?.id && (
+                        <Section
+                            id="attachments"
+                            title={t('invoices.section_attachments')}
+                            hint={t('invoices.section_attachments_hint')}
+                            open={open.attachments ?? true}
+                            onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
+                        >
+                            <ul className="mb-3 space-y-2">
+                                {(invoice.attachments || []).map((file) => (
+                                    <li key={file.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                                        <span className="truncate">{file.original_name}</span>
+                                        <button
+                                            type="button"
+                                            className="text-rose-600 hover:underline"
+                                            onClick={() => router.delete(`/invoices/${invoice.id}/attachments/${file.id}`)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm font-medium text-slate-600 hover:border-indigo-300">
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const data = new FormData();
+                                        data.append('file', file);
+                                        router.post(`/invoices/${invoice.id}/attachments`, data, { forceFormData: true });
+                                        e.target.value = '';
+                                    }}
+                                />
+                                Choose a PDF
+                            </label>
+                        </Section>
+                    )}
                 </div>
             </form>
 

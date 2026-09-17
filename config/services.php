@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'peppol' => [
+        'endpoint' => env('PEPPOL_ENDPOINT'),
+        'token' => env('PEPPOL_TOKEN'),
+    ],
+
 ];

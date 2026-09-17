@@ -354,5 +354,20 @@
     "flash.service-rejected": "Dienst afgewezen.",
     "flash.briefing-updated": "Briefing opgeslagen.",
     "flash.briefing-deleted": "Briefing verwijderd.",
-    "flash.briefing-submitted": "Dank je — we sturen je offerte."
+    "flash.briefing-submitted": "Dank je — we sturen je offerte.",
+
+    "offers.blocks_title": "Offerteblokken",
+    "offers.blocks_hint": "Voeg tekst, afbeeldingen, video's of tabellen toe aan de publieke pagina.",
+    "offers.email_attachments": "E-mail en bijlagen",
+    "offers.email_attachments_hint": "Bereid het bericht voor, voeg PDF's toe en kies juridische documenten.",
+
+    "invoices.new_title": "Nieuwe factuur",
+    "invoices.edit_title": "Factuur bewerken",
+    "invoices.section_basic": "Basisinformatie",
+    "invoices.section_assignment": "Opdracht",
+    "invoices.section_lines": "Factuurregels",
+    "invoices.section_copyright": "Auteursrecht",
+    "invoices.section_comments": "Opmerkingen",
+    "invoices.section_attachments": "Bijlagen",
+    "invoices.section_attachments_hint": "PDF-bestanden meegestuurd bij verzenden of downloaden."
 }

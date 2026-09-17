@@ -27,10 +27,20 @@ class CustomerController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
-        $customers = Customer::where('company_id', $activeCompany->id)
-            ->with('statusRelation', 'country')
-            ->latest()
-            ->get(); // Soft deletes are automatically excluded by default
+        $query = Customer::where('company_id', $activeCompany->id)
+            ->with('statusRelation', 'country');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%")
+                    ->orWhere('org_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $customers = $query->latest()->get();
 
         $statuses = Status::forTable('customers')->pluck('name', 'id');
         $countries = Country::orderBy('name')->pluck('name', 'id');

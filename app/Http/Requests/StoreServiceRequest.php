@@ -26,6 +26,7 @@ class StoreServiceRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:1000'],
             'price' => ['required', 'numeric', 'min:0'],
             'unit' => ['nullable', 'string', 'max:50'],
+            'billing_mode' => ['nullable', 'in:fixed,hourly'],
         ];
     }
 }

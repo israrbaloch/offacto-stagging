@@ -13,18 +13,6 @@ function SearchIcon() {
     );
 }
 
-function BellIcon() {
-    return (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 1 1-6 0"
-            />
-        </svg>
-    );
-}
-
 function HelpIcon() {
     return (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
@@ -54,27 +42,16 @@ function roleLabel(user) {
     return user?.roles?.[0] || 'User';
 }
 
-const notifications = [
-    { id: 1, title: 'Invoice INV-1042 was paid', detail: 'Acme Corp · € 12,500.00', time: '2h ago', unread: true },
-    { id: 2, title: 'Offer awaiting approval', detail: 'Northwind Q3 Proposal', time: 'Yesterday', unread: true },
-    { id: 3, title: 'Payment reminder sent', detail: 'Vertex Labs · INV-1038', time: '2 days ago', unread: false },
-];
-
 export default function TopBar() {
     const { auth, activeCompany, appearance } = usePage().props;
     const user = auth?.user;
     const [open, setOpen] = useState(false);
-    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const menuRef = useRef(null);
-    const notificationsRef = useRef(null);
-
     useEffect(() => {
         function onClick(event) {
             if (!menuRef.current?.contains(event.target)) {
                 setOpen(false);
-            }
-            if (!notificationsRef.current?.contains(event.target)) {
-                setNotificationsOpen(false);
             }
         }
 
@@ -86,13 +63,19 @@ export default function TopBar() {
         <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3 lg:rounded-tr-3xl lg:px-8">
             <form
                 className="relative min-w-0 flex-1 max-w-xl"
-                onSubmit={(event) => event.preventDefault()}
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    if (!searchQuery.trim()) return;
+                    router.get('/search', { q: searchQuery.trim() });
+                }}
             >
                 <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                     <SearchIcon />
                 </span>
                 <input
                     type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={t('topbar.search')}
                     className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
                 />
@@ -122,48 +105,6 @@ export default function TopBar() {
                     <Icon name={appearance === 'dark' ? 'sun' : 'moon'} className="h-5 w-5" />
                 </button>
                 <LocaleSelect />
-                <div className="relative" ref={notificationsRef}>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setNotificationsOpen((value) => !value);
-                            setOpen(false);
-                        }}
-                        className="relative rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
-                        aria-label={t('topbar.notifications')}
-                    >
-                        <BellIcon />
-                        <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-400" />
-                    </button>
-                    {notificationsOpen && (
-                        <div className="absolute right-0 z-20 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
-                            <div className="border-b border-slate-100 px-4 py-3">
-                                <div className="text-sm font-semibold text-slate-900">{t('topbar.notifications')}</div>
-                                <div className="text-xs text-slate-400">{t('topbar.unread', { count: 2 })}</div>
-                            </div>
-                            <ul>
-                                {notifications.map((item) => (
-                                    <li key={item.id} className="border-b border-slate-50 last:border-0">
-                                        <button
-                                            type="button"
-                                            className="flex w-full gap-3 px-4 py-3 text-left hover:bg-slate-50"
-                                        >
-                                            {item.unread && (
-                                                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-indigo-600" />
-                                            )}
-                                            {!item.unread && <span className="mt-1.5 h-2 w-2 shrink-0" />}
-                                            <span className="min-w-0 flex-1">
-                                                <span className="block text-sm font-medium text-slate-800">{item.title}</span>
-                                                <span className="mt-0.5 block text-xs text-slate-400">{item.detail}</span>
-                                                <span className="mt-1 block text-xs text-slate-300">{item.time}</span>
-                                            </span>
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                </div>
                 <Link
                     href="/support"
                     className="rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
@@ -177,10 +118,7 @@ export default function TopBar() {
                 <div className="relative" ref={menuRef}>
                     <button
                         type="button"
-                        onClick={() => {
-                            setOpen((value) => !value);
-                            setNotificationsOpen(false);
-                        }}
+                        onClick={() => setOpen((value) => !value)}
                         className="flex items-center gap-3 rounded-full py-1 pl-2 pr-1 transition hover:bg-slate-50"
                     >
                         <span className="hidden text-right sm:block">

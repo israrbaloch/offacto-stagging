@@ -130,6 +130,9 @@ export default function Index({ invoices, stats = {} }) {
                     <div className="flex flex-wrap gap-2">
                         <button
                             type="button"
+                            onClick={() => {
+                                window.location.href = `/invoices/export-zip${window.location.search}`;
+                            }}
                             className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
                         >
                             {t('offers.export')}

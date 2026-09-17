@@ -13,7 +13,7 @@ class OfferMessage
         $client = trim(($customer?->first_name.' '.$customer?->surname))
             ?: ($customer?->org_name ?: 'Client');
         $company = $offer->company?->company_name ?: 'our company';
-        $link = url('/offers/'.$offer->id);
+        $link = $offer->publicUrl();
 
         return str_replace(
             ['#CLIENTNAME#', '#COMPANY#', '#OFFERLINK#'],

@@ -6,9 +6,15 @@ import Modal from '../../Components/Modal';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { customerName, formatDate, money, optionsFromMap } from '../../lib/utils';
 
-export default function Show({ invoice, paymentMethods = {} }) {
+export default function Show({
+    invoice,
+    paymentMethods = {},
+    peppolConfigured = false,
+    mollieConfigured = false,
+}) {
     const [sendOpen, setSendOpen] = useState(false);
     const [payOpen, setPayOpen] = useState(false);
+    const [reminderOpen, setReminderOpen] = useState(false);
     const send = useForm({
         email: invoice.customer?.email || '',
         message: '',
@@ -22,6 +28,18 @@ export default function Show({ invoice, paymentMethods = {} }) {
         reference: '',
         notes: '',
     });
+    const reminder = useForm({
+        email: invoice.customer?.email || '',
+        message: '',
+    });
+    const recurring = useForm({
+        is_recurring: Boolean(invoice.is_recurring),
+        recurring_interval: invoice.recurring_interval || 'monthly',
+    });
+
+    const whatsappText = encodeURIComponent(
+        `Invoice ${invoice.invoice_number} — ${money(invoice.amount_due)} due ${formatDate(invoice.due_date)}`
+    );
 
     return (
         <AuthenticatedLayout title={invoice.invoice_number}>
@@ -43,6 +61,44 @@ export default function Show({ invoice, paymentMethods = {} }) {
                         UBL
                     </Button>
                     <Button onClick={() => setSendOpen(true)}>Send</Button>
+                    <Button variant="secondary" onClick={() => setReminderOpen(true)}>
+                        Reminder
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            if (confirm('Create a credit note from this invoice?')) {
+                                router.post(`/invoices/${invoice.id}/credit-note`);
+                            }
+                        }}
+                    >
+                        Credit note
+                    </Button>
+                    {mollieConfigured && invoice.payment_status !== 'paid' && (
+                        <Button
+                            variant="secondary"
+                            onClick={() => router.post(`/invoices/${invoice.id}/mollie`)}
+                        >
+                            Mollie pay link
+                        </Button>
+                    )}
+                    {peppolConfigured && (
+                        <Button variant="secondary" onClick={() => router.post(`/invoices/${invoice.id}/peppol`)}>
+                            Send Peppol
+                        </Button>
+                    )}
+                    <Button
+                        variant="secondary"
+                        as="a"
+                        href={`https://wa.me/?text=${whatsappText}`}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        WhatsApp
+                    </Button>
+                    <Button variant="secondary" onClick={() => router.post(`/invoices/${invoice.id}/postbode`)}>
+                        Postbode
+                    </Button>
                     <Button variant="secondary" onClick={() => setPayOpen(true)}>
                         Record payment
                     </Button>
@@ -56,6 +112,45 @@ export default function Show({ invoice, paymentMethods = {} }) {
                     </Button>
                 </div>
             </div>
+
+            <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <label className="inline-flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={recurring.data.is_recurring}
+                            onChange={(e) => recurring.setData('is_recurring', e.target.checked)}
+                        />
+                        Recurring invoice
+                    </label>
+                    {recurring.data.is_recurring && (
+                        <Select
+                            value={recurring.data.recurring_interval}
+                            onChange={(e) => recurring.setData('recurring_interval', e.target.value)}
+                            options={[
+                                { value: 'weekly', label: 'Weekly' },
+                                { value: 'monthly', label: 'Monthly' },
+                                { value: 'yearly', label: 'Yearly' },
+                            ]}
+                        />
+                    )}
+                    <Button
+                        variant="secondary"
+                        onClick={() => recurring.post(`/invoices/${invoice.id}/recurring`)}
+                    >
+                        Save recurring
+                    </Button>
+                    {invoice.mollie_checkout_url && (
+                        <a href={invoice.mollie_checkout_url} className="text-indigo-600 hover:underline" target="_blank" rel="noreferrer">
+                            Open Mollie checkout
+                        </a>
+                    )}
+                    {invoice.peppol_sent_at && (
+                        <span className="text-emerald-600">Peppol sent {formatDate(invoice.peppol_sent_at)}</span>
+                    )}
+                </div>
+            </div>
+
             <div className="rounded-2xl border border-slate-200 bg-white p-6">
                 <p className="whitespace-pre-wrap text-sm text-slate-600">{invoice.intro}</p>
                 <p className="mt-4 whitespace-pre-wrap text-sm">{invoice.desc}</p>
@@ -84,6 +179,41 @@ export default function Show({ invoice, paymentMethods = {} }) {
                     <div>Due {money(invoice.amount_due)}</div>
                 </div>
             </div>
+
+            <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+                <h2 className="mb-3 font-semibold">Attachments</h2>
+                <ul className="mb-3 space-y-2">
+                    {(invoice.attachments || []).map((file) => (
+                        <li key={file.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                            <span className="truncate">{file.original_name}</span>
+                            <button
+                                type="button"
+                                className="text-rose-600 hover:underline"
+                                onClick={() => router.delete(`/invoices/${invoice.id}/attachments/${file.id}`)}
+                            >
+                                Remove
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 hover:border-indigo-300">
+                    <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const data = new FormData();
+                            data.append('file', file);
+                            router.post(`/invoices/${invoice.id}/attachments`, data, { forceFormData: true });
+                            e.target.value = '';
+                        }}
+                    />
+                    Upload PDF attachment
+                </label>
+            </section>
+
             {(invoice.payments || []).length > 0 && (
                 <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
                     <h2 className="mb-3 font-semibold">Payments</h2>
@@ -99,6 +229,7 @@ export default function Show({ invoice, paymentMethods = {} }) {
                     </ul>
                 </section>
             )}
+
             <Modal
                 open={sendOpen}
                 title="Send invoice"
@@ -112,6 +243,21 @@ export default function Show({ invoice, paymentMethods = {} }) {
                 <div className="space-y-3">
                     <Input label="Email" type="email" value={send.data.email} onChange={(e) => send.setData('email', e.target.value)} error={send.errors.email} />
                     <Input label="Message" value={send.data.message} onChange={(e) => send.setData('message', e.target.value)} />
+                </div>
+            </Modal>
+            <Modal
+                open={reminderOpen}
+                title="Payment reminder"
+                onClose={() => setReminderOpen(false)}
+                footer={
+                    <Button disabled={reminder.processing} onClick={() => reminder.post(`/invoices/${invoice.id}/reminder`, { onSuccess: () => setReminderOpen(false) })}>
+                        Send reminder
+                    </Button>
+                }
+            >
+                <div className="space-y-3">
+                    <Input label="Email" type="email" value={reminder.data.email} onChange={(e) => reminder.setData('email', e.target.value)} error={reminder.errors.email} />
+                    <Input label="Message" value={reminder.data.message} onChange={(e) => reminder.setData('message', e.target.value)} />
                 </div>
             </Modal>
             <Modal

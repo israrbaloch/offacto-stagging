@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Briefing;
 use App\Models\BriefingResponse;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Offer;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,6 +26,7 @@ class DashboardController extends Controller
             return Inertia::render('Dashboard', [
                 'user' => $user,
                 'stats' => $this->getEmptyStats(),
+                'chartData' => $this->getEmptyChartData(),
                 'openOffers' => collect(),
                 'topCustomers' => collect(),
                 'awaitingBriefings' => collect(),
@@ -84,6 +87,7 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'user' => $user,
             'stats' => $stats,
+            'chartData' => $this->getChartData($activeCompany->id),
             'openOffers' => $openOffers,
             'topCustomers' => $topCustomers,
             'awaitingBriefings' => $awaitingBriefings,
@@ -153,6 +157,124 @@ class DashboardController extends Controller
             'openOffersTotal' => 0,
             'periodStart' => now()->startOfYear()->format('F j, Y'),
             'periodEnd' => 'today',
+        ];
+    }
+
+    private function getChartData(int $companyId): array
+    {
+        $invoices = Invoice::where('company_id', $companyId)
+            ->with(['items', 'payments'])
+            ->get();
+
+        $labels = [];
+        $paidSeries = [];
+        $outstandingSeries = [];
+        $expensesSeries = [];
+
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $ym = $month->format('Y-m');
+            $labels[] = $month->format('M');
+
+            $monthInvoices = $invoices->filter(
+                fn (Invoice $invoice) => $invoice->invoice_date?->format('Y-m') === $ym
+            );
+
+            $paidSeries[] = round($monthInvoices->sum(fn (Invoice $invoice) => (float) $invoice->amount_paid), 2);
+            $outstandingSeries[] = round($monthInvoices->sum(
+                fn (Invoice $invoice) => $invoice->isPaid() ? 0 : (float) $invoice->amount_due
+            ), 2);
+            $expensesSeries[] = 0;
+        }
+
+        $paymentStatus = [
+            'paid' => $invoices->filter(fn (Invoice $i) => $i->payment_status === Invoice::PAYMENT_PAID)->count(),
+            'partial' => $invoices->filter(fn (Invoice $i) => $i->payment_status === Invoice::PAYMENT_PARTIAL)->count(),
+            'unpaid' => $invoices->filter(
+                fn (Invoice $i) => $i->payment_status === Invoice::PAYMENT_UNPAID && ! $i->isOverdue()
+            )->count(),
+            'overdue' => $invoices->filter(fn (Invoice $i) => $i->isOverdue())->count(),
+        ];
+
+        $totalOutstanding = round($invoices->sum(
+            fn (Invoice $invoice) => $invoice->isPaid() ? 0 : (float) $invoice->amount_due
+        ), 2);
+
+        $dso = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+
+            $paidInMonth = $invoices->filter(function (Invoice $invoice) use ($monthStart, $monthEnd) {
+                if (! $invoice->isPaid() || ! $invoice->invoice_date) {
+                    return false;
+                }
+                $lastPayment = $invoice->payments->max('payment_date');
+
+                if ($lastPayment instanceof Carbon) {
+                    return $lastPayment->between($monthStart, $monthEnd);
+                }
+
+                return $invoice->invoice_date->between($monthStart, $monthEnd);
+            });
+
+            $days = $paidInMonth->map(function (Invoice $invoice) {
+                $lastPayment = $invoice->payments->max('payment_date') ?? $invoice->due_date ?? now();
+
+                return $invoice->invoice_date->diffInDays($lastPayment);
+            });
+
+            $dso[] = [
+                'label' => $monthStart->format('M Y'),
+                'days' => $days->isEmpty() ? 0 : (int) round($days->avg()),
+            ];
+        }
+
+        return [
+            'cashflow' => [
+                'labels' => $labels,
+                'paid' => $paidSeries,
+                'outstanding' => $outstandingSeries,
+                'expenses' => $expensesSeries,
+            ],
+            'paymentStatus' => $paymentStatus,
+            'totalOutstanding' => $totalOutstanding,
+            'dso' => $dso,
+        ];
+    }
+
+    private function getEmptyChartData(): array
+    {
+        $labels = [];
+        $zeros = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $labels[] = now()->subMonths($i)->format('M');
+            $zeros[] = 0;
+        }
+
+        $dso = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $dso[] = [
+                'label' => now()->subMonths($i)->format('M Y'),
+                'days' => 0,
+            ];
+        }
+
+        return [
+            'cashflow' => [
+                'labels' => $labels,
+                'paid' => $zeros,
+                'outstanding' => $zeros,
+                'expenses' => $zeros,
+            ],
+            'paymentStatus' => [
+                'paid' => 0,
+                'partial' => 0,
+                'unpaid' => 0,
+                'overdue' => 0,
+            ],
+            'totalOutstanding' => 0,
+            'dso' => $dso,
         ];
     }
 }

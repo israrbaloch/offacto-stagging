@@ -12,7 +12,10 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BriefingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\MollieWebhookController;
 use App\Http\Controllers\PublicBriefingController;
+use App\Http\Controllers\PublicOfferController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +23,13 @@ use Inertia\Inertia;
 
 Route::get('/b/{token}', [PublicBriefingController::class, 'show'])->name('briefings.public');
 Route::post('/b/{token}', [PublicBriefingController::class, 'submit'])->name('briefings.public.submit');
+
+Route::get('/q/{token}', [PublicOfferController::class, 'show'])->name('offers.public');
+Route::post('/q/{token}/accept', [PublicOfferController::class, 'accept'])->name('offers.public.accept');
+Route::post('/q/{token}/decline', [PublicOfferController::class, 'decline'])->name('offers.public.decline');
+Route::get('/q/{token}/download', [PublicOfferController::class, 'download'])->name('offers.public.download');
+
+Route::post('/webhooks/mollie', MollieWebhookController::class)->name('webhooks.mollie');
 
 Route::post('/locale', function (\Illuminate\Http\Request $request) {
     $locale = $request->validate([
@@ -38,6 +48,10 @@ Route::get('/', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+Route::get('/search', SearchController::class)
+    ->middleware(['auth', 'verified'])
+    ->name('search');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -84,17 +98,28 @@ Route::middleware('auth')->group(function () {
     Route::get('briefings/{briefing}/responses', [BriefingController::class, 'responses'])->name('briefings.responses');
 
     // Offers
+    Route::get('offers/export-zip', [OfferController::class, 'exportZip'])->name('offers.export-zip');
     Route::resource('offers', OfferController::class);
     Route::post('offers/{offer}/send', [OfferController::class, 'send'])->name('offers.send');
+    Route::post('offers/{offer}/blocks', [OfferController::class, 'syncBlocks'])->name('offers.blocks.sync');
     Route::post('offers/{offer}/attachments', [OfferController::class, 'storeAttachment'])->name('offers.attachments.store');
     Route::delete('offers/{offer}/attachments/{attachment}', [OfferController::class, 'destroyAttachment'])->name('offers.attachments.destroy');
     Route::get('offers/{offer}/preview', [OfferController::class, 'preview'])->name('offers.preview');
     Route::get('offers/{offer}/download', [OfferController::class, 'download'])->name('offers.download');
     
     // Invoices
+    Route::get('invoices/export-zip', [InvoiceController::class, 'exportZip'])->name('invoices.export-zip');
     Route::get('invoices/from-offer/{offer}', [InvoiceController::class, 'createFromOffer'])->name('invoices.from-offer');
     Route::resource('invoices', InvoiceController::class);
     Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+    Route::post('invoices/{invoice}/reminder', [InvoiceController::class, 'sendReminder'])->name('invoices.reminder');
+    Route::post('invoices/{invoice}/credit-note', [InvoiceController::class, 'createCreditNote'])->name('invoices.credit-note');
+    Route::post('invoices/{invoice}/recurring', [InvoiceController::class, 'configureRecurring'])->name('invoices.recurring');
+    Route::post('invoices/{invoice}/mollie', [InvoiceController::class, 'createMollieCheckout'])->name('invoices.mollie');
+    Route::post('invoices/{invoice}/peppol', [InvoiceController::class, 'sendPeppol'])->name('invoices.peppol');
+    Route::post('invoices/{invoice}/postbode', [InvoiceController::class, 'queuePostbode'])->name('invoices.postbode');
+    Route::post('invoices/{invoice}/attachments', [InvoiceController::class, 'storeAttachment'])->name('invoices.attachments.store');
+    Route::delete('invoices/{invoice}/attachments/{attachment}', [InvoiceController::class, 'destroyAttachment'])->name('invoices.attachments.destroy');
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
     Route::get('invoices/{invoice}/ubl', [InvoiceController::class, 'downloadUbl'])->name('invoices.ubl');
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.payment');

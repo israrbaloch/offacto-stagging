@@ -10,11 +10,13 @@ use App\Models\CompanyLegalDocument;
 use App\Models\Customer;
 use App\Models\Offer;
 use App\Models\OfferAttachment;
+use App\Models\OfferBlock;
 use App\Models\OfferItem;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
 use App\Support\CompanyAccess;
+use App\Services\PdfZipExportService;
 use App\Support\OfferMessage;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -22,6 +24,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -276,7 +279,7 @@ class OfferController extends Controller
 
         $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany->id)
-            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'briefingResponse.briefing', 'attachments'])
+            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'briefingResponse.briefing', 'attachments', 'blocks'])
             ->firstOrFail();
 
         $customers = Customer::where('company_id', $activeCompany->id)
@@ -508,6 +511,10 @@ class OfferController extends Controller
             }
 
             $offer->loadMissing(['customer', 'items.service', 'company.companySetting', 'attachments']);
+            if (! $offer->share_token) {
+                $offer->update(['share_token' => \Illuminate\Support\Str::random(40)]);
+                $offer->refresh();
+            }
             $sentStatus = Status::where('for', 'offers')->where('name', 'Sent')->first();
             if ($sentStatus) {
                 $offer->update(['status' => $sentStatus->id]);
@@ -543,6 +550,31 @@ class OfferController extends Controller
 
             return redirect()->back()->with('error', 'Failed to send offer: ' . $e->getMessage());
         }
+    }
+
+    public function syncBlocks(Request $request, $offer): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $offer = Offer::where('id', $offer)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'blocks' => ['array'],
+            'blocks.*.type' => ['required', 'in:text,image,video,table'],
+            'blocks.*.content' => ['nullable', 'array'],
+            'blocks.*.sort_order' => ['nullable', 'integer'],
+        ]);
+
+        $offer->blocks()->delete();
+        foreach ($validated['blocks'] ?? [] as $index => $block) {
+            OfferBlock::create([
+                'offer_id' => $offer->id,
+                'type' => $block['type'],
+                'sort_order' => $block['sort_order'] ?? $index,
+                'content' => $block['content'] ?? [],
+            ]);
+        }
+
+        return back()->with('status', 'blocks-updated');
     }
 
     public function storeAttachment(Request $request, $offer): RedirectResponse
@@ -585,6 +617,52 @@ class OfferController extends Controller
         return back()->with('status', 'attachment-deleted');
     }
 
+    public function exportZip(Request $request, PdfZipExportService $zipExport): StreamedResponse|RedirectResponse
+    {
+        $user = $request->user();
+        $activeCompany = $user->activeCompany();
+
+        if (! $activeCompany) {
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        $query = Offer::where('company_id', $activeCompany->id)
+            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('offer_number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('surname', 'like', "%{$search}%")
+                            ->orWhere('org_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('date_filter')) {
+            $this->applyOfferDateFilter($query, $request->date_filter);
+        }
+
+        $offers = $query->latest()->get()->filter(function (Offer $offer) {
+            $status = strtolower((string) $offer->statusRelation?->name);
+
+            return in_array($status, ['sent', 'accepted', 'invoiced'], true);
+        })->values();
+
+        if ($offers->isEmpty()) {
+            return redirect()->route('offers.index')->with('error', 'No quotations to export.');
+        }
+
+        return $zipExport->download(
+            $offers,
+            fn (Offer $offer) => $this->offerPdfDocument($offer),
+            fn (Offer $offer) => 'quotation-'.($offer->offer_number ?? $offer->id).'.pdf',
+            'quotations-'.now()->format('Y-m-d').'.zip'
+        );
+    }
+
     public function preview(Request $request, $offer): HttpResponse|RedirectResponse
     {
         return $this->offerPdf($request, $offer, 'preview');
@@ -614,16 +692,52 @@ class OfferController extends Controller
             abort(403, 'The PDF is available after the offer is sent.');
         }
 
-        $pdf = Pdf::loadView('pdf.offer', [
-            'offer' => $offer,
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
-        ])->setPaper('a4');
-
+        $pdf = $this->offerPdfDocument($offer);
         $filename = 'quotation-'.($offer->offer_number ?? $offer->id).'.pdf';
 
         return $mode === 'preview'
             ? $pdf->stream($filename)
             : $pdf->download($filename);
+    }
+
+    private function offerPdfDocument(Offer $offer): \Barryvdh\DomPDF\PDF
+    {
+        return Pdf::loadView('pdf.offer', [
+            'offer' => $offer,
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+        ])->setPaper('a4');
+    }
+
+    private function applyOfferDateFilter($query, string $dateFilter): void
+    {
+        $now = now();
+
+        switch ($dateFilter) {
+            case 'current_year':
+                $query->whereYear('offer_date', $now->year);
+                break;
+            case 'current_month':
+                $query->whereYear('offer_date', $now->year)
+                    ->whereMonth('offer_date', $now->month);
+                break;
+            case 'current_quarter':
+                $query->whereYear('offer_date', $now->year)
+                    ->whereRaw('QUARTER(offer_date) = ?', [$now->quarter]);
+                break;
+            case 'last_quarter':
+                $lastQuarter = $now->copy()->subQuarter();
+                $query->whereYear('offer_date', $lastQuarter->year)
+                    ->whereRaw('QUARTER(offer_date) = ?', [$lastQuarter->quarter]);
+                break;
+            case 'last_year':
+                $query->whereYear('offer_date', $now->year - 1);
+                break;
+            default:
+                if (is_numeric($dateFilter)) {
+                    $query->whereYear('offer_date', (int) $dateFilter);
+                }
+                break;
+        }
     }
 
     /**

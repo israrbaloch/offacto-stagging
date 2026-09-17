@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 
 class InvoiceSent extends Mailable
 {
@@ -82,6 +83,15 @@ class InvoiceSent extends Mailable
             $xmlFilename = 'invoice-' . ($this->invoice->invoice_number ?? $this->invoice->id) . '.xml';
             $attachments[] = Attachment::fromData(fn () => $this->ublContent, $xmlFilename)
                 ->withMime('application/xml');
+        }
+
+        $this->invoice->loadMissing('attachments');
+        foreach ($this->invoice->attachments as $attachment) {
+            if (Storage::disk('public')->exists($attachment->file_path)) {
+                $attachments[] = Attachment::fromStorageDisk('public', $attachment->file_path)
+                    ->as($attachment->original_name)
+                    ->withMime('application/pdf');
+            }
         }
 
         return $attachments;

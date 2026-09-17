@@ -26,6 +26,7 @@ function customerLabel(customer) {
 
 export default function Dashboard({
     stats = {},
+    chartData = {},
     openOffers = [],
     topCustomers = [],
     awaitingBriefings = [],
@@ -195,7 +196,7 @@ export default function Dashboard({
                             </div>
                         </div>
                         <div className="mt-4">
-                            <CashflowChart />
+                            <CashflowChart data={chartData.cashflow} />
                         </div>
                     </div>
                     <div className="grid gap-6 xl:grid-cols-2">
@@ -204,7 +205,10 @@ export default function Dashboard({
                                 {t('dashboard.payment_status')}
                             </div>
                             <div className="mt-6">
-                                <PaymentDonut />
+                                <PaymentDonut
+                                    paymentStatus={chartData.paymentStatus}
+                                    totalOutstanding={chartData.totalOutstanding}
+                                />
                             </div>
                         </section>
                         <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -212,7 +216,7 @@ export default function Dashboard({
                                 {t('dashboard.dso')}
                             </div>
                             <div className="mt-8">
-                                <DsoBars />
+                                <DsoBars rows={chartData.dso} />
                             </div>
                         </section>
                     </div>

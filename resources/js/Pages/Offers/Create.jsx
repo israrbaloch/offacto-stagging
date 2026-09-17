@@ -6,7 +6,9 @@ import LineItemsEditor from '../../Components/LineItemsEditor';
 import OfferPreview from '../../Components/OfferPreview';
 import RichTextEditor from '../../Components/RichTextEditor';
 import SelectMenu from '../../Components/SelectMenu';
+import OfferBlocksEditor from '../../Components/OfferBlocksEditor';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
 const fieldClass =
@@ -80,6 +82,7 @@ export default function Create({
         lines: true,
         copyright: true,
         email: false,
+        blocks: false,
     });
     const [previewOpen, setPreviewOpen] = useState(false);
     const [savedAt, setSavedAt] = useState(offer?.updated_at || null);
@@ -386,9 +389,19 @@ export default function Create({
                     </Section>
 
                     <Section
+                        id="blocks"
+                        title={t('offers.blocks_title')}
+                        hint={t('offers.blocks_hint')}
+                        open={open.blocks}
+                        onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
+                    >
+                        <OfferBlocksEditor offerId={offer?.id} initialBlocks={offer?.blocks || []} />
+                    </Section>
+
+                    <Section
                         id="email"
-                        title="Email and attachments"
-                        hint="Prepare the message, attach PDFs, and choose legal documents."
+                        title={t('offers.email_attachments')}
+                        hint={t('offers.email_attachments_hint')}
                         open={open.email}
                         onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
                     >

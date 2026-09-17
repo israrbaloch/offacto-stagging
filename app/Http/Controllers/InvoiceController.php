@@ -8,7 +8,9 @@ use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
 use App\Mail\InvoiceSent;
 use App\Models\Customer;
+use App\Mail\InvoiceReminder;
 use App\Models\Invoice;
+use App\Models\InvoiceAttachment;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Offer;
@@ -16,14 +18,20 @@ use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
 use App\Support\CompanyAccess;
+use App\Services\MolliePaymentService;
+use App\Services\PdfZipExportService;
+use App\Services\PeppolSendService;
 use App\Services\UblInvoiceService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -337,12 +345,14 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
-            ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'payments', 'offer'])
+            ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'payments', 'offer', 'attachments'])
             ->firstOrFail();
 
         return Inertia::render('Invoices/Show', [
             'invoice' => $invoice,
             'paymentMethods' => Invoice::getPaymentMethods(),
+            'peppolConfigured' => filled(config('services.peppol.endpoint')) && filled(config('services.peppol.token')),
+            'mollieConfigured' => filled($activeCompany->mollie_key) || filled($activeCompany->mollie_test_key),
         ]);
     }
 
@@ -360,7 +370,7 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
-            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting'])
+            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'attachments'])
             ->firstOrFail();
 
         $customers = Customer::where('company_id', $activeCompany->id)
@@ -590,6 +600,7 @@ class InvoiceController extends Controller
 
         try {
             // Generate PDF
+            $invoice->loadMissing('attachments');
             $pdf = Pdf::loadView('pdf.invoice', ['invoice' => $invoice]);
             
             // Generate UBL XML if requested
@@ -645,6 +656,59 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Export filtered invoices as a ZIP of PDFs.
+     */
+    public function exportZip(Request $request, PdfZipExportService $zipExport): StreamedResponse|RedirectResponse
+    {
+        $user = $request->user();
+        $activeCompany = $user->activeCompany();
+
+        if (! $activeCompany) {
+            return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
+        }
+
+        $query = Invoice::where('company_id', $activeCompany->id)
+            ->with(['customer', 'items.service', 'company.companySetting']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('surname', 'like', "%{$search}%")
+                            ->orWhere('org_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
+        }
+
+        if ($request->filled('date_filter')) {
+            $this->applyInvoiceDateFilter($query, $request->date_filter);
+        }
+
+        $invoices = $query->latest()->get();
+
+        if ($invoices->isEmpty()) {
+            return redirect()->route('invoices.index')->with('error', 'No invoices to export.');
+        }
+
+        return $zipExport->download(
+            $invoices,
+            fn (Invoice $invoice) => $this->invoicePdf($invoice),
+            fn (Invoice $invoice) => 'invoice-'.($invoice->invoice_number ?? $invoice->id).'.pdf',
+            'invoices-'.now()->format('Y-m-d').'.zip'
+        );
+    }
+
+    /**
      * Download invoice as PDF.
      */
     public function download(Request $request, $invoice): Response|RedirectResponse
@@ -661,11 +725,46 @@ class InvoiceController extends Controller
             ->with(['customer', 'items.service', 'company.companySetting'])
             ->firstOrFail();
 
-        $pdf = Pdf::loadView('pdf.invoice', ['invoice' => $invoice]);
-
         $filename = 'invoice-' . ($invoice->invoice_number ?? $invoice->id) . '.pdf';
 
-        return $pdf->download($filename);
+        return $this->invoicePdf($invoice)->download($filename);
+    }
+
+    private function invoicePdf(Invoice $invoice): DomPdf
+    {
+        return Pdf::loadView('pdf.invoice', ['invoice' => $invoice]);
+    }
+
+    private function applyInvoiceDateFilter($query, string $dateFilter): void
+    {
+        $now = now();
+
+        switch ($dateFilter) {
+            case 'current_year':
+                $query->whereYear('invoice_date', $now->year);
+                break;
+            case 'current_month':
+                $query->whereYear('invoice_date', $now->year)
+                    ->whereMonth('invoice_date', $now->month);
+                break;
+            case 'current_quarter':
+                $query->whereYear('invoice_date', $now->year)
+                    ->whereRaw('QUARTER(invoice_date) = ?', [$now->quarter]);
+                break;
+            case 'last_quarter':
+                $lastQuarter = $now->copy()->subQuarter();
+                $query->whereYear('invoice_date', $lastQuarter->year)
+                    ->whereRaw('QUARTER(invoice_date) = ?', [$lastQuarter->quarter]);
+                break;
+            case 'last_year':
+                $query->whereYear('invoice_date', $now->year - 1);
+                break;
+            default:
+                if (is_numeric($dateFilter)) {
+                    $query->whereYear('invoice_date', (int) $dateFilter);
+                }
+                break;
+        }
     }
 
     /**
@@ -768,6 +867,157 @@ class InvoiceController extends Controller
         }
     }
 
+    public function storeAttachment(Request $request, $invoice): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+        ]);
+
+        $path = $request->file('file')->store('invoice-attachments/'.$invoice->id, 'public');
+        InvoiceAttachment::create([
+            'invoice_id' => $invoice->id,
+            'file_path' => $path,
+            'original_name' => $request->file('file')->getClientOriginalName(),
+        ]);
+
+        return back()->with('status', 'attachment-uploaded');
+    }
+
+    public function destroyAttachment(Request $request, $invoice, InvoiceAttachment $attachment): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        if ($attachment->invoice_id !== $invoice->id) {
+            abort(404);
+        }
+
+        Storage::disk('public')->delete($attachment->file_path);
+        $attachment->delete();
+
+        return back()->with('status', 'attachment-deleted');
+    }
+
+    public function createCreditNote(Request $request, $invoice): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $source = Invoice::where('id', $invoice)
+            ->where('company_id', $activeCompany?->id)
+            ->with('items')
+            ->firstOrFail();
+
+        $draftStatus = Status::forTable('invoices')->where('name', 'Draft')->first();
+
+        $credit = DB::transaction(function () use ($source, $draftStatus, $activeCompany) {
+            $credit = Invoice::create([
+                'company_id' => $activeCompany->id,
+                'customer_id' => $source->customer_id,
+                'offer_id' => $source->offer_id,
+                'invoice_number' => $this->generateCreditNoteNumber($activeCompany->id),
+                'invoice_date' => now(),
+                'due_date' => now(),
+                'intro' => $source->intro,
+                'desc' => 'Credit note for '.$source->invoice_number,
+                'notes' => $source->notes,
+                'status' => $draftStatus?->id,
+                'payment_status' => Invoice::PAYMENT_UNPAID,
+                'parent_invoice_id' => $source->id,
+            ]);
+
+            foreach ($source->items as $item) {
+                InvoiceItem::create([
+                    'invoice_id' => $credit->id,
+                    'service_id' => $item->service_id,
+                    'description' => $item->description,
+                    'quantity' => -1 * abs((float) $item->quantity),
+                    'price' => $item->price,
+                ]);
+            }
+
+            return $credit;
+        });
+
+        return redirect()->route('invoices.edit', $credit->id)->with('status', 'credit-note-created');
+    }
+
+    public function sendReminder(Request $request, $invoice): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)
+            ->where('company_id', $activeCompany?->id)
+            ->with(['customer', 'items.service', 'company.companySetting'])
+            ->firstOrFail();
+
+        $request->validate([
+            'message' => ['nullable', 'string'],
+            'email' => ['required', 'email'],
+        ]);
+
+        Mail::to($request->input('email'))->send(new InvoiceReminder(
+            $invoice,
+            $request->input('message', '')
+        ));
+
+        return back()->with('status', 'reminder-sent');
+    }
+
+    public function createMollieCheckout(Request $request, $invoice, MolliePaymentService $mollie): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)
+            ->where('company_id', $activeCompany?->id)
+            ->firstOrFail();
+
+        $url = $mollie->createCheckout($invoice, $activeCompany);
+
+        return redirect()->away($url);
+    }
+
+    public function sendPeppol(Request $request, $invoice, PeppolSendService $peppol): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)
+            ->where('company_id', $activeCompany?->id)
+            ->with(['customer', 'items.service', 'company.companySetting'])
+            ->firstOrFail();
+
+        $peppol->send($invoice);
+
+        return back()->with('status', 'peppol-sent');
+    }
+
+    public function queuePostbode(Request $request, $invoice): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        return back()->with('status', 'postbode-queued');
+    }
+
+    public function configureRecurring(Request $request, $invoice): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)
+            ->where('company_id', $activeCompany?->id)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'is_recurring' => ['required', 'boolean'],
+            'recurring_interval' => ['nullable', 'in:weekly,monthly,yearly'],
+        ]);
+
+        $invoice->update([
+            'is_recurring' => $validated['is_recurring'],
+            'recurring_interval' => $validated['is_recurring'] ? ($validated['recurring_interval'] ?? 'monthly') : null,
+            'next_run_at' => $validated['is_recurring'] ? now()->addMonth() : null,
+        ]);
+
+        return back()->with('status', 'recurring-updated');
+    }
+
     /**
      * Generate invoice number automatically.
      */
@@ -792,5 +1042,23 @@ class InvoiceController extends Controller
         }
         
         return $prefixPattern . $year . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function generateCreditNoteNumber(int $companyId): string
+    {
+        $year = now()->format('Y');
+        $prefix = 'CRN-';
+
+        $last = Invoice::where('company_id', $companyId)
+            ->where('invoice_number', 'like', "{$prefix}{$year}-%")
+            ->orderByDesc('id')
+            ->first();
+
+        $nextNumber = 1;
+        if ($last && preg_match('/'.preg_quote($prefix, '/').'\d{4}-(\d+)/', $last->invoice_number, $matches)) {
+            $nextNumber = (int) $matches[1] + 1;
+        }
+
+        return $prefix.$year.'-'.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 }

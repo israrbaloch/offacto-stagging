@@ -40,6 +40,7 @@ export default function Form({ service = null }) {
         description: service?.description || '',
         price: service?.price ?? '',
         unit: service?.unit || '',
+        billing_mode: service?.billing_mode || 'fixed',
     });
 
     const submit = (e) => {
@@ -95,6 +96,12 @@ export default function Form({ service = null }) {
                             </Field>
                             <Field label="Unit" error={errors.unit}>
                                 <input className={fieldClass} placeholder="hour, piece, project…" value={data.unit} onChange={(e) => setData('unit', e.target.value)} />
+                            </Field>
+                            <Field label="Billing mode" error={errors.billing_mode}>
+                                <select className={fieldClass} value={data.billing_mode} onChange={(e) => setData('billing_mode', e.target.value)}>
+                                    <option value="fixed">Fixed price</option>
+                                    <option value="hourly">Hourly</option>
+                                </select>
                             </Field>
                         </div>
                     </Card>

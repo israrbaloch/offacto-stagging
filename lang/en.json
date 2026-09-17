@@ -355,5 +355,20 @@
     "flash.service-rejected": "Service rejected.",
     "flash.briefing-updated": "Briefing saved.",
     "flash.briefing-deleted": "Briefing deleted.",
-    "flash.briefing-submitted": "Thank you — we will send your quotation."
+    "flash.briefing-submitted": "Thank you — we will send your quotation.",
+
+    "offers.blocks_title": "Quote builder blocks",
+    "offers.blocks_hint": "Add text, images, video links, or tables to the public quotation page.",
+    "offers.email_attachments": "Email and attachments",
+    "offers.email_attachments_hint": "Prepare the message, attach PDFs, and choose legal documents.",
+
+    "invoices.new_title": "New invoice",
+    "invoices.edit_title": "Edit invoice",
+    "invoices.section_basic": "Basic information",
+    "invoices.section_assignment": "Assignment",
+    "invoices.section_lines": "Invoice lines",
+    "invoices.section_copyright": "Copyright",
+    "invoices.section_comments": "Comments",
+    "invoices.section_attachments": "Attachments",
+    "invoices.section_attachments_hint": "PDF files included when sending or downloading."
 }

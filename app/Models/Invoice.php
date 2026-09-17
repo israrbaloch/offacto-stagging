@@ -45,6 +45,13 @@ class Invoice extends Model
         'status',
         'payment_status',
         'ip_transfer_type',
+        'is_recurring',
+        'recurring_interval',
+        'next_run_at',
+        'parent_invoice_id',
+        'peppol_sent_at',
+        'mollie_payment_id',
+        'mollie_checkout_url',
     ];
 
     /**
@@ -57,7 +64,20 @@ class Invoice extends Model
         return [
             'invoice_date' => 'date',
             'due_date' => 'date',
+            'next_run_at' => 'date',
+            'peppol_sent_at' => 'datetime',
+            'is_recurring' => 'boolean',
         ];
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(InvoiceAttachment::class);
+    }
+
+    public function parentInvoice()
+    {
+        return $this->belongsTo(self::class, 'parent_invoice_id');
     }
 
     /**
