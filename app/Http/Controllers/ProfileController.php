@@ -13,7 +13,7 @@ use App\Models\Company;
 use App\Models\CompanyLegalDocument;
 use App\Models\CompanySetting;
 use App\Models\Language;
-use App\Models\NumberingSeries;
+use App\Services\NumberingSeriesService;
 use App\Models\SiteSetting;
 use App\Models\Status;
 use Illuminate\Http\JsonResponse;
@@ -47,9 +47,21 @@ class ProfileController extends Controller
             ]);
         }
 
-        // Get numbering series for the company
-        $numberingSeries = $company 
-            ? NumberingSeries::where('company_id', $company->id)->get()->pluck('name', 'id')
+        $numberingSeriesList = $company
+            ? $company->numberingSeries()->orderBy('name')->get()->map(fn ($series) => [
+                'id' => $series->id,
+                'name' => $series->name,
+                'type' => $series->type,
+                'prefix' => $series->prefix,
+                'year_month' => $series->year_month,
+                'separator' => $series->separator,
+                'digits' => $series->digits,
+                'next_number' => $series->next_number,
+                'use_suffix' => (bool) $series->use_suffix,
+                'suffix' => $series->suffix,
+                'restart_count' => $series->restart_count ?? 'annual',
+                'preview' => app(NumberingSeriesService::class)->preview($series),
+            ])
             : collect();
 
         // Get languages for dropdown
@@ -62,7 +74,8 @@ class ProfileController extends Controller
             'invoiceLogoUrl' => $companySettings?->invoice_logo
                 ? asset('storage/'.$companySettings->invoice_logo)
                 : null,
-            'numberingSeries' => $numberingSeries,
+            'numberingSeriesList' => $numberingSeriesList,
+            'activeNumberingSeriesId' => $companySettings?->numbering_series,
             'languages' => $languages,
             'legalDocuments' => $company
                 ? $company->legalDocuments()->latest()->get()

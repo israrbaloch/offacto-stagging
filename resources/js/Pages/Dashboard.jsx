@@ -57,7 +57,7 @@ export default function Dashboard({
                     <div>
                         <div className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-400">
                             {activeCompany?.company_name || t('dashboard.company_hub')}
-                            {auth?.user?.is_admin
+                            {auth?.user?.is_admin || activeCompany?.subscription_plan
                                 ? ''
                                 : activeCompany?.trial_expired
                                     ? ` · ${t('dashboard.trial_ended')}`

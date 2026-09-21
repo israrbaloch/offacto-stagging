@@ -21,7 +21,7 @@ class CompanyAccess
         $company->loadMissing('statusRelation');
 
         if ($company->isTrialExpired()) {
-            return 'Your 14-day trial has ended. You can still view existing records.';
+            return 'Your 14-day trial has ended. You can still view existing records. Choose a plan on the Upgrade page to continue creating and sending.';
         }
 
         if ($sending && $company->isPendingApproval()) {

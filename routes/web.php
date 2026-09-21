@@ -16,7 +16,9 @@ use App\Http\Controllers\MollieWebhookController;
 use App\Http\Controllers\PublicBriefingController;
 use App\Http\Controllers\PublicOfferController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\NumberingSeriesController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -64,6 +66,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile/legal-documents/{document}', [ProfileController::class, 'destroyLegalDocument'])->name('profile.legal.destroy');
 
     Route::get('/support', fn () => Inertia::render('Support'))->name('support');
+    Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
+    Route::post('/upgrade', [UpgradeController::class, 'store'])->name('upgrade.store');
+
+    Route::post('/profile/numbering-series', [NumberingSeriesController::class, 'store'])->name('profile.numbering-series.store');
+    Route::patch('/profile/numbering-series/{series}', [NumberingSeriesController::class, 'update'])->name('profile.numbering-series.update');
+    Route::delete('/profile/numbering-series/{series}', [NumberingSeriesController::class, 'destroy'])->name('profile.numbering-series.destroy');
+    Route::post('/profile/numbering-series/{series}/default', [NumberingSeriesController::class, 'setDefault'])->name('profile.numbering-series.default');
     Route::get('/settings', [ProfileController::class, 'edit'])->name('settings');
     Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
 

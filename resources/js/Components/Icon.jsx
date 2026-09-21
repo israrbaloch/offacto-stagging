@@ -117,6 +117,12 @@ export default function Icon({ name, className = 'h-[18px] w-[18px]' }) {
                 <circle cx="16.5" cy="10" r=".8" fill="currentColor" />
             </>
         ),
+        clock: (
+            <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+            </>
+        ),
         scale: (
             <>
                 <path d="M12 3v18" />
@@ -157,6 +163,13 @@ export default function Icon({ name, className = 'h-[18px] w-[18px]' }) {
                 <path d="M19 6l-1 14H6L5 6" />
                 <path d="M10 11v6" />
                 <path d="M14 11v6" />
+            </>
+        ),
+        'dots-vertical': (
+            <>
+                <circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none" />
             </>
         ),
     };

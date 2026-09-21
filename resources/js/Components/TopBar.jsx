@@ -83,13 +83,28 @@ export default function TopBar() {
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                 {activeCompany && !auth?.user?.is_admin && (
-                    <span className={`hidden rounded-full px-3 py-1 text-xs font-medium sm:inline ${
-                        activeCompany.trial_expired ? 'bg-rose-50 text-rose-700' : 'bg-indigo-50 text-indigo-700'
-                    }`}>
-                        {activeCompany.trial_expired
-                            ? t('topbar.trial_ended')
-                            : t('topbar.trial_left', { days: activeCompany.trial_days_left ?? 0 })}
-                    </span>
+                    activeCompany.subscription_plan ? (
+                        <Link
+                            href="/upgrade"
+                            className="hidden rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100 sm:inline"
+                        >
+                            {t(`upgrade.plans.${activeCompany.subscription_plan}.name`)}
+                        </Link>
+                    ) : activeCompany.trial_expired ? (
+                        <Link
+                            href="/upgrade"
+                            className="hidden rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100 sm:inline"
+                        >
+                            {t('topbar.trial_ended')} · {t('layout.upgrade_now')}
+                        </Link>
+                    ) : (
+                        <Link
+                            href="/upgrade"
+                            className="hidden rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 sm:inline"
+                        >
+                            {t('topbar.trial_left', { days: activeCompany.trial_days_left ?? 0 })}
+                        </Link>
+                    )
                 )}
                 <button
                     type="button"

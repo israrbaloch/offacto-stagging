@@ -1,4 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import I18nSync from '../Components/I18nSync';
 import Sidebar from '../Components/Sidebar';
@@ -28,7 +28,10 @@ export default function AuthenticatedLayout({ title, children }) {
                     <TopBar />
                     {activeCompany?.trial_expired && !auth?.user?.is_admin && (
                         <div className="border-b border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700 lg:px-8">
-                            {t('layout.trial_expired')}
+                            {t('layout.trial_expired')}{' '}
+                            <Link href="/upgrade" className="font-semibold underline underline-offset-2 hover:text-rose-900">
+                                {t('layout.upgrade_now')}
+                            </Link>
                         </div>
                     )}
                     {flash?.error && (

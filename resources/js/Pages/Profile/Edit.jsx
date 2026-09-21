@@ -1,39 +1,31 @@
-import { router, useForm } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Icon from '../../Components/Icon';
+import NumberingSeriesEditor from '../../Components/NumberingSeriesEditor';
 import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
-import { t } from '../../lib/i18n';
+import { localeTag, t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
 const fieldClass =
     'w-full rounded-xl border border-indigo-100 bg-indigo-50/80 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
 
-function addressValue(company) {
-    const line1 = [company?.street, company?.house].filter(Boolean).join(' ');
-    const line2 = [company?.postal_code, company?.city].filter(Boolean).join(' ');
-    return [line1, line2].filter(Boolean).join('\n');
+function Field({ label, error, children }) {
+    return (
+        <label className="block">
+            <span className={labelClass}>{label}</span>
+            {children}
+            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
+        </label>
+    );
 }
 
-function parseAddress(text) {
-    const lines = String(text || '')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean);
-    if (!lines.length) {
-        return { street: '', house: '', postal_code: '', city: '' };
-    }
-    if (lines.length === 1) {
-        return { street: lines[0], house: '', postal_code: '', city: '' };
-    }
-    const last = lines[lines.length - 1];
-    const street = lines.slice(0, -1).join(', ');
-    const match = last.match(/^(\S+)\s+(.+)$/);
-    if (match) {
-        return { street, house: '', postal_code: match[1], city: match[2] };
-    }
-    return { street, house: '', postal_code: '', city: last };
+function formatTrialDate(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(localeTag(), { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function Card({ icon, title, action, children, className = '' }) {
@@ -72,10 +64,12 @@ export default function Edit({
     company,
     companySettings,
     invoiceLogoUrl,
-    numberingSeries = {},
+    numberingSeriesList = [],
+    activeNumberingSeriesId = null,
     languages = {},
     legalDocuments = [],
 }) {
+    const { activeCompany } = usePage().props;
     const [addingLegal, setAddingLegal] = useState(false);
     const [logoPreview, setLogoPreview] = useState(invoiceLogoUrl || null);
 
@@ -96,10 +90,8 @@ export default function Edit({
         city: company?.city || '',
         language: company?.language || '',
         self_employed_activity: company?.self_employed_activity || '',
-        address: addressValue(company),
     });
     const settings = useForm({
-        numbering_series: companySettings?.numbering_series || Object.keys(numberingSeries)[0] || '',
         theme: {
             primary: companySettings?.theme?.primary || '#4054b2',
             secondary: companySettings?.theme?.secondary || '#94a3b8',
@@ -115,13 +107,9 @@ export default function Edit({
 
     const saveCompany = (e) => {
         e.preventDefault();
-        const parsed = parseAddress(companyForm.data.address);
         companyForm.transform((data) => ({
             ...data,
-            street: parsed.street || data.street,
-            house: parsed.house || data.house || '-',
-            postal_code: parsed.postal_code || data.postal_code,
-            city: parsed.city || data.city,
+            house: data.house?.trim() || '-',
         }));
         companyForm.patch('/profile/company');
     };
@@ -181,36 +169,70 @@ export default function Edit({
 
                     <Card icon="building" title={t('profile.company_info')}>
                         {company ? (
-                            <form onSubmit={saveCompany} className="space-y-4">
-                                <label className="block">
-                                    <span className={labelClass}>{t('companies.name')}</span>
+                            <form onSubmit={saveCompany} className="space-y-5">
+                                <Field label={t('companies.name')} error={companyForm.errors.company_name}>
                                     <input className={fieldClass} value={companyForm.data.company_name} onChange={(e) => companyForm.setData('company_name', e.target.value)} />
-                                    {companyForm.errors.company_name && <span className="mt-1 block text-xs text-rose-600">{companyForm.errors.company_name}</span>}
-                                </label>
-                                <label className="block">
-                                    <span className={labelClass}>{t('companies.address')}</span>
-                                    <textarea
-                                        rows={3}
-                                        className={fieldClass}
-                                        value={companyForm.data.address}
-                                        onChange={(e) => companyForm.setData('address', e.target.value)}
-                                    />
-                                </label>
+                                </Field>
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <label className="block">
-                                        <span className={labelClass}>{t('companies.vat')}</span>
-                                        <input className={fieldClass} value={companyForm.data.vat_number} onChange={(e) => companyForm.setData('vat_number', e.target.value)} />
-                                    </label>
-                                    <label className="block">
-                                        <span className={labelClass}>{t('companies.language')}</span>
-                                        <SelectMenu
-                                            value={companyForm.data.language}
-                                            onChange={(e) => companyForm.setData('language', e.target.value)}
-                                            options={optionsFromMap(languages)}
-                                            placeholder={t('common.select')}
-                                            className={fieldClass}
-                                        />
-                                    </label>
+                                    <Field label={t('companies.first_name')} error={companyForm.errors.first_name}>
+                                        <input className={fieldClass} value={companyForm.data.first_name} onChange={(e) => companyForm.setData('first_name', e.target.value)} />
+                                    </Field>
+                                    <Field label={t('companies.surname')} error={companyForm.errors.surname}>
+                                        <input className={fieldClass} value={companyForm.data.surname} onChange={(e) => companyForm.setData('surname', e.target.value)} />
+                                    </Field>
+                                </div>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <Field label={t('profile.company_email')} error={companyForm.errors.email}>
+                                        <input type="email" className={fieldClass} value={companyForm.data.email} onChange={(e) => companyForm.setData('email', e.target.value)} />
+                                    </Field>
+                                    <Field label={t('profile.company_phone')} error={companyForm.errors.phone}>
+                                        <input className={fieldClass} value={companyForm.data.phone} onChange={(e) => companyForm.setData('phone', e.target.value)} />
+                                    </Field>
+                                </div>
+                                <Field label={t('companies.vat')} error={companyForm.errors.vat_number}>
+                                    <input className={fieldClass} value={companyForm.data.vat_number} onChange={(e) => companyForm.setData('vat_number', e.target.value)} />
+                                </Field>
+                                <Field label={t('companies.activity')} error={companyForm.errors.self_employed_activity}>
+                                    <SelectMenu
+                                        value={companyForm.data.self_employed_activity}
+                                        onChange={(e) => companyForm.setData('self_employed_activity', e.target.value)}
+                                        placeholder={t('common.optional')}
+                                        className={fieldClass}
+                                        options={[
+                                            { value: 'main_profession', label: t('companies.main_profession') },
+                                            { value: 'secondary_profession', label: t('companies.secondary_profession') },
+                                        ]}
+                                    />
+                                </Field>
+                                <div className="border-t border-slate-100 pt-4">
+                                    <p className="mb-3 text-sm font-medium text-slate-800">{t('companies.address')}</p>
+                                    <div className="space-y-4">
+                                        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem]">
+                                            <Field label={t('companies.street')} error={companyForm.errors.street}>
+                                                <input className={fieldClass} value={companyForm.data.street} onChange={(e) => companyForm.setData('street', e.target.value)} />
+                                            </Field>
+                                            <Field label={t('companies.house')} error={companyForm.errors.house}>
+                                                <input className={fieldClass} value={companyForm.data.house} onChange={(e) => companyForm.setData('house', e.target.value)} />
+                                            </Field>
+                                        </div>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <Field label={t('companies.postal')} error={companyForm.errors.postal_code}>
+                                                <input className={fieldClass} value={companyForm.data.postal_code} onChange={(e) => companyForm.setData('postal_code', e.target.value)} />
+                                            </Field>
+                                            <Field label={t('companies.city')} error={companyForm.errors.city}>
+                                                <input className={fieldClass} value={companyForm.data.city} onChange={(e) => companyForm.setData('city', e.target.value)} />
+                                            </Field>
+                                        </div>
+                                        <Field label={t('companies.language')} error={companyForm.errors.language}>
+                                            <SelectMenu
+                                                value={companyForm.data.language}
+                                                onChange={(e) => companyForm.setData('language', e.target.value)}
+                                                options={optionsFromMap(languages)}
+                                                placeholder={t('common.select')}
+                                                className={fieldClass}
+                                            />
+                                        </Field>
+                                    </div>
                                 </div>
                                 <div className="flex justify-end pt-2">
                                     <button type="submit" disabled={companyForm.processing} className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
@@ -225,9 +247,63 @@ export default function Edit({
                             </p>
                         )}
                     </Card>
+
+                    <Card icon="document" title={t('numbering.title')}>
+                        <NumberingSeriesEditor
+                            series={numberingSeriesList}
+                            activeSeriesId={activeNumberingSeriesId}
+                            company={company}
+                        />
+                    </Card>
                 </div>
 
                 <div className="space-y-6">
+                    {company && (
+                        <Card icon="clock" title={t('profile.trial_plan')}>
+                            <div className="space-y-4">
+                                <div
+                                    className={`rounded-2xl px-4 py-3 text-sm ${
+                                        activeCompany?.subscription_plan
+                                            ? 'bg-emerald-50 text-emerald-900'
+                                            : activeCompany?.trial_expired
+                                              ? 'bg-rose-50 text-rose-800'
+                                              : 'bg-indigo-50 text-indigo-900'
+                                    }`}
+                                >
+                                    <div className="font-semibold">
+                                        {activeCompany?.subscription_plan
+                                            ? t('upgrade.active_plan', {
+                                                  plan: t(`upgrade.plans.${activeCompany.subscription_plan}.name`),
+                                              })
+                                            : activeCompany?.trial_expired
+                                              ? t('profile.trial_expired_title')
+                                              : t('profile.trial_active_title', {
+                                                    days: activeCompany?.trial_days_left ?? 0,
+                                                })}
+                                    </div>
+                                    {!activeCompany?.subscription_plan && (
+                                        <p className="mt-1 text-xs opacity-90">
+                                            {t('profile.trial_period', {
+                                                start: formatTrialDate(activeCompany?.trial_starts_at || company?.trial_starts_at),
+                                                end: formatTrialDate(activeCompany?.trial_ends_at || company?.trial_ends_at),
+                                            })}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                    <p className="font-medium text-slate-800">{t('profile.plan_teaser_title')}</p>
+                                    <p className="mt-1">{t('profile.plan_teaser_body')}</p>
+                                    <Link
+                                        href="/upgrade"
+                                        className="mt-3 inline-flex text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                                    >
+                                        {activeCompany?.trial_expired ? t('profile.upgrade_now') : t('profile.upgrade_cta')} →
+                                    </Link>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
                     <Card icon="palette" title={t('profile.branding')}>
                         <div className="space-y-5">
                             <div>
@@ -280,6 +356,18 @@ export default function Edit({
                                     ))}
                                 </div>
                             </div>
+                            {company && (
+                                <div className="flex justify-end border-t border-slate-100 pt-4">
+                                    <button
+                                        type="button"
+                                        disabled={settings.processing}
+                                        onClick={() => saveBranding()}
+                                        className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+                                    >
+                                        {t('profile.save_branding')}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </Card>
 

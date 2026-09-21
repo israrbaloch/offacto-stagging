@@ -64,19 +64,7 @@ class GenerateRecurringInvoices extends Command
 
     private function nextNumber(Invoice $template): string
     {
-        $year = now()->format('Y');
-        $prefix = rtrim((string) config('app.invoice_prefix', 'INV-'), '-');
-        $last = Invoice::where('company_id', $template->company_id)
-            ->where('invoice_number', 'like', "{$prefix}{$year}-%")
-            ->orderByDesc('id')
-            ->first();
-
-        $next = 1;
-        if ($last && preg_match('/'.preg_quote($prefix, '/').'\d{4}-(\d+)/', $last->invoice_number, $matches)) {
-            $next = (int) $matches[1] + 1;
-        }
-
-        return $prefix.$year.'-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        return app(\App\Services\NumberingSeriesService::class)->nextForCompany($template->company_id, 'invoices');
     }
 
     private function nextRunDate(?string $interval): \Illuminate\Support\Carbon

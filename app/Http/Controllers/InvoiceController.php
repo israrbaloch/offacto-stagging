@@ -17,6 +17,7 @@ use App\Models\Offer;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
+use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Services\MolliePaymentService;
 use App\Services\PdfZipExportService;
@@ -1023,42 +1024,11 @@ class InvoiceController extends Controller
      */
     private function generateInvoiceNumber(int $companyId): string
     {
-        $year = now()->format('Y');
-        $prefix = SiteSetting::get('invoice_prefix', 'INV-');
-        
-        // Ensure prefix ends with a separator for pattern matching
-        $prefixPattern = rtrim($prefix, '-');
-        
-        // Get the last invoice number for this company and year
-        $lastInvoice = Invoice::where('company_id', $companyId)
-            ->where('invoice_number', 'like', "{$prefixPattern}{$year}-%")
-            ->orderBy('id', 'desc')
-            ->first();
-        
-        if ($lastInvoice && preg_match('/' . preg_quote($prefixPattern, '/') . '\d{4}-(\d+)/', $lastInvoice->invoice_number, $matches)) {
-            $nextNumber = (int)$matches[1] + 1;
-        } else {
-            $nextNumber = 1;
-        }
-        
-        return $prefixPattern . $year . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        return app(NumberingSeriesService::class)->nextForCompany($companyId, 'invoices');
     }
 
     private function generateCreditNoteNumber(int $companyId): string
     {
-        $year = now()->format('Y');
-        $prefix = 'CRN-';
-
-        $last = Invoice::where('company_id', $companyId)
-            ->where('invoice_number', 'like', "{$prefix}{$year}-%")
-            ->orderByDesc('id')
-            ->first();
-
-        $nextNumber = 1;
-        if ($last && preg_match('/'.preg_quote($prefix, '/').'\d{4}-(\d+)/', $last->invoice_number, $matches)) {
-            $nextNumber = (int) $matches[1] + 1;
-        }
-
-        return $prefix.$year.'-'.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+        return app(NumberingSeriesService::class)->nextForCompany($companyId, 'credit_notes');
     }
 }

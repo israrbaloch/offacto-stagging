@@ -15,6 +15,7 @@ use App\Models\OfferItem;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
+use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Services\PdfZipExportService;
 use App\Support\OfferMessage;
@@ -745,24 +746,6 @@ class OfferController extends Controller
      */
     private function generateOfferNumber(int $companyId): string
     {
-        $year = now()->format('Y');
-        $prefix = SiteSetting::get('offer_prefix', 'OFF-');
-        
-        // Ensure prefix ends with a separator for pattern matching
-        $prefixPattern = rtrim($prefix, '-');
-        
-        // Get the last offer number for this company and year
-        $lastOffer = Offer::where('company_id', $companyId)
-            ->where('offer_number', 'like', "{$prefixPattern}{$year}-%")
-            ->orderBy('id', 'desc')
-            ->first();
-        
-        if ($lastOffer && preg_match('/' . preg_quote($prefixPattern, '/') . '\d{4}-(\d+)/', $lastOffer->offer_number, $matches)) {
-            $nextNumber = (int)$matches[1] + 1;
-        } else {
-            $nextNumber = 1;
-        }
-        
-        return $prefixPattern . $year . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        return app(NumberingSeriesService::class)->nextForCompany($companyId, 'offers');
     }
 }

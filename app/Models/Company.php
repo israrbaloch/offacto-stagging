@@ -34,6 +34,8 @@ class Company extends Model
         'approved_by',
         'trial_starts_at',
         'trial_ends_at',
+        'subscription_plan',
+        'subscription_started_at',
     ];
 
     /**
@@ -46,6 +48,7 @@ class Company extends Model
         'approved_at' => 'datetime',
         'trial_starts_at' => 'datetime',
         'trial_ends_at' => 'datetime',
+        'subscription_started_at' => 'datetime',
     ];
 
     /**
@@ -291,8 +294,17 @@ class Company extends Model
         ])->save();
     }
 
+    public function hasActiveSubscription(): bool
+    {
+        return filled($this->subscription_plan);
+    }
+
     public function isTrialExpired(): bool
     {
+        if ($this->hasActiveSubscription()) {
+            return false;
+        }
+
         return $this->trial_ends_at && $this->trial_ends_at->isPast();
     }
 
@@ -315,11 +327,12 @@ class Company extends Model
                 'company_id' => $this->id,
                 'name' => 'Default-'.$this->id,
                 'type' => 'both',
-                'prefix' => 'OFF',
+                'prefix' => 'OFF_',
                 'year_month' => 'year',
                 'separator' => '-',
                 'digits' => '4',
                 'next_number' => '1',
+                'restart_count' => 'annual',
             ]);
         }
 

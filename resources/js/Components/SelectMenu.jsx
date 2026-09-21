@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from './Icon';
 
 export default function SelectMenu({
@@ -13,6 +14,7 @@ export default function SelectMenu({
 }) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
+    const [menuStyle, setMenuStyle] = useState(null);
     const rootRef = useRef(null);
     const searchRef = useRef(null);
     const enableSearch = searchable ?? options.length > 8;
@@ -27,11 +29,25 @@ export default function SelectMenu({
     useEffect(() => {
         if (!open) {
             setQuery('');
+            setMenuStyle(null);
             return undefined;
         }
+
+        const updatePosition = () => {
+            if (!rootRef.current) return;
+            const rect = rootRef.current.getBoundingClientRect();
+            setMenuStyle({
+                top: rect.bottom + 8,
+                left: rect.left,
+                width: Math.max(rect.width, 220),
+            });
+        };
+
+        updatePosition();
         const timer = setTimeout(() => searchRef.current?.focus(), 0);
         const onPointer = (event) => {
-            if (!rootRef.current?.contains(event.target)) {
+            const menu = document.getElementById('select-menu-portal');
+            if (!rootRef.current?.contains(event.target) && !menu?.contains(event.target)) {
                 setOpen(false);
             }
         };
@@ -40,10 +56,14 @@ export default function SelectMenu({
         };
         document.addEventListener('mousedown', onPointer);
         document.addEventListener('keydown', onKey);
+        window.addEventListener('scroll', updatePosition, true);
+        window.addEventListener('resize', updatePosition);
         return () => {
             clearTimeout(timer);
             document.removeEventListener('mousedown', onPointer);
             document.removeEventListener('keydown', onKey);
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
         };
     }, [open]);
 
@@ -65,8 +85,12 @@ export default function SelectMenu({
                 <Icon name="chevron" className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
             </button>
 
-            {open && (
-                <div className="absolute z-40 mt-2 w-full min-w-[220px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+            {open && menuStyle && typeof document !== 'undefined' && createPortal(
+                <div
+                    id="select-menu-portal"
+                    style={{ position: 'fixed', top: menuStyle.top, left: menuStyle.left, width: menuStyle.width, zIndex: 9999 }}
+                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+                >
                     {enableSearch && (
                         <div className="border-b border-slate-100 p-2">
                             <input
@@ -106,7 +130,8 @@ export default function SelectMenu({
                             );
                         })}
                     </div>
-                </div>
+                </div>,
+                document.body,
             )}
         </div>
     );

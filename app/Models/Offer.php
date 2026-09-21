@@ -147,21 +147,6 @@ class Offer extends Model
 
     public static function nextNumber(int $companyId): string
     {
-        $year = now()->format('Y');
-        $prefix = SiteSetting::get('offer_prefix', 'OFF-');
-        $prefixPattern = rtrim($prefix, '-');
-
-        $lastOffer = static::where('company_id', $companyId)
-            ->where('offer_number', 'like', "{$prefixPattern}{$year}-%")
-            ->orderBy('id', 'desc')
-            ->first();
-
-        if ($lastOffer && preg_match('/'.preg_quote($prefixPattern, '/').'\d{4}-(\d+)/', $lastOffer->offer_number, $matches)) {
-            $nextNumber = (int) $matches[1] + 1;
-        } else {
-            $nextNumber = 1;
-        }
-
-        return $prefixPattern.$year.'-'.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+        return app(\App\Services\NumberingSeriesService::class)->nextForCompany($companyId, 'offers');
     }
 }
