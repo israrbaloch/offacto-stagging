@@ -11,7 +11,9 @@ class BriefingQuestion extends Model
     public const TYPE_LONG_TEXT = 'long_text';
     public const TYPE_YES_NO = 'yes_no';
     public const TYPE_SINGLE_CHOICE = 'single_choice';
+    public const TYPE_MULTIPLE_CHOICE = 'multiple_choice';
     public const TYPE_QUANTITY = 'quantity';
+    public const TYPE_FILE_UPLOAD = 'file_upload';
 
     protected $fillable = [
         'briefing_id',
@@ -52,7 +54,9 @@ class BriefingQuestion extends Model
             self::TYPE_LONG_TEXT => 'Long text',
             self::TYPE_YES_NO => 'Yes / No',
             self::TYPE_SINGLE_CHOICE => 'Single choice',
+            self::TYPE_MULTIPLE_CHOICE => 'Multiple choice',
             self::TYPE_QUANTITY => 'Quantity',
+            self::TYPE_FILE_UPLOAD => 'File upload',
         ];
     }
 }

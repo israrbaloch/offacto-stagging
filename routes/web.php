@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::put('briefings/{briefing}', [BriefingController::class, 'update'])->name('briefings.update');
     Route::delete('briefings/{briefing}', [BriefingController::class, 'destroy'])->name('briefings.destroy');
     Route::get('briefings/{briefing}/responses', [BriefingController::class, 'responses'])->name('briefings.responses');
+    Route::post('briefings/{briefing}/responses/{response}/generate-quote', [BriefingController::class, 'generateQuote'])->name('briefings.responses.generate-quote');
 
     // Offers
     Route::get('offers/export-zip', [OfferController::class, 'exportZip'])->name('offers.export-zip');

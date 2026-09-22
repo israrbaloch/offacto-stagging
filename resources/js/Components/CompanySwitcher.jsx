@@ -12,6 +12,24 @@ function initials(name = '') {
         .join('') || '—';
 }
 
+function CompanyAvatar({ company, active = false }) {
+    if (company?.logo_url) {
+        return (
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ${active ? 'ring-2 ring-indigo-200' : ''}`}>
+                <img src={company.logo_url} alt="" className="h-full w-full object-contain p-0.5" />
+            </span>
+        );
+    }
+
+    return (
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-semibold ${
+            active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+        }`}>
+            {initials(company?.company_name)}
+        </span>
+    );
+}
+
 export default function CompanySwitcher() {
     const { companies, activeCompany } = usePage().props;
     const [open, setOpen] = useState(false);
@@ -46,9 +64,7 @@ export default function CompanySwitcher() {
                 onClick={() => setOpen((value) => !value)}
                 className="flex w-full items-center gap-2.5 rounded-2xl border border-indigo-100/80 bg-white px-2.5 py-2 text-left shadow-sm shadow-indigo-100/40 transition hover:border-indigo-200 hover:shadow"
             >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-[11px] font-semibold text-white">
-                    {initials(current?.company_name)}
-                </span>
+                <CompanyAvatar company={current} active />
                 <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-slate-800">{current?.company_name || t('company.switcher.select')}</span>
                     <span className="block text-[11px] text-slate-400">{current?.is_active === false ? t('common.inactive') : t('common.workspace')}</span>
@@ -74,11 +90,7 @@ export default function CompanySwitcher() {
                                     active ? 'bg-indigo-50' : 'hover:bg-slate-50'
                                 }`}
                             >
-                                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-semibold ${
-                                    active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
-                                }`}>
-                                    {initials(company.company_name)}
-                                </span>
+                                <CompanyAvatar company={company} active={active} />
                                 <span className="min-w-0 flex-1">
                                     <span className={`block truncate text-sm ${active ? 'font-semibold text-indigo-700' : 'font-medium text-slate-700'}`}>
                                         {company.company_name}

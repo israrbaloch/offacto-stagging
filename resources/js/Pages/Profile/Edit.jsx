@@ -97,6 +97,7 @@ export default function Edit({
             secondary: companySettings?.theme?.secondary || '#94a3b8',
         },
         invoice_logo: null,
+        logo_in_emails: companySettings?.logo_in_emails ?? true,
     });
     const destroy = useForm({ password: '' });
 
@@ -331,6 +332,18 @@ export default function Edit({
                                         }}
                                     />
                                 </label>
+                                <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!settings.data.logo_in_emails}
+                                        onChange={(e) => {
+                                            settings.setData('logo_in_emails', e.target.checked);
+                                            saveBranding({ logo_in_emails: e.target.checked });
+                                        }}
+                                    />
+                                    {t('profile.logo_in_emails')}
+                                </label>
+                                <p className="mt-1 text-xs text-slate-400">{t('profile.logo_in_emails_hint')}</p>
                             </div>
                             <div>
                                 <span className={labelClass}>{t('profile.theme_colors')}</span>

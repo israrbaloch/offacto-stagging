@@ -37,9 +37,10 @@ class OfferSent extends Mailable
 
     public function content(): Content
     {
-        $theme = is_array($this->offer->company?->companySetting?->theme)
-            ? $this->offer->company->companySetting->theme
-            : [];
+        $settings = $this->offer->company?->companySetting;
+        $theme = is_array($settings?->theme) ? $settings->theme : [];
+        $showLogo = (bool) ($settings?->logo_in_emails ?? true)
+            && filled($settings?->invoice_logo);
 
         return new Content(
             view: 'emails.offer-sent',
@@ -47,6 +48,8 @@ class OfferSent extends Mailable
                 'offer' => $this->offer,
                 'customMessage' => $this->message,
                 'primaryColor' => $theme['primary'] ?? '#4054b2',
+                'secondaryColor' => $theme['secondary'] ?? '#0f172a',
+                'companyLogoUrl' => $showLogo ? asset('storage/'.$settings->invoice_logo) : null,
             ],
         );
     }

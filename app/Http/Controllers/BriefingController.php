@@ -7,6 +7,8 @@ use App\Models\Briefing;
 use App\Models\BriefingQuestion;
 use App\Models\Customer;
 use App\Models\Service;
+use App\Models\BriefingResponse;
+use App\Services\BriefingQuoteGenerator;
 use App\Support\CompanyAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -154,13 +156,62 @@ class BriefingController extends Controller
 
         $briefing->load(['customer']);
         $responses = $briefing->responses()
-            ->with(['offer.statusRelation', 'customer'])
+            ->with(['offer.statusRelation', 'customer', 'answers.question'])
             ->latest('submitted_at')
-            ->get();
+            ->get()
+            ->map(fn (BriefingResponse $response) => [
+                'id' => $response->id,
+                'respondent_name' => $response->respondent_name,
+                'respondent_email' => $response->respondent_email,
+                'submitted_at' => $response->submitted_at?->toIso8601String(),
+                'customer' => $response->customer,
+                'offer' => $response->offer ? [
+                    'id' => $response->offer->id,
+                    'offer_number' => $response->offer->offer_number,
+                    'status_relation' => $response->offer->statusRelation ? [
+                        'name' => $response->offer->statusRelation->name,
+                    ] : null,
+                ] : null,
+                'answers' => $response->answers->map(fn ($answer) => [
+                    'id' => $answer->id,
+                    'question_label' => $answer->question?->label,
+                    'question_type' => $answer->question?->type,
+                    'display' => app(BriefingQuoteGenerator::class)->formatAnswerForDisplay($answer),
+                    'file_name' => $answer->value['original_name'] ?? null,
+                ]),
+            ]);
 
         return Inertia::render('Briefings/Responses', [
             'briefing' => $briefing,
             'responses' => $responses,
+            'autoGenerateOffer' => $briefing->auto_generate_offer,
         ]);
+    }
+
+    public function generateQuote(Request $request, Briefing $briefing, BriefingResponse $response, BriefingQuoteGenerator $generator): RedirectResponse
+    {
+        $company = $request->user()?->activeCompany();
+        if (! $company || $briefing->company_id !== $company->id || $response->briefing_id !== $briefing->id) {
+            abort(403);
+        }
+
+        if ($deny = CompanyAccess::denyWrite($request->user(), $company)) {
+            return $deny;
+        }
+
+        if ($response->offer_id) {
+            return redirect()->route('offers.edit', $response->offer_id)
+                ->with('status', 'briefing-quote-exists');
+        }
+
+        $response->load(['answers.question', 'briefing.questions.service']);
+        $offer = $generator->generate($response, manual: true);
+
+        if (! $offer) {
+            return back()->with('error', 'Could not generate a quotation. Add priced answers or assign a customer first.');
+        }
+
+        return redirect()->route('offers.edit', $offer)
+            ->with('status', 'briefing-quote-generated');
     }
 }

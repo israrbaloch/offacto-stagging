@@ -92,6 +92,7 @@ class PublicOfferController extends Controller
     private function payload(Offer $offer): array
     {
         $settings = $offer->company?->companySetting;
+        $theme = is_array($settings?->theme) ? $settings->theme : [];
 
         return [
             'id' => $offer->id,
@@ -109,6 +110,10 @@ class PublicOfferController extends Controller
             'company' => [
                 'name' => $offer->company?->company_name,
                 'logo_url' => $settings?->invoice_logo ? asset('storage/'.$settings->invoice_logo) : null,
+                'theme' => [
+                    'primary' => $theme['primary'] ?? '#4054b2',
+                    'secondary' => $theme['secondary'] ?? '#0f172a',
+                ],
             ],
             'customer' => [
                 'name' => $offer->customer?->org_name
@@ -117,7 +122,7 @@ class PublicOfferController extends Controller
             'items' => $offer->items->map(fn ($item) => [
                 'description' => $item->description,
                 'quantity' => $item->quantity,
-                'unit_price' => $item->unit_price,
+                'unit_price' => $item->price,
                 'total' => $item->total,
             ]),
             'blocks' => $offer->blocks?->map(fn ($block) => [

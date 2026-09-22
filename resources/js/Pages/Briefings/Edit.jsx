@@ -18,7 +18,7 @@ function emptyQuestion(type = 'short_text') {
         required: false,
         service_id: '',
         price_override: '',
-        options: type === 'single_choice' ? [{ label: '', price: '', service_id: '' }] : [],
+        options: ['single_choice', 'multiple_choice'].includes(type) ? [{ label: '', price: '', service_id: '' }] : [],
     };
 }
 
@@ -66,7 +66,11 @@ export default function Edit({ briefing, customers = {}, services = [], question
                     ? {
                           ...question,
                           type,
-                          options: type === 'single_choice' ? question.options?.length ? question.options : [{ label: '', price: '', service_id: '' }] : [],
+                          options: ['single_choice', 'multiple_choice'].includes(type)
+                              ? question.options?.length
+                                  ? question.options
+                                  : [{ label: '', price: '', service_id: '' }]
+                              : [],
                       }
                     : question,
             ),
@@ -111,7 +115,8 @@ export default function Edit({ briefing, customers = {}, services = [], question
         }
     };
 
-    const priced = (type) => ['yes_no', 'single_choice', 'quantity'].includes(type);
+    const priced = (type) => ['yes_no', 'single_choice', 'multiple_choice', 'quantity'].includes(type);
+    const hasChoices = (type) => ['single_choice', 'multiple_choice'].includes(type);
 
     return (
         <AuthenticatedLayout title={form.data.title || 'Briefing'}>
@@ -250,7 +255,7 @@ export default function Edit({ briefing, customers = {}, services = [], question
                                             </label>
                                         </>
                                     )}
-                                    {priced(question.type) && question.type !== 'single_choice' && (
+                                    {priced(question.type) && !hasChoices(question.type) && (
                                         <>
                                             <label className="block">
                                                 <span className={labelClass}>Linked service</span>
@@ -269,9 +274,11 @@ export default function Edit({ briefing, customers = {}, services = [], question
                                         </>
                                     )}
                                 </div>
-                                {question.type === 'single_choice' && (
+                                {hasChoices(question.type) && (
                                     <div className="mt-4 space-y-3">
-                                        <div className="text-sm font-medium text-slate-800">Choices</div>
+                                        <div className="text-sm font-medium text-slate-800">
+                                            {question.type === 'multiple_choice' ? 'Choices (sum selected prices)' : 'Choices'}
+                                        </div>
                                         {(question.options || []).map((option, optionIndex) => (
                                             <div key={optionIndex} className="grid gap-3 md:grid-cols-3">
                                                 <input

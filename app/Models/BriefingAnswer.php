@@ -10,6 +10,7 @@ class BriefingAnswer extends Model
         'response_id',
         'question_id',
         'value',
+        'file_path',
     ];
 
     protected function casts(): array

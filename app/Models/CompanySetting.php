@@ -17,6 +17,7 @@ class CompanySetting extends Model
     protected $fillable = [
         'company_id',
         'invoice_logo',
+        'logo_in_emails',
         'theme',
         'numbering_series',
     ];
@@ -29,7 +30,8 @@ class CompanySetting extends Model
     protected function casts(): array
     {
         return [
-            'theme' => 'array', // Will return null if database value is null
+            'theme' => 'array',
+            'logo_in_emails' => 'boolean',
         ];
     }
 

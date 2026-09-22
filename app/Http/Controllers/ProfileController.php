@@ -270,6 +270,9 @@ class ProfileController extends Controller
         }
 
         $data = $request->validated();
+        if ($request->has('logo_in_emails')) {
+            $data['logo_in_emails'] = $request->boolean('logo_in_emails');
+        }
 
         // Handle file upload
         if ($request->hasFile('invoice_logo')) {

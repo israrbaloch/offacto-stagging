@@ -17,6 +17,8 @@ class SubmitBriefingRequest extends FormRequest
             'respondent_name' => ['required', 'string', 'max:255'],
             'respondent_email' => ['required', 'email', 'max:255'],
             'answers' => ['nullable', 'array'],
+            'answer_files' => ['nullable', 'array'],
+            'answer_files.*' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,gif,webp,doc,docx'],
         ];
     }
 }

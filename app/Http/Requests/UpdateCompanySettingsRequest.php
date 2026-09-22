@@ -24,6 +24,7 @@ class UpdateCompanySettingsRequest extends FormRequest
     {
         return [
             'invoice_logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
+            'logo_in_emails' => ['sometimes', 'boolean'],
             'theme' => ['nullable', 'array'],
             'theme.primary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'theme.secondary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],

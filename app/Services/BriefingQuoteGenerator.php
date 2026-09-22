@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\BriefingAnswer;
 use App\Models\BriefingQuestion;
 use App\Models\BriefingResponse;
-use App\Models\Customer;
 use App\Models\Offer;
+use App\Models\OfferAttachment;
 use App\Models\OfferItem;
 use App\Models\Service;
 use App\Models\Status;
@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\DB;
 
 class BriefingQuoteGenerator
 {
-    public function generate(BriefingResponse $response): ?Offer
+    public function __construct(private BriefingCustomerService $customers) {}
+
+    public function generate(BriefingResponse $response, bool $manual = false): ?Offer
     {
         $response->loadMissing(['briefing.company', 'briefing.questions.service', 'answers.question.service', 'offer']);
 
@@ -23,12 +25,17 @@ class BriefingQuoteGenerator
         }
 
         $briefing = $response->briefing;
-        if (! $briefing?->auto_generate_offer) {
+        if (! $briefing || (! $manual && ! $briefing->auto_generate_offer)) {
             return null;
         }
 
         $customerId = $briefing->customer_id
-            ?: $this->matchCustomer($briefing->company_id, $response->respondent_email);
+            ?: $response->customer_id
+            ?: $this->customers->resolveOrCreate(
+                $briefing->company_id,
+                $response->respondent_name,
+                $response->respondent_email,
+            )?->id;
 
         $draftStatus = Status::where('for', 'offers')->where('name', 'Draft')->first()
             ?? Status::forTable('offers')->first();
@@ -50,6 +57,23 @@ class BriefingQuoteGenerator
 
             foreach ($briefing->questions as $question) {
                 $answer = $response->answers->firstWhere('question_id', $question->id);
+
+                if ($question->type === BriefingQuestion::TYPE_FILE_UPLOAD) {
+                    $this->attachAnswerFile($offer, $answer, $question);
+
+                    continue;
+                }
+
+                if ($question->type === BriefingQuestion::TYPE_MULTIPLE_CHOICE) {
+                    foreach ($this->multipleChoiceLines($question, $answer, $briefing->company_id) as $line) {
+                        $item = new OfferItem($line);
+                        $item->calculateTotal();
+                        $offer->items()->save($item);
+                    }
+
+                    continue;
+                }
+
                 $line = $this->lineFromAnswer($question, $answer, $briefing->company_id);
                 if (! $line) {
                     continue;
@@ -67,17 +91,6 @@ class BriefingQuoteGenerator
 
             return $offer->fresh(['items.service', 'customer', 'statusRelation']);
         });
-    }
-
-    private function matchCustomer(int $companyId, ?string $email): ?int
-    {
-        if (! $email) {
-            return null;
-        }
-
-        return Customer::where('company_id', $companyId)
-            ->where('email', $email)
-            ->value('id');
     }
 
     private function answerSummary(BriefingResponse $response): string
@@ -98,6 +111,16 @@ class BriefingQuoteGenerator
         return implode("\n", $lines);
     }
 
+    public function formatAnswerForDisplay(BriefingAnswer $answer): string
+    {
+        $answer->loadMissing('question');
+        if (! $answer->question) {
+            return '';
+        }
+
+        return $this->displayAnswer($answer->question, $answer);
+    }
+
     private function displayAnswer(BriefingQuestion $question, ?BriefingAnswer $answer): string
     {
         if (! $answer) {
@@ -105,10 +128,13 @@ class BriefingQuoteGenerator
         }
 
         $value = $answer->value ?? [];
+
         return match ($question->type) {
             BriefingQuestion::TYPE_YES_NO => ! empty($value['yes']) ? 'Yes' : 'No',
             BriefingQuestion::TYPE_SINGLE_CHOICE => (string) ($value['label'] ?? $value['text'] ?? ''),
+            BriefingQuestion::TYPE_MULTIPLE_CHOICE => implode(', ', $value['labels'] ?? []),
             BriefingQuestion::TYPE_QUANTITY => (string) ($value['quantity'] ?? $value['text'] ?? ''),
+            BriefingQuestion::TYPE_FILE_UPLOAD => (string) ($value['original_name'] ?? basename((string) $answer->file_path)),
             default => (string) ($value['text'] ?? ''),
         };
     }
@@ -127,6 +153,39 @@ class BriefingQuoteGenerator
             BriefingQuestion::TYPE_QUANTITY => $this->quantityLine($question, $value, $companyId),
             default => null,
         };
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function multipleChoiceLines(BriefingQuestion $question, ?BriefingAnswer $answer, int $companyId): array
+    {
+        if (! $answer) {
+            return [];
+        }
+
+        $value = $answer->value ?? [];
+        $indices = $value['indices'] ?? [];
+        $options = $question->options ?? [];
+        $lines = [];
+
+        foreach ($indices as $index) {
+            if (! is_numeric($index)) {
+                continue;
+            }
+
+            $option = $options[(int) $index] ?? null;
+            if (! $option) {
+                continue;
+            }
+
+            $line = $this->lineFromOption($question, $option, $companyId);
+            if ($line) {
+                $lines[] = $line;
+            }
+        }
+
+        return $lines;
     }
 
     private function yesNoLine(BriefingQuestion $question, array $value, int $companyId): ?array
@@ -156,6 +215,14 @@ class BriefingQuoteGenerator
             return null;
         }
 
+        return $this->lineFromOption($question, $option, $companyId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $option
+     */
+    private function lineFromOption(BriefingQuestion $question, array $option, int $companyId): ?array
+    {
         $serviceId = $option['service_id'] ?? $question->service_id;
         $price = $option['price'] ?? $question->price_override;
         $label = $question->label.': '.($option['label'] ?? '');
@@ -177,6 +244,19 @@ class BriefingQuoteGenerator
             $qty,
             $companyId
         );
+    }
+
+    private function attachAnswerFile(Offer $offer, ?BriefingAnswer $answer, BriefingQuestion $question): void
+    {
+        if (! $answer?->file_path) {
+            return;
+        }
+
+        OfferAttachment::create([
+            'offer_id' => $offer->id,
+            'file_path' => $answer->file_path,
+            'original_name' => $answer->value['original_name'] ?? $question->label,
+        ]);
     }
 
     private function pricedLine(mixed $serviceId, mixed $priceOverride, string $description, int $quantity, int $companyId): ?array

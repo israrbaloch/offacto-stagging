@@ -53,14 +53,23 @@ export default function Sidebar() {
     const { url, props } = usePage();
     const user = props.auth?.user;
     const appearance = props.appearance;
+    const activeCompany = props.activeCompany;
     void props.locale;
 
     return (
         <aside className="relative hidden h-full w-[250px] shrink-0 flex-col overflow-hidden rounded-l-3xl bg-indigo-50 lg:flex">
             <FloatingFavicons count={6} minSize={24} maxSize={80} />
             <div className="relative z-10 px-5 pt-6">
-                <Link href="/dashboard" className="flex justify-center">
-                    <Logo variant={appearance === 'dark' ? 'white' : 'dark'} className="h-8 w-auto" />
+                <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1">
+                    {activeCompany?.invoice_logo_url ? (
+                        <img
+                            src={activeCompany.invoice_logo_url}
+                            alt={activeCompany.company_name || 'Company'}
+                            className="h-10 max-w-[170px] object-contain"
+                        />
+                    ) : (
+                        <Logo variant={appearance === 'dark' ? 'white' : 'dark'} className="h-8 w-auto" />
+                    )}
                 </Link>
                 <div className="mt-5">
                     <CompanySwitcher />

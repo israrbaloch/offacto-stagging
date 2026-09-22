@@ -39,7 +39,8 @@
             border-bottom: 1px solid #ddd;
         }
         th {
-            background-color: #f5f5f5;
+            background-color: {{ $secondaryColor ?? '#0f172a' }};
+            color: #fff;
             font-weight: bold;
         }
         .total {
@@ -57,11 +58,11 @@
 </head>
 <body>
     <div class="header">
-        @php
-            $logoPath = $offer->company?->companySetting?->invoice_logo;
-            $logoUrl = $logoPath ? asset('storage/'.$logoPath) : null;
-        @endphp
-        <div style="margin-bottom:12px;">@include('emails.partials.logo', ['width' => 140, 'companyLogo' => $logoUrl])</div>
+        @if($companyLogoUrl ?? null)
+            <div style="margin-bottom:12px;">
+                @include('emails.partials.logo', ['width' => 140, 'companyLogo' => $companyLogoUrl])
+            </div>
+        @endif
         <h2>{{ $offer->company->company_name }}</h2>
         <p>{{ $offer->company->street }} {{ $offer->company->house }}</p>
         <p>{{ $offer->company->postal_code }} {{ $offer->company->city }}</p>
@@ -74,7 +75,7 @@
     @endif
 
     <div class="offer-details">
-        <h3>Offer #{{ $offer->offer_number ?? 'N/A' }}</h3>
+        <h3 style="color: {{ $primaryColor ?? '#4054b2' }};">Offer #{{ $offer->offer_number ?? 'N/A' }}</h3>
         <p><strong>Date:</strong> {{ $offer->offer_date ? $offer->offer_date->format('d-m-Y') : 'N/A' }}</p>
         @if($offer->valid_until)
         <p><strong>Valid Until:</strong> {{ $offer->valid_until->format('d-m-Y') }}</p>
@@ -132,7 +133,6 @@
     </div>
 
     <div class="footer">
-        <div style="margin-bottom:12px;display:inline-block;">@include('emails.partials.logo', ['width' => 120])</div>
         <p>This offer was sent by {{ $offer->company->company_name }}.</p>
         <p>For questions, please contact: {{ $offer->company->email }}</p>
     </div>

@@ -44,7 +44,18 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'companies' => $user
-                ? $user->accessibleCompanies()->select('id', 'company_name', 'is_active')->get()
+                ? $user->accessibleCompanies()
+                    ->with('companySetting:company_id,invoice_logo')
+                    ->get(['id', 'company_name', 'is_active'])
+                    ->map(fn ($company) => [
+                        'id' => $company->id,
+                        'company_name' => $company->company_name,
+                        'is_active' => (bool) $company->is_active,
+                        'logo_url' => $company->companySetting?->invoice_logo
+                            ? asset('storage/'.$company->companySetting->invoice_logo)
+                            : null,
+                    ])
+                    ->values()
                 : [],
             'activeCompany' => $active ? [
                 'id' => $active->id,
@@ -64,6 +75,7 @@ class HandleInertiaRequests extends Middleware
                 'invoice_logo_url' => $settings?->invoice_logo
                     ? asset('storage/'.$settings->invoice_logo)
                     : null,
+                'logo_in_emails' => $settings?->logo_in_emails ?? true,
                 'is_active' => (bool) $active->is_active,
                 'pending_approval' => $active->isPendingApproval(),
                 'trial_starts_at' => $active->trial_starts_at?->toIso8601String(),
