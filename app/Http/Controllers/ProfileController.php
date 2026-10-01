@@ -7,8 +7,7 @@ use App\Http\Requests\UpdateCompanyRequest;
 use App\Http\Requests\UpdateCompanySettingsRequest;
 use App\Mail\Admin\CompanyPendingApproval;
 use App\Mail\CompanySubmittedConfirmation;
-use App\Mail\PasswordOtpMail;
-use App\Models\PasswordOtp;
+use App\Services\EmailOtpService;
 use App\Models\Company;
 use App\Models\CompanyLegalDocument;
 use App\Models\CompanySetting;
@@ -87,21 +86,7 @@ class ProfileController extends Controller
     public function sendPasswordReset(Request $request): RedirectResponse
     {
         $user = $request->user();
-        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        PasswordOtp::updateOrCreate(
-            ['email' => $user->email],
-            [
-                'code_hash' => Hash::make($code),
-                'reset_token_hash' => null,
-                'attempts' => 0,
-                'expires_at' => now()->addMinutes(10),
-                'verified_at' => null,
-                'last_sent_at' => now(),
-            ]
-        );
-
-        Mail::to($user->email)->send(new PasswordOtpMail($user, $code));
+        app(EmailOtpService::class)->issue($user, EmailOtpService::PURPOSE_PASSWORD_RESET);
 
         return back()->with('status', 'password-reset-sent');
     }

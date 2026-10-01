@@ -1,5 +1,5 @@
-import { Link, router, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { router, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Logo from '../../Components/Logo';
 import AuthSplitLayout from '../../Layouts/AuthSplitLayout';
 
@@ -14,15 +14,59 @@ function formatTime(total) {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-export default function VerifyOtp({ email, expiresAt, resendAt }) {
-    const { flash } = usePage().props;
+const OTP_ROUTES = {
+    registration: {
+        verify: '/register/verify',
+        resend: '/register/resend',
+        cancel: '/register/verify/cancel',
+        backLabel: 'Back to login',
+        submitLabel: 'Verify email',
+        title: 'Verify your email',
+        hint: 'Enter the code we sent to finish creating your account.',
+    },
+    password_reset: {
+        verify: '/forgot-password/verify',
+        resend: '/forgot-password/resend',
+        cancel: '/forgot-password/verify/cancel',
+        backLabel: 'Use a different email',
+        submitLabel: 'Continue',
+        title: 'Enter reset code',
+        hint: 'Enter the code we sent to reset your password.',
+    },
+};
+
+function resolveOtpContext(propContext, url) {
+    const path = (url || '').split('?')[0];
+    if (path === '/register/verify') {
+        return 'registration';
+    }
+    if (path === '/forgot-password/verify') {
+        return 'password_reset';
+    }
+    if (propContext === 'registration' || propContext === 'password_reset') {
+        return propContext;
+    }
+    return 'password_reset';
+}
+
+export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpContextProp }) {
+    const { flash, url } = usePage();
+    const otpContext = useMemo(() => resolveOtpContext(otpContextProp, url), [otpContextProp, url]);
+    const routes = OTP_ROUTES[otpContext] ?? OTP_ROUTES.password_reset;
+
     const [digits, setDigits] = useState(['', '', '', '', '', '']);
     const [expiresIn, setExpiresIn] = useState(() => secondsUntil(expiresAt));
     const [resendIn, setResendIn] = useState(() => secondsUntil(resendAt));
+    const [resending, setResending] = useState(false);
     const inputs = useRef([]);
     const { errors, setData, data } = useForm({ code: '' });
     const [processing, setProcessing] = useState(false);
     const submitting = useRef(false);
+
+    useEffect(() => {
+        setExpiresIn(secondsUntil(expiresAt));
+        setResendIn(secondsUntil(resendAt));
+    }, [expiresAt, resendAt]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -36,13 +80,22 @@ export default function VerifyOtp({ email, expiresAt, resendAt }) {
         if (code.length !== 6 || submitting.current) return;
         submitting.current = true;
         setData('code', code);
-        router.post('/forgot-password/verify', { code }, {
+        router.post(routes.verify, { code }, {
             preserveScroll: true,
             onStart: () => setProcessing(true),
             onFinish: () => {
                 submitting.current = false;
                 setProcessing(false);
             },
+        });
+    };
+
+    const resendCode = () => {
+        if (resending) return;
+        setResending(true);
+        router.post(routes.resend, {}, {
+            preserveScroll: true,
+            onFinish: () => setResending(false),
         });
     };
 
@@ -74,11 +127,12 @@ export default function VerifyOtp({ email, expiresAt, resendAt }) {
     };
 
     return (
-        <AuthSplitLayout title="Verify email">
+        <AuthSplitLayout title={routes.title}>
             <Logo className="h-7 w-auto" />
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Verify your email</h2>
-            <p className="mt-2 text-sm text-slate-500">
-                We’ve sent a 6-digit code to <span className="font-medium text-slate-700">{email}</span>.
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{routes.title}</h2>
+            <p className="mt-2 text-sm text-slate-500">{routes.hint}</p>
+            <p className="mt-1 text-sm text-slate-500">
+                Code sent to <span className="font-medium text-slate-700">{email}</span>
             </p>
             {flash?.status && <p className="mt-3 text-sm text-emerald-600">{flash.status}</p>}
 
@@ -118,7 +172,7 @@ export default function VerifyOtp({ email, expiresAt, resendAt }) {
                     disabled={processing || digits.join('').length !== 6}
                     className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
                 >
-                    Verify account
+                    {routes.submitLabel}
                     <span aria-hidden="true">→</span>
                 </button>
             </form>
@@ -129,18 +183,23 @@ export default function VerifyOtp({ email, expiresAt, resendAt }) {
                 ) : (
                     <button
                         type="button"
-                        className="font-medium text-indigo-600 hover:text-indigo-500"
-                        onClick={() => router.post('/forgot-password/resend')}
+                        disabled={resending}
+                        className="font-medium text-indigo-600 hover:text-indigo-500 disabled:opacity-50"
+                        onClick={resendCode}
                     >
-                        Resend code
+                        {resending ? 'Sending…' : 'Resend code'}
                     </button>
                 )}
                 <p className="text-xs text-slate-400">
-                    {expiresIn > 0 ? `Code expires in ${formatTime(expiresIn)}` : 'This code has expired.'}
+                    {expiresIn > 0 ? `Code expires in ${formatTime(expiresIn)}` : 'This code has expired. Use resend for a new one.'}
                 </p>
-                <Link href="/forgot-password" className="block text-sm text-slate-500 hover:text-slate-700">
-                    Use a different email
-                </Link>
+                <button
+                    type="button"
+                    className="block w-full text-sm text-slate-500 hover:text-slate-700"
+                    onClick={() => router.post(routes.cancel)}
+                >
+                    {routes.backLabel}
+                </button>
             </div>
         </AuthSplitLayout>
     );

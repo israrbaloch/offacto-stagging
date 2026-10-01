@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Mail\PasswordOtpMail;
 use App\Models\PasswordOtp;
 use App\Models\User;
+use App\Services\EmailOtpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -29,7 +30,10 @@ class PasswordResetTest extends TestCase
             ->assertRedirect(route('password.otp'));
 
         Mail::assertSent(PasswordOtpMail::class, fn ($mail) => $mail->hasTo($user->email));
-        $this->assertDatabaseHas('password_otps', ['email' => $user->email]);
+        $this->assertDatabaseHas('password_otps', [
+            'email' => $user->email,
+            'purpose' => EmailOtpService::PURPOSE_PASSWORD_RESET,
+        ]);
     }
 
     public function test_otp_screen_requires_session(): void
@@ -47,7 +51,9 @@ class PasswordResetTest extends TestCase
 
         $this->get('/forgot-password/verify')->assertOk();
 
-        $otp = PasswordOtp::where('email', $user->email)->first();
+        $otp = PasswordOtp::where('email', $user->email)
+            ->where('purpose', EmailOtpService::PURPOSE_PASSWORD_RESET)
+            ->first();
         $otp->update(['code_hash' => Hash::make('123456')]);
 
         $this->post('/forgot-password/verify', ['code' => '123456'])

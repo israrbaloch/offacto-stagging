@@ -32,6 +32,13 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
+        if (! $user->hasVerifiedEmail()) {
+            $remember = $request->boolean('remember');
+            Auth::logout();
+
+            return RegisterEmailVerificationController::beginVerification($request, $user, $remember);
+        }
+
         if (!$user->isActive()) {
             Auth::logout();
             $request->session()->invalidate();

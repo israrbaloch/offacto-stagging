@@ -9,6 +9,7 @@ class PasswordOtp extends Model
 {
     protected $fillable = [
         'email',
+        'purpose',
         'code_hash',
         'reset_token_hash',
         'attempts',

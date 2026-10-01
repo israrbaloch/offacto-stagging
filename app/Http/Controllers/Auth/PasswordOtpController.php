@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Mail\PasswordOtpMail;
-use App\Models\PasswordOtp;
 use App\Models\User;
+use App\Services\EmailOtpService;
+use App\Support\OtpFlow;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +18,8 @@ use Inertia\Response;
 
 class PasswordOtpController extends Controller
 {
+    public function __construct(private EmailOtpService $otp) {}
+
     public function request(): Response
     {
         return Inertia::render('Auth/ForgotPassword');
@@ -30,9 +31,8 @@ class PasswordOtpController extends Controller
             'email' => ['required', 'email'],
         ]);
 
+        OtpFlow::startPasswordReset($request, $request->email);
         $this->issueOtp($request->email);
-
-        $request->session()->put('password_reset_email', $request->email);
 
         return redirect()->route('password.otp')
             ->with('status', 'If an account exists for that email, we sent a 6-digit code.');
@@ -40,18 +40,22 @@ class PasswordOtpController extends Controller
 
     public function showVerify(Request $request): Response|RedirectResponse
     {
-        $email = $request->session()->get('password_reset_email');
-
-        if (!$email) {
+        if (OtpFlow::current($request) !== OtpFlow::PASSWORD_RESET) {
             return redirect()->route('password.request');
         }
 
-        $otp = PasswordOtp::where('email', $email)->first();
+        $email = $request->session()->get('password_reset_email');
+        if (! $email) {
+            return redirect()->route('password.request');
+        }
+
+        $otp = $this->otp->find($email, EmailOtpService::PURPOSE_PASSWORD_RESET);
 
         return Inertia::render('Auth/VerifyOtp', [
             'email' => $email,
             'expiresAt' => ($otp?->expires_at ?? now()->addMinutes(10))->toIso8601String(),
             'resendAt' => $otp?->resendAvailableAt()?->toIso8601String() ?? now()->addSeconds(60)->toIso8601String(),
+            'otpContext' => OtpFlow::PASSWORD_RESET,
         ]);
     }
 
@@ -62,31 +66,11 @@ class PasswordOtpController extends Controller
         ]);
 
         $email = $request->session()->get('password_reset_email');
-        if (!$email) {
+        if (! $email) {
             return redirect()->route('password.request');
         }
 
-        $otp = PasswordOtp::where('email', $email)->first();
-
-        if (!$otp || $otp->isExpired()) {
-            throw ValidationException::withMessages([
-                'code' => ['This code has expired. Please request a new one.'],
-            ]);
-        }
-
-        if ($otp->attempts >= 5) {
-            throw ValidationException::withMessages([
-                'code' => ['Too many attempts. Please request a new code.'],
-            ]);
-        }
-
-        $otp->increment('attempts');
-
-        if (!Hash::check($request->code, $otp->code_hash)) {
-            throw ValidationException::withMessages([
-                'code' => ['The code you entered is incorrect.'],
-            ]);
-        }
+        $otp = $this->otp->verifyCode($email, $request->code, EmailOtpService::PURPOSE_PASSWORD_RESET);
 
         $resetToken = Str::random(64);
         $otp->update([
@@ -103,22 +87,33 @@ class PasswordOtpController extends Controller
     public function resend(Request $request): RedirectResponse
     {
         $email = $request->session()->get('password_reset_email');
-        if (!$email) {
+        if (! $email) {
             return redirect()->route('password.request');
         }
 
-        $otp = PasswordOtp::where('email', $email)->first();
+        $otp = $this->otp->find($email, EmailOtpService::PURPOSE_PASSWORD_RESET);
         $availableAt = $otp?->resendAvailableAt();
 
         if ($availableAt && $availableAt->isFuture()) {
-            throw ValidationException::withMessages([
-                'code' => ['Please wait before requesting another code.'],
-            ]);
+            return redirect()
+                ->route('password.otp')
+                ->withErrors(['code' => 'Please wait before requesting another code.']);
         }
 
         $this->issueOtp($email);
 
-        return back()->with('status', 'A new code has been sent if that email is registered.');
+        return redirect()
+            ->route('password.otp')
+            ->with('status', 'A new code has been sent if that email is registered.');
+    }
+
+    public function cancel(Request $request): RedirectResponse
+    {
+        OtpFlow::clear($request);
+
+        return redirect()
+            ->route('password.request')
+            ->with('status', 'Enter your email to receive a new reset code.');
     }
 
     public function showReset(Request $request): Response|RedirectResponse
@@ -126,7 +121,7 @@ class PasswordOtpController extends Controller
         $email = $request->session()->get('password_reset_email');
         $token = $request->session()->get('password_reset_token');
 
-        if (!$email || !$token) {
+        if (! $email || ! $token) {
             return redirect()->route('password.request');
         }
 
@@ -144,18 +139,18 @@ class PasswordOtpController extends Controller
         $email = $request->session()->get('password_reset_email');
         $token = $request->session()->get('password_reset_token');
 
-        if (!$email || !$token) {
+        if (! $email || ! $token) {
             return redirect()->route('password.request');
         }
 
-        $otp = PasswordOtp::where('email', $email)->first();
+        $otp = $this->otp->find($email, EmailOtpService::PURPOSE_PASSWORD_RESET);
 
         if (
-            !$otp
-            || !$otp->verified_at
-            || !$otp->reset_token_hash
+            ! $otp
+            || ! $otp->verified_at
+            || ! $otp->reset_token_hash
             || $otp->isExpired()
-            || !Hash::check($token, $otp->reset_token_hash)
+            || ! Hash::check($token, $otp->reset_token_hash)
         ) {
             throw ValidationException::withMessages([
                 'password' => ['This reset session is invalid or has expired. Please start again.'],
@@ -163,7 +158,7 @@ class PasswordOtpController extends Controller
         }
 
         $user = User::where('email', $email)->first();
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('password.request');
         }
 
@@ -182,24 +177,10 @@ class PasswordOtpController extends Controller
     private function issueOtp(string $email): void
     {
         $user = User::where('email', $email)->first();
-        if (!$user) {
+        if (! $user) {
             return;
         }
 
-        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        PasswordOtp::updateOrCreate(
-            ['email' => $email],
-            [
-                'code_hash' => Hash::make($code),
-                'reset_token_hash' => null,
-                'attempts' => 0,
-                'expires_at' => now()->addMinutes(10),
-                'verified_at' => null,
-                'last_sent_at' => now(),
-            ]
-        );
-
-        Mail::to($user->email)->send(new PasswordOtpMail($user, $code));
+        $this->otp->issue($user, EmailOtpService::PURPOSE_PASSWORD_RESET);
     }
 }

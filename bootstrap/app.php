@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureEmailVerifiedForSession;
 use App\Http\Middleware\EnsureUserIsAuthenticated;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'auth.check' => EnsureUserIsAuthenticated::class,
+            'verified.email' => EnsureEmailVerifiedForSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

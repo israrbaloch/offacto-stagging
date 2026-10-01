@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Mail\Admin\NewUserRegistered;
 use App\Mail\Admin\CompanyPendingApproval;
 use App\Mail\CompanySubmittedConfirmation;
-use App\Mail\WelcomeEmail;
 use App\Models\Company;
 use App\Models\Role;
 use App\Models\SiteSetting;
@@ -16,7 +15,6 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\RedirectResponse;
@@ -90,10 +88,6 @@ class RegisteredUserController extends Controller
         $company = Company::create($companyData);
         $company->ensureDefaults();
 
-        if (SiteSetting::getBoolean('send_welcome_email', true)) {
-            Mail::to($user->email)->send(new WelcomeEmail($user));
-        }
-
         $adminEmail = SiteSetting::get('admin_email');
         if ($adminEmail) {
             Mail::to($adminEmail)->send(new NewUserRegistered($user, true));
@@ -104,12 +98,12 @@ class RegisteredUserController extends Controller
                 Mail::to($adminEmail)->send(new CompanyPendingApproval($company));
             }
             Mail::to($user->email)->send(new CompanySubmittedConfirmation($company));
-            return redirect()->route('login')
-                ->with('status', 'Registration successful. Your company is pending approval. You will receive an email when it is approved.');
+
+            return RegisterEmailVerificationController::beginVerification($request, $user);
         }
 
         $user->setActiveCompanyId($company->id);
-        Auth::login($user);
-        return redirect(route('dashboard', absolute: false));
+
+        return RegisterEmailVerificationController::beginVerification($request, $user);
     }
 }

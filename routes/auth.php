@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordOtpController;
+use App\Http\Controllers\Auth\RegisterEmailVerificationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,20 @@ Route::middleware('guest')->group(function () {
         ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store']);
+
+    Route::get('register/verify', [RegisterEmailVerificationController::class, 'show'])
+        ->name('register.verify');
+
+    Route::post('register/verify', [RegisterEmailVerificationController::class, 'verify'])
+        ->middleware('throttle:10,1')
+        ->name('register.verify.submit');
+
+    Route::post('register/resend', [RegisterEmailVerificationController::class, 'resend'])
+        ->middleware('throttle:6,1')
+        ->name('register.verify.resend');
+
+    Route::post('register/verify/cancel', [RegisterEmailVerificationController::class, 'cancel'])
+        ->name('register.verify.cancel');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
@@ -38,6 +53,9 @@ Route::middleware('guest')->group(function () {
     Route::post('forgot-password/resend', [PasswordOtpController::class, 'resend'])
         ->middleware('throttle:6,1')
         ->name('password.otp.resend');
+
+    Route::post('forgot-password/verify/cancel', [PasswordOtpController::class, 'cancel'])
+        ->name('password.otp.cancel');
 
     Route::get('reset-password', [PasswordOtpController::class, 'showReset'])
         ->name('password.reset');
