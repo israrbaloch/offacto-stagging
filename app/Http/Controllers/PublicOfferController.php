@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Offer;
+use App\Support\PublicStorage;
 use App\Models\SiteSetting;
 use App\Models\Status;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -109,7 +110,7 @@ class PublicOfferController extends Controller
             'tax_amount' => $offer->tax_amount,
             'company' => [
                 'name' => $offer->company?->company_name,
-                'logo_url' => $settings?->invoice_logo ? asset('storage/'.$settings->invoice_logo) : null,
+                'logo_url' => PublicStorage::url($settings?->invoice_logo),
                 'theme' => [
                     'primary' => $theme['primary'] ?? '#4054b2',
                     'secondary' => $theme['secondary'] ?? '#0f172a',

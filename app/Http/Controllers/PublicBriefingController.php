@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\SubmitBriefingRequest;
 use App\Models\Briefing;
+use App\Support\PublicStorage;
 use App\Models\BriefingQuestion;
 use App\Services\BriefingCustomerService;
 use App\Services\BriefingQuoteGenerator;
@@ -188,7 +189,7 @@ class PublicBriefingController extends Controller
             'status' => $briefing->status,
             'company' => [
                 'name' => $briefing->company?->company_name,
-                'logo_url' => $settings?->invoice_logo ? asset('storage/'.$settings->invoice_logo) : null,
+                'logo_url' => PublicStorage::url($settings?->invoice_logo),
                 'theme' => [
                     'primary' => $theme['primary'] ?? '#4054b2',
                     'secondary' => $theme['secondary'] ?? '#0f172a',

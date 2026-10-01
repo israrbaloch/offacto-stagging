@@ -1,5 +1,5 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Icon from '../../Components/Icon';
 import NumberingSeriesEditor from '../../Components/NumberingSeriesEditor';
 import SelectMenu from '../../Components/SelectMenu';
@@ -73,6 +73,10 @@ export default function Edit({
     const [addingLegal, setAddingLegal] = useState(false);
     const [logoPreview, setLogoPreview] = useState(invoiceLogoUrl || null);
 
+    useEffect(() => {
+        setLogoPreview(invoiceLogoUrl || null);
+    }, [invoiceLogoUrl]);
+
     const profile = useForm({
         name: user?.name || '',
         email: user?.email || '',
@@ -116,8 +120,23 @@ export default function Edit({
     };
 
     const saveBranding = (extra = {}) => {
-        settings.transform((data) => ({ ...data, ...extra }));
-        settings.patch('/profile/company-settings', { forceFormData: true });
+        const uploadFile = extra.invoice_logo instanceof File ? extra.invoice_logo : null;
+        if (uploadFile) {
+            settings.setData('invoice_logo', uploadFile);
+        } else {
+            Object.entries(extra).forEach(([key, value]) => settings.setData(key, value));
+        }
+
+        const hasFile = uploadFile instanceof File || settings.data.invoice_logo instanceof File;
+
+        settings.patch('/profile/company-settings', {
+            forceFormData: hasFile,
+            preserveScroll: true,
+            onSuccess: () => {
+                settings.setData('invoice_logo', null);
+                router.reload({ preserveScroll: true });
+            },
+        });
     };
 
     const typeLabel = {
@@ -307,6 +326,13 @@ export default function Edit({
 
                     <Card icon="palette" title={t('profile.branding')}>
                         <div className="space-y-5">
+                            {(settings.errors.invoice_logo || settings.errors['theme.primary'] || settings.errors['theme.secondary']) && (
+                                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                                    {settings.errors.invoice_logo && <p>{settings.errors.invoice_logo}</p>}
+                                    {settings.errors['theme.primary'] && <p>{settings.errors['theme.primary']}</p>}
+                                    {settings.errors['theme.secondary'] && <p>{settings.errors['theme.secondary']}</p>}
+                                </div>
+                            )}
                             <div>
                                 <span className={labelClass}>{t('profile.logo')}</span>
                                 <label className="mt-1 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 px-4 py-8 text-center hover:border-indigo-300 hover:bg-indigo-50">

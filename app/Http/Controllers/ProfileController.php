@@ -14,6 +14,7 @@ use App\Models\CompanyLegalDocument;
 use App\Models\CompanySetting;
 use App\Models\Language;
 use App\Services\NumberingSeriesService;
+use App\Support\PublicStorage;
 use App\Models\SiteSetting;
 use App\Models\Status;
 use Illuminate\Http\JsonResponse;
@@ -71,9 +72,7 @@ class ProfileController extends Controller
             'user' => $user,
             'company' => $company,
             'companySettings' => $companySettings,
-            'invoiceLogoUrl' => $companySettings?->invoice_logo
-                ? asset('storage/'.$companySettings->invoice_logo)
-                : null,
+            'invoiceLogoUrl' => PublicStorage::url($companySettings?->invoice_logo),
             'numberingSeriesList' => $numberingSeriesList,
             'activeNumberingSeriesId' => $companySettings?->numbering_series,
             'languages' => $languages,
@@ -262,11 +261,13 @@ class ProfileController extends Controller
 
         $companySettings = $company->companySetting;
 
-        if (!$companySettings) {
-            $companySettings = CompanySetting::create([
-                'company_id' => $company->id,
-                'numbering_series' => $request->validated()['numbering_series'],
-            ]);
+        if (! $companySettings) {
+            $company->ensureDefaults();
+            $companySettings = $company->fresh()->companySetting;
+        }
+
+        if (! $companySettings) {
+            return back()->with('error', 'Could not save branding settings for this company.');
         }
 
         $data = $request->validated();

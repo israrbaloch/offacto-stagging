@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Http\Middleware\SetLocale;
+use App\Support\PublicStorage;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -51,9 +52,7 @@ class HandleInertiaRequests extends Middleware
                         'id' => $company->id,
                         'company_name' => $company->company_name,
                         'is_active' => (bool) $company->is_active,
-                        'logo_url' => $company->companySetting?->invoice_logo
-                            ? asset('storage/'.$company->companySetting->invoice_logo)
-                            : null,
+                        'logo_url' => PublicStorage::url($company->companySetting?->invoice_logo),
                     ])
                     ->values()
                 : [],
@@ -72,9 +71,7 @@ class HandleInertiaRequests extends Middleware
                     'primary' => $theme['primary'] ?? '#4054b2',
                     'secondary' => $theme['secondary'] ?? '#0f172a',
                 ],
-                'invoice_logo_url' => $settings?->invoice_logo
-                    ? asset('storage/'.$settings->invoice_logo)
-                    : null,
+                'invoice_logo_url' => PublicStorage::url($settings?->invoice_logo),
                 'logo_in_emails' => $settings?->logo_in_emails ?? true,
                 'is_active' => (bool) $active->is_active,
                 'pending_approval' => $active->isPendingApproval(),

@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\CompanyLegalDocument;
+use App\Support\PublicStorage;
 use App\Models\Offer;
 use App\Models\SiteSetting;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -49,7 +50,7 @@ class OfferSent extends Mailable
                 'customMessage' => $this->message,
                 'primaryColor' => $theme['primary'] ?? '#4054b2',
                 'secondaryColor' => $theme['secondary'] ?? '#0f172a',
-                'companyLogoUrl' => $showLogo ? asset('storage/'.$settings->invoice_logo) : null,
+                'companyLogoUrl' => $showLogo ? PublicStorage::absoluteUrl($settings->invoice_logo) : null,
             ],
         );
     }
