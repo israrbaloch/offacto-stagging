@@ -5,13 +5,14 @@ namespace App\Services;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
+use App\Support\CompanyIntegrations;
 use Illuminate\Support\Facades\Http;
 
 class MolliePaymentService
 {
     public function createCheckout(Invoice $invoice, Company $company): ?string
     {
-        $apiKey = $company->mollie_test_key ?: $company->mollie_key;
+        $apiKey = $this->resolveApiKey($company);
         if (! $apiKey) {
             throw new \RuntimeException('Mollie API key is not configured for this company.');
         }
@@ -59,7 +60,7 @@ class MolliePaymentService
         }
 
         $company = $invoice->company;
-        $apiKey = $company?->mollie_test_key ?: $company?->mollie_key;
+        $apiKey = $this->resolveApiKey($company);
         if (! $apiKey) {
             return;
         }
@@ -80,5 +81,22 @@ class MolliePaymentService
             $invoice->refresh();
             $invoice->updatePaymentStatus();
         }
+    }
+
+    private function resolveApiKey(?Company $company): ?string
+    {
+        if (! $company) {
+            return null;
+        }
+
+        $settings = CompanyIntegrations::settings($company);
+        if ($settings) {
+            $fromSettings = CompanyIntegrations::mollieApiKey($settings);
+            if (filled($fromSettings)) {
+                return $fromSettings;
+            }
+        }
+
+        return $company->mollie_test_key ?? $company->mollie_key ?? null;
     }
 }

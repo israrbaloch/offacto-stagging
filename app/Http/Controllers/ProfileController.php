@@ -13,6 +13,7 @@ use App\Models\CompanyLegalDocument;
 use App\Models\CompanySetting;
 use App\Models\Language;
 use App\Services\NumberingSeriesService;
+use App\Support\CompanyIntegrations;
 use App\Support\PublicStorage;
 use App\Models\SiteSetting;
 use App\Models\Status;
@@ -78,6 +79,11 @@ class ProfileController extends Controller
             'legalDocuments' => $company
                 ? $company->legalDocuments()->latest()->get()
                 : collect(),
+            'integrations' => CompanyIntegrations::postbodeFormDefaults($companySettings),
+            'integrationLinks' => [
+                'postbode_docs' => config('services.postbode.docs_url'),
+                'postbode_tokens' => config('services.postbode.token_app_url'),
+            ],
         ];
 
         return Inertia::render('Profile/Edit', $props);

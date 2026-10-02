@@ -6,6 +6,7 @@ import LineItemsEditor from '../../Components/LineItemsEditor';
 import OfferPreview from '../../Components/OfferPreview';
 import RichTextEditor from '../../Components/RichTextEditor';
 import SelectMenu from '../../Components/SelectMenu';
+import OfferAcceptancePanel from '../../Components/OfferAcceptancePanel';
 import OfferBlocksEditor from '../../Components/OfferBlocksEditor';
 import CopyLinkButton from '../../Components/CopyLinkButton';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
@@ -263,6 +264,8 @@ export default function Create({
                         </Link>
                     </div>
                 )}
+
+                {offer?.id && <OfferAcceptancePanel offer={offer} compact />}
 
                 <div className="rounded-3xl border border-slate-200 bg-white px-5 sm:px-8">
                     <Section

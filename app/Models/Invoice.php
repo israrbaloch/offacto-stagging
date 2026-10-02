@@ -50,6 +50,10 @@ class Invoice extends Model
         'next_run_at',
         'parent_invoice_id',
         'peppol_sent_at',
+        'postbode_sent_at',
+        'postbode_postal_uuid',
+        'postbode_status',
+        'postbode_customer_reference',
         'mollie_payment_id',
         'mollie_checkout_url',
     ];
@@ -66,6 +70,7 @@ class Invoice extends Model
             'due_date' => 'date',
             'next_run_at' => 'date',
             'peppol_sent_at' => 'datetime',
+            'postbode_sent_at' => 'datetime',
             'is_recurring' => 'boolean',
         ];
     }

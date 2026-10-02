@@ -274,7 +274,14 @@ export default function Index({ offers, stats = {} }) {
                                                 <StatusPill tone="draft">{t('offers.standard')}</StatusPill>
                                             </td>
                                             <td className="px-3 py-4">
-                                                <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                                                    {offer.has_acceptance_artifact && (
+                                                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
+                                                            {t('offers.has_signature_badge')}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-3 py-4">
                                                 <CopyLinkButton

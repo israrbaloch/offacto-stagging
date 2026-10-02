@@ -1,6 +1,7 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import Icon from '../../Components/Icon';
+import CompanyIntegrationsPanel from '../../Components/CompanyIntegrationsPanel';
 import NumberingSeriesEditor from '../../Components/NumberingSeriesEditor';
 import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
@@ -68,6 +69,8 @@ export default function Edit({
     activeNumberingSeriesId = null,
     languages = {},
     legalDocuments = [],
+    integrations = {},
+    integrationLinks = {},
 }) {
     const { activeCompany } = usePage().props;
     const [addingLegal, setAddingLegal] = useState(false);
@@ -408,6 +411,14 @@ export default function Edit({
                                 </div>
                             )}
                         </div>
+                    </Card>
+
+                    <Card icon="settings" title={t('integrations.title')} className="lg:col-span-2">
+                        {company ? (
+                            <CompanyIntegrationsPanel integrations={integrations} links={integrationLinks} />
+                        ) : (
+                            <p className="text-sm text-slate-500">{t('integrations.no_company')}</p>
+                        )}
                     </Card>
 
                     <Card

@@ -20,6 +20,9 @@ use App\Models\Status;
 use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Services\MolliePaymentService;
+use App\Services\Postbode\PostbodeApiException;
+use App\Services\Postbode\PostbodeSendService;
+use App\Support\CompanyIntegrations;
 use App\Services\PdfZipExportService;
 use App\Services\PeppolSendService;
 use App\Services\UblInvoiceService;
@@ -354,7 +357,8 @@ class InvoiceController extends Controller
             'invoice' => $invoice,
             'paymentMethods' => Invoice::getPaymentMethods(),
             'peppolConfigured' => filled(config('services.peppol.endpoint')) && filled(config('services.peppol.token')),
-            'mollieConfigured' => filled($activeCompany->mollie_key) || filled($activeCompany->mollie_test_key),
+            'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
+            'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
         ]);
     }
 
@@ -991,12 +995,44 @@ class InvoiceController extends Controller
         return back()->with('status', 'peppol-sent');
     }
 
-    public function queuePostbode(Request $request, $invoice): RedirectResponse
+    public function sendPostbode(Request $request, $invoice, PostbodeSendService $postbode): RedirectResponse
     {
         $activeCompany = $request->user()?->activeCompany();
-        Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+        $invoice = Invoice::where('id', $invoice)
+            ->where('company_id', $activeCompany?->id)
+            ->firstOrFail();
 
-        return back()->with('status', 'postbode-queued');
+        $settings = CompanyIntegrations::settings($activeCompany);
+        if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
+            return back()->with('error', 'Postbode is not configured for this workspace. Add your API token under Profile → Integrations.');
+        }
+
+        $validated = $request->validate([
+            'registered' => ['nullable', 'boolean'],
+        ]);
+
+        try {
+            $result = $postbode->sendInvoice(
+                $invoice,
+                $settings,
+                $request->has('registered') ? $request->boolean('registered') : null,
+            );
+
+            $invoice->update([
+                'postbode_sent_at' => now(),
+                'postbode_postal_uuid' => $result['uuid'],
+                'postbode_status' => $result['status'],
+                'postbode_customer_reference' => $result['reference'],
+            ]);
+
+            return back()->with('status', 'postbode-sent');
+        } catch (PostbodeApiException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'Postbode could not send this invoice.');
+        }
     }
 
     public function configureRecurring(Request $request, $invoice): RedirectResponse

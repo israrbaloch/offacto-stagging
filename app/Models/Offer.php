@@ -14,6 +14,9 @@ class Offer extends Model
 
     protected $appends = ['total', 'subtotal', 'tax_amount'];
 
+    /** @var list<string> */
+    protected $hidden = ['signature_data'];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -37,6 +40,9 @@ class Offer extends Model
         'declined_at',
         'signature_data',
         'voice_note_path',
+        'postbode_sent_at',
+        'postbode_postal_uuid',
+        'postbode_status',
     ];
 
     /**
@@ -51,6 +57,7 @@ class Offer extends Model
             'valid_until' => 'date',
             'accepted_at' => 'datetime',
             'declined_at' => 'datetime',
+            'postbode_sent_at' => 'datetime',
         ];
     }
 

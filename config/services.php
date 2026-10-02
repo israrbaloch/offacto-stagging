@@ -45,4 +45,10 @@ return [
         'token' => env('PEPPOL_TOKEN'),
     ],
 
+    'postbode' => [
+        'v2_base' => env('POSTBODE_V2_BASE', 'https://postbode.app/api/v2'),
+        'docs_url' => env('POSTBODE_DOCS_URL', 'https://postbode.app/docs/api'),
+        'token_app_url' => env('POSTBODE_TOKEN_URL', 'https://app.postbode.nu/settings/api'),
+    ],
+
 ];

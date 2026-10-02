@@ -79,6 +79,8 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
     Route::delete('/profile/numbering-series/{series}', [NumberingSeriesController::class, 'destroy'])->name('profile.numbering-series.destroy');
     Route::post('/profile/numbering-series/{series}/default', [NumberingSeriesController::class, 'setDefault'])->name('profile.numbering-series.default');
     Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
+    Route::patch('/profile/integrations', [\App\Http\Controllers\CompanyIntegrationsController::class, 'update'])->name('profile.integrations.update');
+    Route::post('/profile/integrations/postbode/test', [\App\Http\Controllers\CompanyIntegrationsController::class, 'testPostbode'])->name('profile.integrations.postbode.test');
 
     Route::post('/theme', function (\Illuminate\Http\Request $request) {
         $theme = $request->validate([
@@ -135,7 +137,9 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
     Route::post('invoices/{invoice}/recurring', [InvoiceController::class, 'configureRecurring'])->name('invoices.recurring');
     Route::post('invoices/{invoice}/mollie', [InvoiceController::class, 'createMollieCheckout'])->name('invoices.mollie');
     Route::post('invoices/{invoice}/peppol', [InvoiceController::class, 'sendPeppol'])->name('invoices.peppol');
-    Route::post('invoices/{invoice}/postbode', [InvoiceController::class, 'queuePostbode'])->name('invoices.postbode');
+    Route::post('invoices/{invoice}/postbode', [InvoiceController::class, 'sendPostbode'])->name('invoices.postbode');
+    Route::post('offers/{offer}/postbode', [OfferController::class, 'sendPostbode'])->name('offers.postbode');
+    Route::get('offers/{offer}/voice-note', [OfferController::class, 'downloadVoiceNote'])->name('offers.voice-note');
     Route::post('invoices/{invoice}/attachments', [InvoiceController::class, 'storeAttachment'])->name('invoices.attachments.store');
     Route::delete('invoices/{invoice}/attachments/{attachment}', [InvoiceController::class, 'destroyAttachment'])->name('invoices.attachments.destroy');
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');

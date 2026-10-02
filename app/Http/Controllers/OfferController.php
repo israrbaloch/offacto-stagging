@@ -18,7 +18,11 @@ use App\Models\Status;
 use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Services\PdfZipExportService;
+use App\Services\Postbode\PostbodeApiException;
+use App\Services\Postbode\PostbodeSendService;
+use App\Support\CompanyIntegrations;
 use App\Support\OfferMessage;
+use App\Support\OfferPresentation;
 use App\Support\PublicStorage;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -136,7 +140,7 @@ class OfferController extends Controller
         $offers->getCollection()->transform(function (Offer $offer) {
             $offer->setAttribute('public_url', $offer->publicUrl());
 
-            return $offer;
+            return OfferPresentation::forStaffList($offer);
         });
 
         return Inertia::render('Offers/Index', [
@@ -268,8 +272,68 @@ class OfferController extends Controller
             ->firstOrFail();
 
         return Inertia::render('Offers/Show', [
-            'offer' => $offer,
+            'offer' => OfferPresentation::forStaffDetail($offer),
+            'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
         ]);
+    }
+
+    public function downloadVoiceNote(Request $request, $offer): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $offer = Offer::where('id', $offer)
+            ->where('company_id', $activeCompany?->id)
+            ->firstOrFail();
+
+        if (! filled($offer->voice_note_path)) {
+            abort(404);
+        }
+
+        if (! Storage::disk('public')->exists($offer->voice_note_path)) {
+            abort(404);
+        }
+
+        $filename = 'voice-note-'.($offer->offer_number ?: $offer->id).'.'.pathinfo($offer->voice_note_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('public')->download($offer->voice_note_path, $filename);
+    }
+
+    public function sendPostbode(Request $request, $offer, PostbodeSendService $postbode): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $offer = Offer::where('id', $offer)
+            ->where('company_id', $activeCompany?->id)
+            ->firstOrFail();
+
+        $settings = CompanyIntegrations::settings($activeCompany);
+        if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
+            return back()->with('error', 'Postbode is not configured for this workspace. Add your API token under Profile → Integrations.');
+        }
+
+        $request->validate([
+            'registered' => ['nullable', 'boolean'],
+        ]);
+
+        try {
+            $result = $postbode->sendOffer(
+                $offer,
+                $settings,
+                $request->has('registered') ? $request->boolean('registered') : null,
+            );
+
+            $offer->update([
+                'postbode_sent_at' => now(),
+                'postbode_postal_uuid' => $result['uuid'],
+                'postbode_status' => $result['status'],
+            ]);
+
+            return back()->with('status', 'postbode-sent');
+        } catch (PostbodeApiException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'Postbode could not send this quotation.');
+        }
     }
 
     /**
@@ -328,7 +392,7 @@ class OfferController extends Controller
         })->values();
 
         return Inertia::render('Offers/Create', [
-            'offer' => $offer,
+            'offer' => OfferPresentation::forStaffDetail($offer),
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,

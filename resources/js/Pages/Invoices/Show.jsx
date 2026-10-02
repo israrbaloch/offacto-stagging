@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Button from '../../Components/Button';
 import Input, { Select } from '../../Components/Input';
 import Modal from '../../Components/Modal';
+import PostbodeSendModal from '../../Components/PostbodeSendModal';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
@@ -13,9 +14,11 @@ export default function Show({
     paymentMethods = {},
     peppolConfigured = false,
     mollieConfigured = false,
+    postbodeConfigured = false,
 }) {
     const { confirm } = useUi();
     const [sendOpen, setSendOpen] = useState(false);
+    const [postbodeOpen, setPostbodeOpen] = useState(false);
     const [payOpen, setPayOpen] = useState(false);
     const [reminderOpen, setReminderOpen] = useState(false);
     const send = useForm({
@@ -104,9 +107,11 @@ export default function Show({
                     >
                         WhatsApp
                     </Button>
-                    <Button variant="secondary" onClick={() => router.post(`/invoices/${invoice.id}/postbode`)}>
-                        Postbode
-                    </Button>
+                    {postbodeConfigured && (
+                        <Button variant="secondary" onClick={() => setPostbodeOpen(true)}>
+                            {t('integrations.postbode_send_short')}
+                        </Button>
+                    )}
                     <Button variant="secondary" onClick={() => setPayOpen(true)}>
                         Record payment
                     </Button>
@@ -163,6 +168,12 @@ export default function Show({
                     )}
                     {invoice.peppol_sent_at && (
                         <span className="text-emerald-600">Peppol sent {formatDate(invoice.peppol_sent_at)}</span>
+                    )}
+                    {invoice.postbode_sent_at && (
+                        <span className="text-emerald-600">
+                            {t('integrations.postbode_sent', { date: formatDate(invoice.postbode_sent_at) })}
+                            {invoice.postbode_status ? ` · ${invoice.postbode_status}` : ''}
+                        </span>
                     )}
                 </div>
             </div>
@@ -293,6 +304,12 @@ export default function Show({
                     <Input label="Reference" value={pay.data.reference} onChange={(e) => pay.setData('reference', e.target.value)} />
                 </div>
             </Modal>
+            <PostbodeSendModal
+                open={postbodeOpen}
+                onClose={() => setPostbodeOpen(false)}
+                actionUrl={`/invoices/${invoice.id}/postbode`}
+                documentLabel={invoice.invoice_number}
+            />
         </AuthenticatedLayout>
     );
 }

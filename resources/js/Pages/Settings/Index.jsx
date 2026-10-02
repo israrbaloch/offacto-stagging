@@ -393,6 +393,9 @@ export default function SettingsIndex({
                                     <p className="text-xs text-slate-500">
                                         {payment.mollie_configured ? t('settings.mollie_ready') : t('settings.mollie_missing')}
                                     </p>
+                                    <p className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
+                                        {t('settings.company_integrations_note')}
+                                    </p>
                                     <div className="flex justify-end border-t border-slate-100 pt-4">
                                         <SaveButton processing={paymentForm.processing} label={t('settings.save_payment')} />
                                     </div>

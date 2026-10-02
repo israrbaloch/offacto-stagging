@@ -3,16 +3,19 @@ import { useState } from 'react';
 import Button from '../../Components/Button';
 import Input from '../../Components/Input';
 import Modal from '../../Components/Modal';
+import PostbodeSendModal from '../../Components/PostbodeSendModal';
+import OfferAcceptancePanel from '../../Components/OfferAcceptancePanel';
 import OfferPreview from '../../Components/OfferPreview';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { customerName, formatDate } from '../../lib/utils';
 
-export default function Show({ offer }) {
+export default function Show({ offer, postbodeConfigured = false }) {
     const { activeCompany } = usePage().props;
     const { confirm } = useUi();
     const [open, setOpen] = useState(false);
+    const [postbodeOpen, setPostbodeOpen] = useState(false);
     const form = useForm({
         email: offer.customer?.email || '',
         subject: `Offer ${offer.offer_number}`,
@@ -50,6 +53,11 @@ export default function Show({ offer }) {
                         Create invoice
                     </Button>
                     <Button onClick={() => setOpen(true)}>Send</Button>
+                    {isSent && postbodeConfigured && (
+                        <Button variant="secondary" onClick={() => setPostbodeOpen(true)}>
+                            {t('integrations.postbode_send_short')}
+                        </Button>
+                    )}
                     <Button
                         variant="danger"
                         onClick={async () => {
@@ -73,6 +81,13 @@ export default function Show({ offer }) {
                     On-screen preview — the PDF file is created when you send this offer.
                 </p>
             )}
+            {offer.postbode_sent_at && (
+                <p className="mb-3 text-sm text-emerald-700">
+                    {t('integrations.postbode_sent', { date: formatDate(offer.postbode_sent_at) })}
+                    {offer.postbode_status ? ` · ${offer.postbode_status}` : ''}
+                </p>
+            )}
+            <OfferAcceptancePanel offer={offer} />
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <OfferPreview
                     number={offer.offer_number}
@@ -131,6 +146,12 @@ export default function Show({ offer }) {
                     <Input label="Message" value={form.data.message} onChange={(e) => form.setData('message', e.target.value)} />
                 </div>
             </Modal>
+            <PostbodeSendModal
+                open={postbodeOpen}
+                onClose={() => setPostbodeOpen(false)}
+                actionUrl={`/offers/${offer.id}/postbode`}
+                documentLabel={offer.offer_number}
+            />
         </AuthenticatedLayout>
     );
 }
