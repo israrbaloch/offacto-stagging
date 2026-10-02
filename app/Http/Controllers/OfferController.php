@@ -132,6 +132,11 @@ class OfferController extends Controller
 
         // Paginate results
         $offers = $query->latest()->paginate(15)->withQueryString();
+        $offers->getCollection()->transform(function (Offer $offer) {
+            $offer->setAttribute('public_url', $offer->publicUrl());
+
+            return $offer;
+        });
 
         return Inertia::render('Offers/Index', [
             'offers' => $offers,
@@ -334,6 +339,7 @@ class OfferController extends Controller
             'customersData' => Customer::where('company_id', $activeCompany->id)
                 ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email']),
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
+            'publicQuoteUrl' => $offer->publicUrl(),
         ]);
     }
 

@@ -39,13 +39,14 @@ export default function Responses({ briefing, responses = [], autoGenerateOffer 
                             <th className="px-5 py-3 font-medium">{t('briefings.respondent')}</th>
                             <th className="px-3 py-3 font-medium">{t('briefings.submitted')}</th>
                             <th className="px-3 py-3 font-medium">{t('briefings.customer')}</th>
+                            <th className="px-3 py-3 font-medium">{t('common.status')}</th>
                             <th className="px-5 py-3 font-medium">{t('briefings.quotation')}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {responses.length === 0 && (
                             <tr>
-                                <td colSpan="4" className="px-6 py-10 text-center text-slate-400">
+                                <td colSpan="5" className="px-6 py-10 text-center text-slate-400">
                                     {t('briefings.no_responses')}
                                 </td>
                             </tr>
@@ -59,6 +60,11 @@ export default function Responses({ briefing, responses = [], autoGenerateOffer 
                                     </td>
                                     <td className="px-3 py-4 text-slate-500">{formatDate(response.submitted_at)}</td>
                                     <td className="px-3 py-4 text-slate-600">{response.customer ? customerName(response.customer) : '—'}</td>
+                                    <td className="px-3 py-4">
+                                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                            {response.quote_status?.label}
+                                        </span>
+                                    </td>
                                     <td className="px-5 py-4">
                                         <div className="flex flex-wrap items-center gap-2">
                                             {response.offer ? (
@@ -89,7 +95,7 @@ export default function Responses({ briefing, responses = [], autoGenerateOffer 
                                 </tr>
                                 {expandedId === response.id && (
                                     <tr className="bg-slate-50">
-                                        <td colSpan="4" className="px-5 py-4">
+                                        <td colSpan="5" className="px-5 py-4">
                                             <div className="space-y-2">
                                                 {(response.answers || []).length === 0 && (
                                                     <p className="text-sm text-slate-400">{t('briefings.no_answers')}</p>

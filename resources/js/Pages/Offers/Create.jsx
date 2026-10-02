@@ -7,6 +7,7 @@ import OfferPreview from '../../Components/OfferPreview';
 import RichTextEditor from '../../Components/RichTextEditor';
 import SelectMenu from '../../Components/SelectMenu';
 import OfferBlocksEditor from '../../Components/OfferBlocksEditor';
+import CopyLinkButton from '../../Components/CopyLinkButton';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
@@ -70,6 +71,7 @@ export default function Create({
     nextOfferNumber = '',
     customersData = [],
     legalDocuments = [],
+    publicQuoteUrl = null,
 }) {
     const { activeCompany } = usePage().props;
     const parsed = parseIntro(offer?.intro || '');
@@ -210,6 +212,13 @@ export default function Create({
                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                                 {savedLabel}
                             </span>
+                            {publicQuoteUrl && (
+                                <CopyLinkButton
+                                    url={publicQuoteUrl}
+                                    labelKey="offers.copy_public_link"
+                                    className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                                />
+                            )}
                             <button
                                 type="button"
                                 onClick={() => setPreviewOpen(true)}
@@ -246,11 +255,9 @@ export default function Create({
 
                 {offer?.briefing_response?.briefing && (
                     <div className="mb-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
-                        Generated from briefing <span className="font-semibold">{offer.briefing_response.briefing.title}</span>
-                        {' — '}
-                        review before sending.
+                        {t('offers.from_briefing_banner', { title: offer.briefing_response.briefing.title })}
                         <Link href={`/briefings/${offer.briefing_response.briefing.id}/responses`} className="ml-2 font-medium underline">
-                            View response
+                            {t('offers.view_response')}
                         </Link>
                     </div>
                 )}

@@ -3,11 +3,18 @@ import { useState } from 'react';
 import Icon from '../../Components/Icon';
 import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
 const fieldClass =
     'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-800';
+
+function statusLabel(status) {
+    const key = `briefings.status.${status}`;
+    const translated = t(key);
+    return translated === key ? status : translated;
+}
 
 function emptyQuestion(type = 'short_text') {
     return {
@@ -50,6 +57,7 @@ export default function Edit({ briefing, customers = {}, services = [], question
     });
 
     const [copied, setCopied] = useState(false);
+    const shareForm = useForm({ email: '', message: '' });
 
     const updateQuestion = (index, key, value) => {
         form.setData(
@@ -111,7 +119,7 @@ export default function Edit({ briefing, customers = {}, services = [], question
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            window.prompt('Copy this link', shareUrl);
+            window.prompt(t('common.copy_link_prompt'), shareUrl);
         }
     };
 
@@ -126,8 +134,8 @@ export default function Edit({ briefing, customers = {}, services = [], question
                         <Icon name="back" className="h-4 w-4" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-semibold text-slate-900">Briefing builder</h1>
-                        <p className="text-xs text-slate-400 capitalize">{form.data.status}</p>
+                        <h1 className="text-2xl font-semibold text-slate-900">{t('briefings.builder_title')}</h1>
+                        <p className="text-xs text-slate-400">{statusLabel(form.data.status)}</p>
                     </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -137,51 +145,51 @@ export default function Edit({ briefing, customers = {}, services = [], question
                         rel="noreferrer"
                         className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
                     >
-                        Preview
+                        {t('briefings.preview')}
                     </a>
                     <button type="button" onClick={copyLink} className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                        {copied ? 'Copied' : 'Copy share link'}
+                        {copied ? t('common.copied') : t('briefings.copy_share_link')}
                     </button>
                     {form.data.status !== 'active' && (
                         <button type="button" onClick={() => save({ status: 'active' })} className="rounded-full border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50">
-                            Activate
+                            {t('briefings.activate')}
                         </button>
                     )}
                     {form.data.status === 'active' && (
                         <button type="button" onClick={() => save({ status: 'closed' })} className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700">
-                            Close
+                            {t('briefings.close')}
                         </button>
                     )}
                     <button type="button" disabled={form.processing} onClick={() => save()} className="rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50">
-                        Save
+                        {t('briefings.save')}
                     </button>
                 </div>
             </div>
 
             <div className="space-y-6">
                 <section className="rounded-3xl border border-slate-200 bg-white p-6">
-                    <h2 className="text-lg font-semibold text-slate-900">Settings</h2>
+                    <h2 className="text-lg font-semibold text-slate-900">{t('briefings.settings')}</h2>
                     <div className="mt-5 grid gap-5 md:grid-cols-2">
                         <label className="block md:col-span-2">
-                            <span className={labelClass}>Internal title</span>
+                            <span className={labelClass}>{t('briefings.internal_title')}</span>
                             <input className={fieldClass} value={form.data.title} onChange={(e) => form.setData('title', e.target.value)} />
                         </label>
                         <label className="block">
-                            <span className={labelClass}>Customer (optional)</span>
+                            <span className={labelClass}>{t('briefings.customer_optional')}</span>
                             <SelectMenu
                                 className={fieldClass}
                                 value={form.data.customer_id}
                                 onChange={(e) => form.setData('customer_id', e.target.value)}
                                 options={customerOptions}
-                                placeholder="Template — assign later"
+                                placeholder={t('briefings.customer_template_placeholder')}
                             />
                         </label>
                         <label className="block">
-                            <span className={labelClass}>Quote valid for (days)</span>
+                            <span className={labelClass}>{t('briefings.quote_valid_days')}</span>
                             <input className={fieldClass} type="number" min="1" value={form.data.valid_until_days} onChange={(e) => form.setData('valid_until_days', e.target.value)} />
                         </label>
                         <label className="block md:col-span-2">
-                            <span className={labelClass}>Intro shown to the respondent</span>
+                            <span className={labelClass}>{t('briefings.intro_respondent')}</span>
                             <textarea className={fieldClass} rows={4} value={form.data.intro} onChange={(e) => form.setData('intro', e.target.value)} />
                         </label>
                         <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -190,14 +198,50 @@ export default function Edit({ briefing, customers = {}, services = [], question
                                 checked={!!form.data.auto_generate_offer}
                                 onChange={(e) => form.setData('auto_generate_offer', e.target.checked)}
                             />
-                            Auto-create a draft quotation from answers
+                            {t('briefings.auto_generate_offer')}
                         </label>
                     </div>
+                    <form
+                        className="mt-6 grid gap-3 border-t border-slate-100 pt-5 md:grid-cols-[1fr_1fr_auto]"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            shareForm.post(`/briefings/${briefing.id}/share`, { preserveScroll: true });
+                        }}
+                    >
+                        <label className="block text-sm">
+                            <span className={labelClass}>{t('briefings.share_by_email')}</span>
+                            <input
+                                type="email"
+                                required
+                                className={fieldClass}
+                                value={shareForm.data.email}
+                                onChange={(e) => shareForm.setData('email', e.target.value)}
+                                placeholder={t('briefings.share_email_label')}
+                            />
+                        </label>
+                        <label className="block text-sm">
+                            <span className={labelClass}>{t('briefings.share_message')}</span>
+                            <input
+                                className={fieldClass}
+                                value={shareForm.data.message}
+                                onChange={(e) => shareForm.setData('message', e.target.value)}
+                            />
+                        </label>
+                        <div className="flex items-end">
+                            <button
+                                type="submit"
+                                disabled={shareForm.processing}
+                                className="w-full rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-800 hover:bg-indigo-100 disabled:opacity-50"
+                            >
+                                {t('briefings.send_link')}
+                            </button>
+                        </div>
+                    </form>
                 </section>
 
                 <section className="rounded-3xl border border-slate-200 bg-white p-6">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-lg font-semibold text-slate-900">Questions</h2>
+                        <h2 className="text-lg font-semibold text-slate-900">{t('briefings.questions_heading')}</h2>
                         <div className="flex flex-wrap gap-2">
                             {typeOptions.map((option) => (
                                 <button
@@ -214,11 +258,13 @@ export default function Edit({ briefing, customers = {}, services = [], question
                     </div>
 
                     <div className="space-y-4">
-                        {form.data.questions.length === 0 && <p className="text-sm text-slate-400">Add a heading or question to get started.</p>}
+                        {form.data.questions.length === 0 && <p className="text-sm text-slate-400">{t('briefings.add_questions_hint')}</p>}
                         {form.data.questions.map((question, index) => (
                             <div key={question.id || `new-${index}`} className="rounded-2xl border border-slate-200 p-4">
                                 <div className="mb-3 flex items-center justify-between gap-2">
-                                    <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Question {index + 1}</span>
+                                    <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                                        {t('briefings.question_n', { n: index + 1 })}
+                                    </span>
                                     <div className="flex gap-1">
                                         <button type="button" onClick={() => move(index, -1)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50" aria-label="Move up">
                                             <Icon name="chevron" className="h-4 w-4 rotate-180" />
@@ -233,11 +279,11 @@ export default function Edit({ briefing, customers = {}, services = [], question
                                 </div>
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <label className="block">
-                                        <span className={labelClass}>Type</span>
+                                        <span className={labelClass}>{t('briefings.type')}</span>
                                         <SelectMenu className={fieldClass} value={question.type} onChange={(e) => changeType(index, e.target.value)} options={typeOptions} allowEmpty={false} />
                                     </label>
                                     <label className="block">
-                                        <span className={labelClass}>Label</span>
+                                        <span className={labelClass}>{t('briefings.label')}</span>
                                         <input className={fieldClass} value={question.label} onChange={(e) => updateQuestion(index, 'label', e.target.value)} />
                                         {form.errors[`questions.${index}.label`] && (
                                             <span className="mt-1 block text-xs text-rose-600">{form.errors[`questions.${index}.label`]}</span>
@@ -246,19 +292,19 @@ export default function Edit({ briefing, customers = {}, services = [], question
                                     {question.type !== 'heading' && (
                                         <>
                                             <label className="block md:col-span-2">
-                                                <span className={labelClass}>Help text</span>
+                                                <span className={labelClass}>{t('briefings.help_text')}</span>
                                                 <input className={fieldClass} value={question.help_text} onChange={(e) => updateQuestion(index, 'help_text', e.target.value)} />
                                             </label>
                                             <label className="flex items-center gap-2 text-sm text-slate-700">
                                                 <input type="checkbox" checked={question.required} onChange={(e) => updateQuestion(index, 'required', e.target.checked)} />
-                                                Required
+                                                {t('briefings.required')}
                                             </label>
                                         </>
                                     )}
                                     {priced(question.type) && !hasChoices(question.type) && (
                                         <>
                                             <label className="block">
-                                                <span className={labelClass}>Linked service</span>
+                                                <span className={labelClass}>{t('briefings.linked_service')}</span>
                                                 <SelectMenu
                                                     className={fieldClass}
                                                     value={question.service_id}
@@ -268,7 +314,7 @@ export default function Edit({ briefing, customers = {}, services = [], question
                                                 />
                                             </label>
                                             <label className="block">
-                                                <span className={labelClass}>Price override</span>
+                                                <span className={labelClass}>{t('briefings.price_override')}</span>
                                                 <input className={fieldClass} type="number" min="0" step="0.01" value={question.price_override} onChange={(e) => updateQuestion(index, 'price_override', e.target.value)} />
                                             </label>
                                         </>
@@ -277,13 +323,13 @@ export default function Edit({ briefing, customers = {}, services = [], question
                                 {hasChoices(question.type) && (
                                     <div className="mt-4 space-y-3">
                                         <div className="text-sm font-medium text-slate-800">
-                                            {question.type === 'multiple_choice' ? 'Choices (sum selected prices)' : 'Choices'}
+                                            {question.type === 'multiple_choice' ? t('briefings.choices_multiple') : t('briefings.choices_single')}
                                         </div>
                                         {(question.options || []).map((option, optionIndex) => (
                                             <div key={optionIndex} className="grid gap-3 md:grid-cols-3">
                                                 <input
                                                     className={fieldClass}
-                                                    placeholder="Label"
+                                                    placeholder={t('briefings.choice_label')}
                                                     value={option.label}
                                                     onChange={(e) => {
                                                         const options = [...question.options];
@@ -322,7 +368,7 @@ export default function Edit({ briefing, customers = {}, services = [], question
                                             onClick={() => updateQuestion(index, 'options', [...(question.options || []), { label: '', price: '', service_id: '' }])}
                                             className="text-sm font-medium text-indigo-600"
                                         >
-                                            Add choice
+                                            {t('briefings.add_choice')}
                                         </button>
                                     </div>
                                 )}
@@ -333,16 +379,16 @@ export default function Edit({ briefing, customers = {}, services = [], question
 
                 <div className="flex justify-between">
                     <Link href={`/briefings/${briefing.id}/responses`} className="text-sm font-medium text-indigo-600">
-                        View responses
+                        {t('briefings.view_responses_link')}
                     </Link>
                     <button
                         type="button"
                         className="text-sm text-rose-600"
                         onClick={() => {
-                            if (confirm('Delete this briefing?')) router.delete(`/briefings/${briefing.id}`);
+                            if (confirm(t('briefings.delete_confirm'))) router.delete(`/briefings/${briefing.id}`);
                         }}
                     >
-                        Delete briefing
+                        {t('briefings.delete')}
                     </button>
                 </div>
             </div>

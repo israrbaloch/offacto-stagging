@@ -8,10 +8,12 @@ use App\Models\BriefingQuestion;
 use App\Models\Customer;
 use App\Models\Service;
 use App\Models\BriefingResponse;
+use App\Mail\BriefingShareMail;
 use App\Services\BriefingQuoteGenerator;
 use App\Support\CompanyAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -82,9 +84,76 @@ class BriefingController extends Controller
             'briefing' => $briefing,
             'customers' => $customers,
             'services' => $services,
-            'questionTypes' => BriefingQuestion::types(),
+            'questionTypes' => collect(BriefingQuestion::types())->mapWithKeys(
+                fn (string $label, string $key) => [$key => __('briefings.question_type.'.$key)]
+            ),
             'shareUrl' => $briefing->publicUrl(),
         ]);
+    }
+
+    public function duplicate(Request $request, Briefing $briefing): RedirectResponse
+    {
+        $company = $request->user()->activeCompany();
+        if (! $company || $briefing->company_id !== $company->id) {
+            abort(403);
+        }
+
+        if ($deny = CompanyAccess::denyWrite($request->user(), $company)) {
+            return $deny;
+        }
+
+        $copy = $briefing->replicate(['share_token']);
+        $copy->title = trim($briefing->title.' '.__('briefings.copy_suffix'));
+        $copy->status = Briefing::STATUS_DRAFT;
+        $copy->save();
+
+        foreach ($briefing->questions as $question) {
+            $copy->questions()->create([
+                'sort_order' => $question->sort_order,
+                'type' => $question->type,
+                'label' => $question->label,
+                'help_text' => $question->help_text,
+                'required' => $question->required,
+                'service_id' => $question->service_id,
+                'price_override' => $question->price_override,
+                'options' => $question->options ?? [],
+            ]);
+        }
+
+        return redirect()->route('briefings.edit', $copy)->with('status', 'briefing-duplicated');
+    }
+
+    public function archive(Request $request, Briefing $briefing): RedirectResponse
+    {
+        $company = $request->user()->activeCompany();
+        if (! $company || $briefing->company_id !== $company->id) {
+            abort(403);
+        }
+
+        $briefing->update(['status' => Briefing::STATUS_CLOSED]);
+
+        return back()->with('status', 'briefing-archived');
+    }
+
+    public function share(Request $request, Briefing $briefing): RedirectResponse
+    {
+        $company = $request->user()->activeCompany();
+        if (! $company || $briefing->company_id !== $company->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'message' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        Mail::to($data['email'])->send(new BriefingShareMail(
+            $briefing,
+            $briefing->publicUrl(),
+            $data['message'] ?? null,
+        ));
+
+        return back()->with('status', 'briefing-shared');
     }
 
     public function update(UpdateBriefingRequest $request, Briefing $briefing): RedirectResponse
@@ -179,6 +248,7 @@ class BriefingController extends Controller
                     'display' => app(BriefingQuoteGenerator::class)->formatAnswerForDisplay($answer),
                     'file_name' => $answer->value['original_name'] ?? null,
                 ]),
+                'quote_status' => $this->responseQuoteStatus($response),
             ]);
 
         return Inertia::render('Briefings/Responses', [
@@ -213,5 +283,28 @@ class BriefingController extends Controller
 
         return redirect()->route('offers.edit', $offer)
             ->with('status', 'briefing-quote-generated');
+    }
+
+    /**
+     * @return array{key: string, label: string}
+     */
+    private function responseQuoteStatus(BriefingResponse $response): array
+    {
+        if (! $response->offer_id || ! $response->offer) {
+            return [
+                'key' => 'pending',
+                'label' => __('briefings.response_status.pending'),
+            ];
+        }
+
+        $name = strtolower((string) ($response->offer->statusRelation->name ?? 'draft'));
+
+        return match ($name) {
+            'accepted' => ['key' => 'accepted', 'label' => __('briefings.response_status.accepted')],
+            'invoiced' => ['key' => 'invoiced', 'label' => __('briefings.response_status.invoiced')],
+            'sent', 'pending', 'open' => ['key' => 'sent', 'label' => __('briefings.response_status.sent')],
+            'rejected', 'declined' => ['key' => 'declined', 'label' => __('briefings.response_status.declined')],
+            default => ['key' => 'draft', 'label' => __('briefings.response_status.draft')],
+        };
     }
 }

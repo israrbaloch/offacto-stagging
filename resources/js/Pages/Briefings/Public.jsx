@@ -95,7 +95,15 @@ export default function Public({ briefing, token, submitted = false, canSubmit =
                         <div className="rounded-3xl border border-slate-200 bg-white p-6">
                             <h1 className="text-2xl font-semibold text-slate-900">{briefing.title}</h1>
                             {briefing.intro && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{briefing.intro}</p>}
-                            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                            {askable.length > 0 && (
+                                <p className="mt-3 text-xs font-medium text-slate-500">
+                                    {t('briefings.step_progress', {
+                                        current: Math.min(answeredCount + 1, askable.length),
+                                        total: askable.length,
+                                    })}
+                                </p>
+                            )}
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
                                 <div className="h-full rounded-full" style={{ width: `${progress}%`, background: primary }} />
                             </div>
                             {!canSubmit && <p className="mt-3 text-xs text-amber-600">{t('briefings.preview_only')}</p>}

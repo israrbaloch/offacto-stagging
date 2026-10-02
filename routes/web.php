@@ -49,11 +49,11 @@ Route::get('/', function () {
 })->middleware('auth');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified.email'])
     ->name('dashboard');
 
 Route::get('/search', SearchController::class)
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified.email'])
     ->name('search');
 
 Route::middleware(['auth', 'verified.email'])->group(function () {
@@ -110,6 +110,9 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
     Route::delete('briefings/{briefing}', [BriefingController::class, 'destroy'])->name('briefings.destroy');
     Route::get('briefings/{briefing}/responses', [BriefingController::class, 'responses'])->name('briefings.responses');
     Route::post('briefings/{briefing}/responses/{response}/generate-quote', [BriefingController::class, 'generateQuote'])->name('briefings.responses.generate-quote');
+    Route::post('briefings/{briefing}/duplicate', [BriefingController::class, 'duplicate'])->name('briefings.duplicate');
+    Route::post('briefings/{briefing}/archive', [BriefingController::class, 'archive'])->name('briefings.archive');
+    Route::post('briefings/{briefing}/share', [BriefingController::class, 'share'])->name('briefings.share');
 
     // Offers
     Route::get('offers/export-zip', [OfferController::class, 'exportZip'])->name('offers.export-zip');

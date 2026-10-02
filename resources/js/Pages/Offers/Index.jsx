@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import CopyLinkButton from '../../Components/CopyLinkButton';
 import Icon from '../../Components/Icon';
 import Pagination from '../../Components/Pagination';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
@@ -197,7 +198,30 @@ export default function Index({ offers, stats = {} }) {
                         </div>
                     )}
 
-                    <div className="overflow-x-auto">
+                    <div className="space-y-3 border-t border-slate-100 p-4 md:hidden">
+                        {rows.map((offer) => {
+                            const status = statusMeta(offer);
+                            return (
+                                <div key={offer.id} className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+                                    <Link href={`/offers/${offer.id}/edit`} className="font-semibold text-indigo-600">
+                                        {offer.offer_number}
+                                    </Link>
+                                    <div className="mt-1 text-sm text-slate-600">{offer.customer ? displayName(offer.customer) : t('offers.untitled')}</div>
+                                    <div className="mt-2 flex items-center justify-between">
+                                        <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                                        <span className="font-serif text-slate-900">{money(offer.total)}</span>
+                                    </div>
+                                    <CopyLinkButton
+                                        url={offer.public_url}
+                                        labelKey="offers.copy_public_link"
+                                        className="mt-3 text-xs font-medium text-indigo-600"
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="hidden overflow-x-auto md:block">
                         <table className="w-full min-w-[820px] text-left text-sm">
                             <thead>
                                 <tr className="border-y border-slate-100 text-[11px] uppercase tracking-wide text-slate-400">
@@ -207,13 +231,14 @@ export default function Index({ offers, stats = {} }) {
                                     <th className="px-3 py-3 font-medium">{t('offers.valid_until')}</th>
                                     <th className="px-3 py-3 font-medium">{t('common.type')}</th>
                                     <th className="px-3 py-3 font-medium">{t('common.status')}</th>
+                                    <th className="px-3 py-3 font-medium">{t('common.actions')}</th>
                                     <th className="px-5 py-3 text-right font-medium sm:px-6">{t('offers.amount')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {rows.length === 0 && (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-10 text-center text-slate-400">
+                                        <td colSpan="8" className="px-6 py-10 text-center text-slate-400">
                                             {t('offers.empty')}
                                         </td>
                                     </tr>
@@ -250,6 +275,13 @@ export default function Index({ offers, stats = {} }) {
                                             </td>
                                             <td className="px-3 py-4">
                                                 <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                                            </td>
+                                            <td className="px-3 py-4">
+                                                <CopyLinkButton
+                                                    url={offer.public_url}
+                                                    labelKey="offers.copy_public_link"
+                                                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                                                />
                                             </td>
                                             <td className="px-5 py-4 text-right font-serif text-slate-900 sm:px-6">
                                                 {money(offer.total)}
