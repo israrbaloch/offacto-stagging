@@ -90,7 +90,7 @@ export default function Register({ languages = {} }) {
                 <LocaleSelect />
             </div>
             <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-                <aside className="relative hidden w-[42%] flex-col justify-between overflow-hidden bg-indigo-50 px-10 py-10 lg:flex">
+                <aside className="auth-aside-bg relative hidden w-[42%] flex-col justify-between overflow-hidden px-10 py-10 lg:flex">
                     <FloatingFavicons count={8} minSize={36} maxSize={128} />
                     <div className="relative">
                         <Logo className="h-8 w-auto" />

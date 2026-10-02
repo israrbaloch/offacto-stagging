@@ -27,11 +27,11 @@ export default function FloatingFavicons({ count = 10, minSize = 28, maxSize = 1
                 size,
                 left: `${Math.min(90, Math.max(2, cellLeft + jitterX))}%`,
                 top: `${Math.min(90, Math.max(2, cellTop + jitterY))}%`,
-                duration: `${20 + Math.round(unit(index, 4) * 18)}s`,
-                x: `${Math.round((unit(index, 5) - 0.5) * 22)}px`,
-                y: `${Math.round((unit(index, 6) - 0.5) * 22)}px`,
-                delay: `-${Math.round(unit(index, 7) * 16)}s`,
-                opacity: 0.22 + unit(index, 8) * 0.28,
+                duration: `${11 + Math.round(unit(index, 4) * 9)}s`,
+                x: `${Math.round((unit(index, 5) - 0.5) * 90)}px`,
+                y: `${Math.round((unit(index, 6) - 0.5) * 90)}px`,
+                delay: `-${Math.round(unit(index, 7) * 8)}s`,
+                opacity: 0.38 + unit(index, 8) * 0.32,
             };
         });
     }, [count, minSize, maxSize]);

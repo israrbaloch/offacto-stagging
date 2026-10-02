@@ -57,7 +57,7 @@ export default function Sidebar() {
     void props.locale;
 
     return (
-        <aside className="relative hidden h-full w-[250px] shrink-0 flex-col overflow-hidden rounded-l-3xl bg-indigo-50 lg:flex">
+        <aside className="auth-aside-bg relative hidden h-full w-[250px] shrink-0 flex-col overflow-hidden rounded-l-3xl lg:flex">
             <FloatingFavicons count={6} minSize={24} maxSize={80} />
             <div className="relative z-10 px-5 pt-6">
                 <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1">

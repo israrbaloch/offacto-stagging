@@ -66,14 +66,16 @@ html.dark .divide-slate-100 > :not(:last-child) { border-color: #1e293b; }
 html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 
 @keyframes register-float {
-    0% {
-        transform: translate3d(0, 0, 0) scale(1);
-    }
-    50% {
-        transform: translate3d(var(--float-x, 18px), var(--float-y, -22px), 0) scale(1.04);
-    }
+    0%,
     100% {
-        transform: translate3d(0, 0, 0) scale(1);
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    }
+    33% {
+        transform: translate3d(var(--float-x, 36px), var(--float-y, -32px), 0) scale(1.1) rotate(4deg);
+    }
+    66% {
+        transform: translate3d(calc(var(--float-x, 36px) * -0.75), calc(var(--float-y, -32px) * -0.85), 0)
+            scale(0.94) rotate(-3deg);
     }
 }
 
@@ -88,8 +90,13 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     }
 }
 
+.auth-aside-bg {
+    background-color: #dadff4;
+}
+
 .register-orb {
-    animation: register-float var(--float-duration, 28s) ease-in-out infinite;
+    animation: register-float var(--float-duration, 14s) ease-in-out infinite;
+    will-change: transform;
 }
 
 .register-quote {
