@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'mollie' => [
+        // Optional public URL for webhooks (e.g. ngrok) when APP_URL is localhost.
+        'webhook_url' => env('MOLLIE_WEBHOOK_URL'),
+    ],
+
     'peppol' => [
         'endpoint' => env('PEPPOL_ENDPOINT'),
         'token' => env('PEPPOL_TOKEN'),

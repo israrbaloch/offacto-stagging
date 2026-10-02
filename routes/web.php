@@ -17,6 +17,7 @@ use App\Http\Controllers\PublicBriefingController;
 use App\Http\Controllers\PublicOfferController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\NumberingSeriesController;
+use App\Http\Controllers\PlatformSettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\ServiceController;
@@ -68,12 +69,12 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
     Route::get('/support', fn () => Inertia::render('Support'))->name('support');
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
     Route::post('/upgrade', [UpgradeController::class, 'store'])->name('upgrade.store');
+    Route::get('/upgrade/callback', [UpgradeController::class, 'callback'])->name('upgrade.callback');
 
     Route::post('/profile/numbering-series', [NumberingSeriesController::class, 'store'])->name('profile.numbering-series.store');
     Route::patch('/profile/numbering-series/{series}', [NumberingSeriesController::class, 'update'])->name('profile.numbering-series.update');
     Route::delete('/profile/numbering-series/{series}', [NumberingSeriesController::class, 'destroy'])->name('profile.numbering-series.destroy');
     Route::post('/profile/numbering-series/{series}/default', [NumberingSeriesController::class, 'setDefault'])->name('profile.numbering-series.default');
-    Route::get('/settings', [ProfileController::class, 'edit'])->name('settings');
     Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
 
     Route::post('/theme', function (\Illuminate\Http\Request $request) {
@@ -133,6 +134,14 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
     Route::get('invoices/{invoice}/ubl', [InvoiceController::class, 'downloadUbl'])->name('invoices.ubl');
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.payment');
+});
+
+Route::middleware(['auth', 'verified.email', 'role:admin'])->group(function () {
+    Route::get('/settings', [PlatformSettingsController::class, 'index'])->name('settings.index');
+    Route::patch('/settings/general', [PlatformSettingsController::class, 'updateGeneral'])->name('settings.general.update');
+    Route::patch('/settings/platform', [PlatformSettingsController::class, 'updatePlatform'])->name('settings.platform.update');
+    Route::patch('/settings/payment-gateway', [PlatformSettingsController::class, 'updatePaymentGateway'])->name('settings.payment.update');
+    Route::patch('/settings/plans', [PlatformSettingsController::class, 'updatePlans'])->name('settings.plans.update');
 });
 
 // Admin routes

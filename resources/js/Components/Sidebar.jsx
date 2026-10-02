@@ -17,7 +17,6 @@ const mainNav = [
 
 const footerNav = [
     { href: '/support', label: 'nav.support', icon: 'help' },
-    { href: '/settings', label: 'nav.settings', icon: 'settings', aliases: ['/profile'] },
 ];
 
 function isActive(url, item) {
@@ -99,6 +98,12 @@ export default function Sidebar() {
                 {footerNav.map((item) => (
                     <NavLink key={item.href} item={item} url={url} />
                 ))}
+                {user?.is_admin && (
+                    <NavLink
+                        item={{ href: '/settings', label: 'nav.settings', icon: 'settings' }}
+                        url={url}
+                    />
+                )}
             </nav>
         </aside>
     );

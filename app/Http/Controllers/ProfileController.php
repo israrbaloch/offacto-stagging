@@ -80,7 +80,7 @@ class ProfileController extends Controller
                 : collect(),
         ];
 
-        return Inertia::render($request->routeIs('settings') ? 'Settings' : 'Profile/Edit', $props);
+        return Inertia::render('Profile/Edit', $props);
     }
 
     public function sendPasswordReset(Request $request): RedirectResponse

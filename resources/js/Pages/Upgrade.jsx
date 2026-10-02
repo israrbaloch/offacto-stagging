@@ -3,7 +3,7 @@ import Icon from '../Components/Icon';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { t } from '../lib/i18n';
 
-function PlanCard({ plan, currentPlan, onSelect, processing }) {
+function PlanCard({ plan, currentPlan, onSelect, processing, checkoutDisabled }) {
     const selected = currentPlan === plan.id;
     const highlighted = plan.highlight;
 
@@ -18,23 +18,23 @@ function PlanCard({ plan, currentPlan, onSelect, processing }) {
                     {t('upgrade.popular')}
                 </span>
             )}
-            <h3 className="text-lg font-semibold text-slate-900">{t(`upgrade.plans.${plan.id}.name`)}</h3>
+            <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
             <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-3xl font-bold text-slate-900">{plan.price}</span>
                 <span className="text-sm text-slate-500">/{t(`upgrade.${plan.period}`)}</span>
             </div>
-            <p className="mt-2 text-sm text-slate-600">{t(`upgrade.plans.${plan.id}.description`)}</p>
+            <p className="mt-2 text-sm text-slate-600">{plan.description}</p>
             <ul className="mt-5 flex-1 space-y-2">
-                {plan.features.map((featureKey) => (
-                    <li key={featureKey} className="flex items-start gap-2 text-sm text-slate-700">
+                {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm text-slate-700">
                         <Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
-                        <span>{t(featureKey)}</span>
+                        <span>{feature}</span>
                     </li>
                 ))}
             </ul>
             <button
                 type="button"
-                disabled={processing || selected}
+                disabled={processing || selected || checkoutDisabled}
                 onClick={() => onSelect(plan.id)}
                 className={`mt-6 w-full rounded-full px-4 py-2.5 text-sm font-semibold transition disabled:cursor-default ${
                     selected
@@ -50,8 +50,8 @@ function PlanCard({ plan, currentPlan, onSelect, processing }) {
     );
 }
 
-export default function Upgrade({ plans = [], currentPlan = null, trialExpired = false }) {
-    const { activeCompany } = usePage().props;
+export default function Upgrade({ plans = [], currentPlan = null, trialExpired = false, paymentConfigured = true }) {
+    const { activeCompany, flash } = usePage().props;
     const form = useForm({ plan: '' });
 
     const selectPlan = (planId) => {
@@ -74,6 +74,16 @@ export default function Upgrade({ plans = [], currentPlan = null, trialExpired =
                             })}
                         </p>
                     )}
+                    {flash?.status === 'payment-processing' && (
+                        <p className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+                            {t('upgrade.payment_processing')}
+                        </p>
+                    )}
+                    {!paymentConfigured && (
+                        <p className="mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            {t('upgrade.payment_not_configured')}
+                        </p>
+                    )}
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-3">
@@ -84,6 +94,7 @@ export default function Upgrade({ plans = [], currentPlan = null, trialExpired =
                             currentPlan={currentPlan}
                             processing={form.processing}
                             onSelect={selectPlan}
+                            checkoutDisabled={!paymentConfigured}
                         />
                     ))}
                 </div>

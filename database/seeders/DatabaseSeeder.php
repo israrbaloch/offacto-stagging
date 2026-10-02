@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             AddCompanyForStaff::class,
             AddStatuses::class,
             SiteSettingsSeeder::class,
+            SubscriptionPlanSeeder::class,
             DemoDataSeeder::class,
         ]);
     }

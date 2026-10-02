@@ -16,20 +16,25 @@ class MolliePaymentService
             throw new \RuntimeException('Mollie API key is not configured for this company.');
         }
 
-        $response = Http::withToken($apiKey)
-            ->post('https://api.mollie.com/v2/payments', [
-                'amount' => [
-                    'currency' => 'EUR',
-                    'value' => number_format((float) $invoice->amount_due, 2, '.', ''),
-                ],
-                'description' => 'Invoice '.($invoice->invoice_number ?? $invoice->id),
-                'redirectUrl' => route('invoices.show', $invoice->id),
-                'webhookUrl' => route('webhooks.mollie'),
-                'metadata' => [
-                    'invoice_id' => $invoice->id,
-                    'company_id' => $company->id,
-                ],
-            ]);
+        $payload = [
+            'amount' => [
+                'currency' => 'EUR',
+                'value' => number_format((float) $invoice->amount_due, 2, '.', ''),
+            ],
+            'description' => 'Invoice '.($invoice->invoice_number ?? $invoice->id),
+            'redirectUrl' => route('invoices.show', $invoice->id),
+            'metadata' => [
+                'invoice_id' => (string) $invoice->id,
+                'company_id' => (string) $company->id,
+            ],
+        ];
+
+        $webhookUrl = app(PlatformMollieService::class)->resolveWebhookUrl();
+        if ($webhookUrl !== null) {
+            $payload['webhookUrl'] = $webhookUrl;
+        }
+
+        $response = Http::withToken($apiKey)->post('https://api.mollie.com/v2/payments', $payload);
 
         if (! $response->successful()) {
             throw new \RuntimeException('Mollie payment could not be created.');
@@ -46,6 +51,8 @@ class MolliePaymentService
 
     public function handleWebhook(string $paymentId): void
     {
+        app(PlatformMollieService::class)->syncPaymentStatus($paymentId);
+
         $invoice = Invoice::where('mollie_payment_id', $paymentId)->first();
         if (! $invoice) {
             return;

@@ -29,6 +29,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response as FoundationResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -965,7 +966,7 @@ class InvoiceController extends Controller
         return back()->with('status', 'reminder-sent');
     }
 
-    public function createMollieCheckout(Request $request, $invoice, MolliePaymentService $mollie): RedirectResponse
+    public function createMollieCheckout(Request $request, $invoice, MolliePaymentService $mollie): RedirectResponse|FoundationResponse
     {
         $activeCompany = $request->user()?->activeCompany();
         $invoice = Invoice::where('id', $invoice)
@@ -974,7 +975,7 @@ class InvoiceController extends Controller
 
         $url = $mollie->createCheckout($invoice, $activeCompany);
 
-        return redirect()->away($url);
+        return Inertia::location($url);
     }
 
     public function sendPeppol(Request $request, $invoice, PeppolSendService $peppol): RedirectResponse

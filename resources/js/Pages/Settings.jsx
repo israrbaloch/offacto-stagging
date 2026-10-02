@@ -1,1 +1,1 @@
-export { default } from './Profile/Edit';
+export { default } from './Settings/Index';

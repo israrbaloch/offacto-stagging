@@ -82,6 +82,41 @@ class SiteSettingsSeeder extends Seeder
                 'group' => 'features',
                 'label' => 'Send Welcome Email',
             ],
+            [
+                'key' => 'platform_default_currency',
+                'value' => 'EUR',
+                'type' => 'string',
+                'group' => 'platform',
+                'label' => 'Default currency',
+            ],
+            [
+                'key' => 'payment_gateway',
+                'value' => 'mollie',
+                'type' => 'string',
+                'group' => 'payment',
+                'label' => 'Payment gateway',
+            ],
+            [
+                'key' => 'payment_mollie_mode',
+                'value' => 'test',
+                'type' => 'string',
+                'group' => 'payment',
+                'label' => 'Mollie mode',
+            ],
+            [
+                'key' => 'payment_mollie_test_key',
+                'value' => '',
+                'type' => 'string',
+                'group' => 'payment',
+                'label' => 'Mollie test API key',
+            ],
+            [
+                'key' => 'payment_mollie_live_key',
+                'value' => '',
+                'type' => 'string',
+                'group' => 'payment',
+                'label' => 'Mollie live API key',
+            ],
         ];
 
         foreach ($settings as $setting) {
