@@ -126,11 +126,18 @@ class PublicOfferController extends Controller
                 'unit_price' => $item->price,
                 'total' => $item->total,
             ]),
-            'blocks' => $offer->blocks?->map(fn ($block) => [
-                'id' => $block->id,
-                'type' => $block->type,
-                'content' => $block->content,
-            ]) ?? [],
+            'blocks' => $offer->blocks?->map(function ($block) {
+                $content = $block->content ?? [];
+                if ($block->type === 'image' && ! empty($content['path']) && empty($content['url'])) {
+                    $content['url'] = PublicStorage::url($content['path']);
+                }
+
+                return [
+                    'id' => $block->id,
+                    'type' => $block->type,
+                    'content' => $content,
+                ];
+            }) ?? [],
         ];
     }
 }

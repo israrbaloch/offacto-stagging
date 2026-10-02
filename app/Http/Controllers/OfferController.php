@@ -19,6 +19,7 @@ use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Services\PdfZipExportService;
 use App\Support\OfferMessage;
+use App\Support\PublicStorage;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -582,6 +583,23 @@ class OfferController extends Controller
         }
 
         return back()->with('status', 'blocks-updated');
+    }
+
+    public function uploadBlockImage(Request $request, $offer): JsonResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $offer = Offer::where('id', $offer)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'file' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $path = $validated['file']->store('offer-blocks/'.$offer->id, 'public');
+
+        return response()->json([
+            'path' => $path,
+            'url' => PublicStorage::url($path),
+        ]);
     }
 
     public function storeAttachment(Request $request, $offer): RedirectResponse

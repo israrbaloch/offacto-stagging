@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import FlashToaster from '../../Components/FlashToaster';
 import Logo from '../../Components/Logo';
+import OfferBlockView from '../../Components/OfferBlockView';
 import { money } from '../../lib/utils';
 
 function SignaturePad({ onChange, strokeColor = '#0f172a' }) {
@@ -124,18 +125,7 @@ export default function Public({ offer, token, canRespond }) {
                         <div className="mt-8 space-y-4">
                             {offer.blocks.map((block) => (
                                 <div key={block.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm">
-                                    {block.type === 'text' && <p>{block.content?.text}</p>}
-                                    {block.type === 'image' && block.content?.url && (
-                                        <img src={block.content.url} alt="" className="max-h-64 rounded-lg object-contain" />
-                                    )}
-                                    {block.type === 'video' && block.content?.url && (
-                                        <a href={block.content.url} className="hover:underline" style={{ color: primary }} target="_blank" rel="noreferrer">
-                                            Watch video
-                                        </a>
-                                    )}
-                                    {block.type === 'table' && (
-                                        <pre className="whitespace-pre-wrap">{block.content?.markdown || block.content?.text}</pre>
-                                    )}
+                                    <OfferBlockView block={block} primary={primary} />
                                 </div>
                             ))}
                         </div>
