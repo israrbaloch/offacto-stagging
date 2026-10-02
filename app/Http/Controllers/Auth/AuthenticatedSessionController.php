@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Models\SiteSetting;
+use App\Support\SubscriptionReminder;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -58,6 +59,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+        SubscriptionReminder::markLoginPending($request);
 
         if ($user && !session('active_company_id')) {
             $activeCompany = $user->activeCompany();

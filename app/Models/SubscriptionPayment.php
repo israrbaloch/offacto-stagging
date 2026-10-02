@@ -50,9 +50,6 @@ class SubscriptionPayment extends Model
             return;
         }
 
-        $this->company?->update([
-            'subscription_plan' => $plan->slug,
-            'subscription_started_at' => now(),
-        ]);
+        $this->company?->applySubscriptionPayment($plan);
     }
 }

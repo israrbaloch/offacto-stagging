@@ -20,6 +20,10 @@ class CompanyAccess
 
         $company->loadMissing('statusRelation');
 
+        if ($company->isSubscriptionExpired()) {
+            return 'Your subscription period has ended. You can still view existing records. Renew or choose a plan on the Upgrade page to continue creating and sending.';
+        }
+
         if ($company->isTrialExpired()) {
             return 'Your 14-day trial has ended. You can still view existing records. Choose a plan on the Upgrade page to continue creating and sending.';
         }

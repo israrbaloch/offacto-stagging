@@ -16,8 +16,13 @@ class UpgradeController extends Controller
     public function index(Request $request): Response
     {
         $company = $request->user()?->activeCompany();
+        $currentPlan = $company?->hasActiveSubscription()
+            ? SubscriptionPlan::findBySlug($company->subscription_plan)
+            : null;
 
-        $plans = SubscriptionPlan::active()->ordered()->get()->map->toUpgradeArray();
+        $plans = SubscriptionPlan::active()->ordered()->get()->map(
+            fn (SubscriptionPlan $plan) => $plan->toUpgradeArray(currentPlan: $currentPlan)
+        );
 
         return Inertia::render('Upgrade', [
             'currentPlan' => $company?->subscription_plan,
@@ -43,6 +48,14 @@ class UpgradeController extends Controller
 
         if ($company->subscription_plan === $plan->slug) {
             return redirect()->route('upgrade')->with('status', 'plan-already-active');
+        }
+
+        $currentPlan = $company->hasActiveSubscription()
+            ? SubscriptionPlan::findBySlug($company->subscription_plan)
+            : null;
+
+        if ($currentPlan && ! $plan->isUpgradeFrom($currentPlan)) {
+            return redirect()->route('upgrade')->with('error', __('upgrade.downgrade_not_allowed'));
         }
 
         $gateway = SiteSetting::get('payment_gateway', 'mollie');

@@ -90,6 +90,13 @@ class SiteSettingsSeeder extends Seeder
                 'label' => 'Default currency',
             ],
             [
+                'key' => 'subscription_reminder_days',
+                'value' => '7',
+                'type' => 'integer',
+                'group' => 'platform',
+                'label' => 'Days before expiry to remind',
+            ],
+            [
                 'key' => 'payment_gateway',
                 'value' => 'mollie',
                 'type' => 'string',

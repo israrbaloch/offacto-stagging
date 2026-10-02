@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'is_active',
+        'billing_reminders_enabled',
     ];
 
     /**
@@ -44,6 +45,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'billing_reminders_enabled' => 'boolean',
         ];
     }
 

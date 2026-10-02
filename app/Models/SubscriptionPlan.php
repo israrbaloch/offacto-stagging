@@ -48,6 +48,32 @@ class SubscriptionPlan extends Model
         return $query->orderBy('sort_order')->orderBy('id');
     }
 
+    public static function findBySlug(?string $slug): ?self
+    {
+        if (! filled($slug)) {
+            return null;
+        }
+
+        return static::where('slug', $slug)->first();
+    }
+
+    /**
+     * Whether this plan is a higher tier than the company's current plan (by sort_order).
+     * When there is no current plan, any active plan may be chosen.
+     */
+    public function isUpgradeFrom(?self $current): bool
+    {
+        if ($current === null) {
+            return true;
+        }
+
+        if ($this->slug === $current->slug) {
+            return false;
+        }
+
+        return (int) $this->sort_order > (int) $current->sort_order;
+    }
+
     public function label(string $field, ?string $locale = null): string
     {
         $locale = $locale ?: app()->getLocale();
@@ -110,9 +136,10 @@ class SubscriptionPlan extends Model
     /**
      * @return array<string, mixed>
      */
-    public function toUpgradeArray(?string $locale = null): array
+    public function toUpgradeArray(?string $locale = null, ?self $currentPlan = null): array
     {
         $locale = $locale ?: app()->getLocale();
+        $isCurrent = $currentPlan !== null && $this->slug === $currentPlan->slug;
 
         return [
             'id' => $this->slug,
@@ -123,6 +150,8 @@ class SubscriptionPlan extends Model
             'period' => 'month',
             'highlight' => $this->is_highlighted,
             'features' => $this->displayFeatures($locale),
+            'is_current' => $isCurrent,
+            'can_select' => $this->isUpgradeFrom($currentPlan),
         ];
     }
 

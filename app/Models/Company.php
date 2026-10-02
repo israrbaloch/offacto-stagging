@@ -36,6 +36,10 @@ class Company extends Model
         'trial_ends_at',
         'subscription_plan',
         'subscription_started_at',
+        'subscription_ends_at',
+        'subscription_cancel_at_period_end',
+        'trial_expiry_reminder_sent_at',
+        'subscription_expiry_reminder_sent_at',
     ];
 
     /**
@@ -49,6 +53,10 @@ class Company extends Model
         'trial_starts_at' => 'datetime',
         'trial_ends_at' => 'datetime',
         'subscription_started_at' => 'datetime',
+        'subscription_ends_at' => 'datetime',
+        'subscription_cancel_at_period_end' => 'boolean',
+        'trial_expiry_reminder_sent_at' => 'datetime',
+        'subscription_expiry_reminder_sent_at' => 'datetime',
     ];
 
     /**
@@ -299,13 +307,80 @@ class Company extends Model
         return filled($this->subscription_plan);
     }
 
+    public function isSubscriptionExpired(): bool
+    {
+        if (! $this->hasActiveSubscription()) {
+            return false;
+        }
+
+        if (! $this->subscription_ends_at) {
+            return false;
+        }
+
+        return $this->subscription_ends_at->isPast();
+    }
+
+    public function hasValidSubscription(): bool
+    {
+        return $this->hasActiveSubscription() && ! $this->isSubscriptionExpired();
+    }
+
     public function isTrialExpired(): bool
     {
-        if ($this->hasActiveSubscription()) {
+        if ($this->hasValidSubscription()) {
             return false;
         }
 
         return $this->trial_ends_at && $this->trial_ends_at->isPast();
+    }
+
+    public function subscriptionDaysLeft(): ?int
+    {
+        if (! $this->subscription_ends_at) {
+            return null;
+        }
+
+        return max(0, (int) now()->startOfDay()->diffInDays($this->subscription_ends_at->copy()->startOfDay(), false));
+    }
+
+    public function isSubscriptionExpiringSoon(?int $days = null): bool
+    {
+        $days = $days ?? \App\Support\SubscriptionReminder::reminderDays();
+        $left = $this->subscriptionDaysLeft();
+
+        return $left !== null && $left <= $days;
+    }
+
+    public function applySubscriptionPayment(\App\Models\SubscriptionPlan $plan): void
+    {
+        $base = $this->subscription_ends_at && $this->subscription_ends_at->isFuture()
+            ? $this->subscription_ends_at
+            : now();
+
+        $this->forceFill([
+            'subscription_plan' => $plan->slug,
+            'subscription_started_at' => $this->subscription_started_at ?? now(),
+            'subscription_ends_at' => $base->copy()->addMonth(),
+            'subscription_cancel_at_period_end' => false,
+            'subscription_expiry_reminder_sent_at' => null,
+        ])->save();
+    }
+
+    public function cancelSubscriptionAtPeriodEnd(): void
+    {
+        $this->forceFill([
+            'subscription_cancel_at_period_end' => true,
+        ])->save();
+    }
+
+    public function expireSubscription(): void
+    {
+        $this->forceFill([
+            'subscription_plan' => null,
+            'subscription_started_at' => null,
+            'subscription_ends_at' => null,
+            'subscription_cancel_at_period_end' => false,
+        ])->save();
     }
 
     public function trialDaysLeft(): ?int

@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Middleware\SetLocale;
 use App\Support\PublicStorage;
+use App\Support\SubscriptionReminder;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -80,7 +81,13 @@ class HandleInertiaRequests extends Middleware
                 'trial_days_left' => $daysLeft,
                 'trial_expired' => $active->isTrialExpired(),
                 'subscription_plan' => $active->subscription_plan,
+                'subscription_ends_at' => $active->subscription_ends_at?->toIso8601String(),
+                'subscription_days_left' => $active->subscriptionDaysLeft(),
+                'subscription_cancel_at_period_end' => (bool) $active->subscription_cancel_at_period_end,
+                'subscription_valid' => $active->hasValidSubscription(),
             ] : null,
+            'subscriptionReminder' => SubscriptionReminder::forSession($active, $user, $request),
+            'billingRemindersEnabled' => $user ? (bool) $user->billing_reminders_enabled : true,
             'appearance' => $request->session()->get('appearance', 'light'),
             'locale' => app()->getLocale(),
             'locales' => SetLocale::LOCALES,

@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import I18nSync from '../Components/I18nSync';
 import Sidebar from '../Components/Sidebar';
+import SubscriptionReminderModal from '../Components/SubscriptionReminderModal';
 import Toast from '../Components/Toast';
 import TopBar from '../Components/TopBar';
 import { t } from '../lib/i18n';
@@ -22,6 +23,7 @@ export default function AuthenticatedLayout({ title, children }) {
             <I18nSync />
             <Head title={title} />
             <Toast />
+            <SubscriptionReminderModal />
             <div className="flex h-full">
                 <Sidebar />
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white lg:rounded-r-3xl">

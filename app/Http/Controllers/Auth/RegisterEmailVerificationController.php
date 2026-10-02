@@ -81,6 +81,7 @@ class RegisterEmailVerificationController extends Controller
 
         Auth::login($user, $remember);
         $request->session()->regenerate();
+        \App\Support\SubscriptionReminder::markLoginPending($request);
 
         $activeCompany = $user->activeCompany();
         if ($activeCompany) {

@@ -3,8 +3,9 @@ import Icon from '../Components/Icon';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { t } from '../lib/i18n';
 
-function PlanCard({ plan, currentPlan, onSelect, processing, checkoutDisabled }) {
-    const selected = currentPlan === plan.id;
+function PlanCard({ plan, onSelect, processing, checkoutDisabled }) {
+    const selected = plan.is_current;
+    const downgradeLocked = !plan.can_select && !selected;
     const highlighted = plan.highlight;
 
     return (
@@ -34,23 +35,80 @@ function PlanCard({ plan, currentPlan, onSelect, processing, checkoutDisabled })
             </ul>
             <button
                 type="button"
-                disabled={processing || selected || checkoutDisabled}
+                disabled={processing || selected || checkoutDisabled || downgradeLocked}
                 onClick={() => onSelect(plan.id)}
                 className={`mt-6 w-full rounded-full px-4 py-2.5 text-sm font-semibold transition disabled:cursor-default ${
                     selected
                         ? 'bg-emerald-100 text-emerald-800'
-                        : highlighted
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-500'
-                          : 'bg-slate-900 text-white hover:bg-slate-800'
+                        : downgradeLocked
+                          ? 'bg-slate-100 text-slate-400'
+                          : highlighted
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-500'
+                            : 'bg-slate-900 text-white hover:bg-slate-800'
                 }`}
             >
-                {selected ? t('upgrade.current_plan') : t('upgrade.choose_plan')}
+                {selected
+                    ? t('upgrade.current_plan')
+                    : downgradeLocked
+                      ? t('upgrade.downgrade_not_available')
+                      : t('upgrade.choose_plan')}
             </button>
         </div>
     );
 }
 
-export default function Upgrade({ plans = [], currentPlan = null, trialExpired = false, paymentConfigured = true }) {
+function BillingManagement() {
+    const { activeCompany, billingRemindersEnabled, auth } = usePage().props;
+    const cancelForm = useForm({});
+    const remindersForm = useForm({ enabled: billingRemindersEnabled ?? true });
+
+    if (auth?.user?.is_admin || !activeCompany?.subscription_valid) {
+        return null;
+    }
+
+    const endsLabel = activeCompany.subscription_ends_at
+        ? new Date(activeCompany.subscription_ends_at).toLocaleDateString()
+        : null;
+
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">{t('subscription.billing_title')}</h2>
+            <p className="mt-1 text-sm text-slate-600">
+                {activeCompany.subscription_cancel_at_period_end
+                    ? t('subscription.cancel_pending', { date: endsLabel })
+                    : t('subscription.renews_on', { date: endsLabel })}
+            </p>
+            <label className="mt-4 flex cursor-pointer items-center gap-3 text-sm text-slate-700">
+                <input
+                    type="checkbox"
+                    className="rounded border-slate-300"
+                    checked={remindersForm.data.enabled}
+                    onChange={(e) => {
+                        remindersForm.setData('enabled', e.target.checked);
+                        remindersForm.patch('/subscription/reminders', { preserveScroll: true });
+                    }}
+                />
+                {t('subscription.email_reminders_label')}
+            </label>
+            {!activeCompany.subscription_cancel_at_period_end && (
+                <button
+                    type="button"
+                    disabled={cancelForm.processing}
+                    onClick={() => {
+                        if (window.confirm(t('subscription.cancel_confirm'))) {
+                            cancelForm.post('/subscription/cancel', { preserveScroll: true });
+                        }
+                    }}
+                    className="mt-4 text-sm font-medium text-rose-600 hover:text-rose-700 disabled:opacity-50"
+                >
+                    {t('subscription.cancel_plan')}
+                </button>
+            )}
+        </div>
+    );
+}
+
+export default function Upgrade({ plans = [], trialExpired = false, paymentConfigured = true }) {
     const { activeCompany, flash } = usePage().props;
     const form = useForm({ plan: '' });
 
@@ -79,6 +137,16 @@ export default function Upgrade({ plans = [], currentPlan = null, trialExpired =
                             {t('upgrade.payment_processing')}
                         </p>
                     )}
+                    {flash?.status === 'subscription-cancelled' && (
+                        <p className="mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            {t('subscription.cancel_success')}
+                        </p>
+                    )}
+                    {flash?.status === 'subscription-already-cancelled' && (
+                        <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            {t('subscription.cancel_already')}
+                        </p>
+                    )}
                     {!paymentConfigured && (
                         <p className="mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                             {t('upgrade.payment_not_configured')}
@@ -91,13 +159,14 @@ export default function Upgrade({ plans = [], currentPlan = null, trialExpired =
                         <PlanCard
                             key={plan.id}
                             plan={plan}
-                            currentPlan={currentPlan}
                             processing={form.processing}
                             onSelect={selectPlan}
                             checkoutDisabled={!paymentConfigured}
                         />
                     ))}
                 </div>
+
+                <BillingManagement />
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center text-sm text-slate-600">
                     <p>{t('upgrade.billing_note')}</p>

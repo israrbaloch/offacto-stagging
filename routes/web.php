@@ -70,6 +70,9 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
     Route::post('/upgrade', [UpgradeController::class, 'store'])->name('upgrade.store');
     Route::get('/upgrade/callback', [UpgradeController::class, 'callback'])->name('upgrade.callback');
+    Route::post('/subscription/reminder/dismiss', [\App\Http\Controllers\SubscriptionController::class, 'dismissReminder'])->name('subscription.reminder.dismiss');
+    Route::patch('/subscription/reminders', [\App\Http\Controllers\SubscriptionController::class, 'updateReminders'])->name('subscription.reminders.update');
+    Route::post('/subscription/cancel', [\App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('subscription.cancel');
 
     Route::post('/profile/numbering-series', [NumberingSeriesController::class, 'store'])->name('profile.numbering-series.store');
     Route::patch('/profile/numbering-series/{series}', [NumberingSeriesController::class, 'update'])->name('profile.numbering-series.update');
