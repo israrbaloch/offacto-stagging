@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import Icon from '../../Components/Icon';
 import Pagination from '../../Components/Pagination';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { customerName, formatDate } from '../../lib/utils';
 
@@ -19,13 +20,20 @@ function statusLabel(status) {
 
 export default function Index({ briefings }) {
     const rows = briefings?.data || [];
+    const { confirm } = useUi();
 
     const duplicate = (id) => {
         router.post(`/briefings/${id}/duplicate`, {}, { preserveScroll: true });
     };
 
-    const archive = (id) => {
-        if (window.confirm(t('briefings.archive_confirm'))) {
+    const archive = async (id) => {
+        if (
+            await confirm({
+                message: t('briefings.archive_confirm'),
+                confirmLabel: t('briefings.archive'),
+                danger: true,
+            })
+        ) {
             router.post(`/briefings/${id}/archive`, {}, { preserveScroll: true });
         }
     };

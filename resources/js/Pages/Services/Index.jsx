@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import Icon from '../../Components/Icon';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { money } from '../../lib/utils';
 
@@ -48,6 +49,7 @@ function StatCard({ label, value, accent, icon = 'wrench' }) {
 }
 
 export default function Index({ services = [] }) {
+    const { confirm } = useUi();
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [filter, setFilter] = useState('all');
 
@@ -170,8 +172,14 @@ export default function Index({ services = [] }) {
                                                 <button
                                                     type="button"
                                                     className="text-sm font-medium text-rose-600 hover:text-rose-700"
-                                                    onClick={() => {
-                                                        if (confirm(t('services.delete_confirm'))) {
+                                                    onClick={async () => {
+                                                        if (
+                                                            await confirm({
+                                                                message: t('services.delete_confirm'),
+                                                                confirmLabel: t('common.delete'),
+                                                                danger: true,
+                                                            })
+                                                        ) {
                                                             router.delete(`/services/${service.id}`);
                                                         }
                                                     }}

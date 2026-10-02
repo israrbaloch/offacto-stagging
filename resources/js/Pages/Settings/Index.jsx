@@ -88,23 +88,6 @@ function LocaleLabels({ locales, labels, onChange, multiline = false }) {
     );
 }
 
-function StatusFlash({ flash }) {
-    const map = {
-        'general-settings-saved': t('settings.general_saved'),
-        'platform-settings-saved': t('settings.platform_saved'),
-        'payment-settings-saved': t('settings.payment_saved'),
-        'plans-saved': t('settings.plans_saved'),
-    };
-    const message = map[flash?.status];
-    if (!message) return null;
-
-    return (
-        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
-            {message}
-        </div>
-    );
-}
-
 export default function SettingsIndex({
     locales = ['en', 'fr', 'nl'],
     overview = {},
@@ -114,7 +97,6 @@ export default function SettingsIndex({
     plans = [],
     currencyOptions = ['EUR', 'USD', 'GBP'],
 }) {
-    const { flash } = usePage().props;
     const [section, setSection] = useState('general');
 
     const generalForm = useForm({ ...general });
@@ -205,10 +187,6 @@ export default function SettingsIndex({
                         </div>
                     </div>
                 </header>
-
-                <div className="mb-6">
-                    <StatusFlash flash={flash} />
-                </div>
 
                 <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
                     <nav className="lg:w-56 lg:shrink-0">

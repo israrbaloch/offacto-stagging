@@ -1,9 +1,9 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
+import FlashToaster from '../Components/FlashToaster';
 import I18nSync from '../Components/I18nSync';
 import Sidebar from '../Components/Sidebar';
 import SubscriptionReminderModal from '../Components/SubscriptionReminderModal';
-import Toast from '../Components/Toast';
 import TopBar from '../Components/TopBar';
 import { t } from '../lib/i18n';
 
@@ -22,7 +22,7 @@ export default function AuthenticatedLayout({ title, children }) {
         <div className="h-screen overflow-hidden bg-slate-100">
             <I18nSync />
             <Head title={title} />
-            <Toast />
+            <FlashToaster />
             <SubscriptionReminderModal />
             <div className="flex h-full">
                 <Sidebar />
@@ -34,11 +34,6 @@ export default function AuthenticatedLayout({ title, children }) {
                             <Link href="/upgrade" className="font-semibold underline underline-offset-2 hover:text-rose-900">
                                 {t('layout.upgrade_now')}
                             </Link>
-                        </div>
-                    )}
-                    {flash?.error && (
-                        <div className="border-b border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700 lg:px-8">
-                            {flash.error}
                         </div>
                     )}
                     {activeCompany?.pending_approval && (

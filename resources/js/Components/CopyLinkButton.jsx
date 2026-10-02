@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useUi } from '../context/UiContext';
 import { t } from '../lib/i18n';
 
 export default function CopyLinkButton({ url, className = '', labelKey = 'common.copy_link' }) {
+    const { toast } = useUi();
     const [copied, setCopied] = useState(false);
 
     if (!url) {
@@ -12,9 +14,10 @@ export default function CopyLinkButton({ url, className = '', labelKey = 'common
         try {
             await navigator.clipboard.writeText(url);
             setCopied(true);
+            toast.success(t('common.copied'), 2500);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            window.prompt(t('common.copy_link_prompt'), url);
+            toast.warning(t('common.copy_failed'));
         }
     };
 

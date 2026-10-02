@@ -3,8 +3,8 @@ import { useState } from 'react';
 import I18nSync from '../../Components/I18nSync';
 import LocaleSelect from '../../Components/LocaleSelect';
 import Logo from '../../Components/Logo';
+import FlashToaster from '../../Components/FlashToaster';
 import FloatingFavicons from '../../Components/FloatingFavicons';
-import Toast from '../../Components/Toast';
 import { t } from '../../lib/i18n';
 
 const inputClass = (error) =>
@@ -13,7 +13,6 @@ const inputClass = (error) =>
     }`;
 
 export default function Login({ allowRegistration = true }) {
-    const { flash } = usePage().props;
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -25,7 +24,7 @@ export default function Login({ allowRegistration = true }) {
         <div className="min-h-screen bg-slate-100 px-4 py-8">
             <I18nSync />
             <Head title={t('auth.login')} />
-            <Toast />
+            <FlashToaster />
             <div className="mx-auto mb-3 flex max-w-6xl justify-end">
                 <LocaleSelect />
             </div>
@@ -59,8 +58,6 @@ export default function Login({ allowRegistration = true }) {
                     <div className="mx-auto w-full max-w-md">
                         <h2 className="text-3xl font-semibold tracking-tight text-slate-900">{t('auth.welcome')}</h2>
                         <p className="mt-2 text-sm text-slate-500">{t('auth.sign_in_hint')}</p>
-
-                        {flash?.status && <p className="mt-4 text-sm text-emerald-600">{flash.status}</p>}
 
                         <form
                             onSubmit={(e) => {

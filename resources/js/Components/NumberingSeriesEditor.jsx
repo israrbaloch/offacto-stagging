@@ -2,6 +2,7 @@ import { router, useForm } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import Icon from './Icon';
 import SelectMenu from './SelectMenu';
+import { useUi } from '../context/UiContext';
 import { t } from '../lib/i18n';
 
 const fieldClass =
@@ -221,6 +222,7 @@ function SeriesForm({ series, onCancel, onSaved }) {
 }
 
 export default function NumberingSeriesEditor({ series = [], activeSeriesId = null, company }) {
+    const { confirm } = useUi();
     const [expandedId, setExpandedId] = useState(null);
     const [creating, setCreating] = useState(false);
     const [menuOpenId, setMenuOpenId] = useState(null);
@@ -301,11 +303,17 @@ export default function NumberingSeriesEditor({ series = [], activeSeriesId = nu
                                             <button
                                                 type="button"
                                                 className="block w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50"
-                                                onClick={() => {
-                                                    if (window.confirm(t('numbering.delete_confirm'))) {
+                                                onClick={async () => {
+                                                    setMenuOpenId(null);
+                                                    if (
+                                                        await confirm({
+                                                            message: t('numbering.delete_confirm'),
+                                                            confirmLabel: t('common.delete'),
+                                                            danger: true,
+                                                        })
+                                                    ) {
                                                         router.delete(`/profile/numbering-series/${item.id}`, { preserveScroll: true });
                                                     }
-                                                    setMenuOpenId(null);
                                                 }}
                                             >
                                                 {t('common.delete')}

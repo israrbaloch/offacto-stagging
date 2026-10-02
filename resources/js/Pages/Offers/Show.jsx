@@ -5,10 +5,13 @@ import Input from '../../Components/Input';
 import Modal from '../../Components/Modal';
 import OfferPreview from '../../Components/OfferPreview';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../context/UiContext';
+import { t } from '../../lib/i18n';
 import { customerName, formatDate } from '../../lib/utils';
 
 export default function Show({ offer }) {
     const { activeCompany } = usePage().props;
+    const { confirm } = useUi();
     const [open, setOpen] = useState(false);
     const form = useForm({
         email: offer.customer?.email || '',
@@ -49,8 +52,16 @@ export default function Show({ offer }) {
                     <Button onClick={() => setOpen(true)}>Send</Button>
                     <Button
                         variant="danger"
-                        onClick={() => {
-                            if (confirm('Delete this offer?')) router.delete(`/offers/${offer.id}`);
+                        onClick={async () => {
+                            if (
+                                await confirm({
+                                    message: t('offers.delete_confirm'),
+                                    confirmLabel: t('common.delete'),
+                                    danger: true,
+                                })
+                            ) {
+                                router.delete(`/offers/${offer.id}`);
+                            }
                         }}
                     >
                         Delete

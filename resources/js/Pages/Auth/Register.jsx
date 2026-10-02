@@ -1,11 +1,11 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import FlashToaster from '../../Components/FlashToaster';
 import I18nSync from '../../Components/I18nSync';
 import LocaleSelect from '../../Components/LocaleSelect';
 import Logo from '../../Components/Logo';
 import FloatingFavicons from '../../Components/FloatingFavicons';
 import SelectMenu from '../../Components/SelectMenu';
-import Toast from '../../Components/Toast';
 import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
@@ -85,7 +85,7 @@ export default function Register({ languages = {} }) {
         <div className="min-h-screen bg-slate-100 px-4 py-8">
             <I18nSync />
             <Head title={t('auth.register')} />
-            <Toast />
+            <FlashToaster />
             <div className="mx-auto mb-3 flex max-w-6xl justify-end">
                 <LocaleSelect />
             </div>

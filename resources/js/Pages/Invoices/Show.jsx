@@ -4,6 +4,8 @@ import Button from '../../Components/Button';
 import Input, { Select } from '../../Components/Input';
 import Modal from '../../Components/Modal';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../context/UiContext';
+import { t } from '../../lib/i18n';
 import { customerName, formatDate, money, optionsFromMap } from '../../lib/utils';
 
 export default function Show({
@@ -12,6 +14,7 @@ export default function Show({
     peppolConfigured = false,
     mollieConfigured = false,
 }) {
+    const { confirm } = useUi();
     const [sendOpen, setSendOpen] = useState(false);
     const [payOpen, setPayOpen] = useState(false);
     const [reminderOpen, setReminderOpen] = useState(false);
@@ -66,8 +69,13 @@ export default function Show({
                     </Button>
                     <Button
                         variant="secondary"
-                        onClick={() => {
-                            if (confirm('Create a credit note from this invoice?')) {
+                        onClick={async () => {
+                            if (
+                                await confirm({
+                                    message: t('invoices.credit_note_confirm'),
+                                    confirmLabel: t('common.confirm'),
+                                })
+                            ) {
                                 router.post(`/invoices/${invoice.id}/credit-note`);
                             }
                         }}
@@ -104,8 +112,16 @@ export default function Show({
                     </Button>
                     <Button
                         variant="danger"
-                        onClick={() => {
-                            if (confirm('Delete this invoice?')) router.delete(`/invoices/${invoice.id}`);
+                        onClick={async () => {
+                            if (
+                                await confirm({
+                                    message: t('invoices.delete_confirm'),
+                                    confirmLabel: t('common.delete'),
+                                    danger: true,
+                                })
+                            ) {
+                                router.delete(`/invoices/${invoice.id}`);
+                            }
                         }}
                     >
                         Delete

@@ -9,6 +9,7 @@ import SelectMenu from '../../Components/SelectMenu';
 import OfferBlocksEditor from '../../Components/OfferBlocksEditor';
 import CopyLinkButton from '../../Components/CopyLinkButton';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
@@ -74,6 +75,7 @@ export default function Create({
     publicQuoteUrl = null,
 }) {
     const { activeCompany } = usePage().props;
+    const { toast } = useUi();
     const parsed = parseIntro(offer?.intro || '');
     const parsedNotes = parseNotes(offer?.notes || '');
     const ready = useRef(false);
@@ -167,11 +169,11 @@ export default function Create({
     const sendQuote = () => {
         if (!offer?.id) return;
         if (!form.data.customer_id) {
-            window.alert('Select a customer before sending.');
+            toast.error(t('offers.send_need_customer'));
             return;
         }
         if (!selectedCustomer?.email) {
-            window.alert('The selected customer needs an email address.');
+            toast.error(t('offers.send_need_email'));
             return;
         }
         form.transform(() => payloadFromState());

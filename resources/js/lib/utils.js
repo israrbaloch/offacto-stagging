@@ -28,6 +28,4 @@ export function customerName(customer) {
     return customer.org_name ? `${name} (${customer.org_name})` : name || '—';
 }
 
-export function flashLabel(status) {
-    return t(`flash.${status}`);
-}
+export { flashLabel } from './flash';

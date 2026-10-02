@@ -1,5 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
+import FlashToaster from '../../Components/FlashToaster';
 import Logo from '../../Components/Logo';
 import { t } from '../../lib/i18n';
 
@@ -70,6 +71,7 @@ export default function Public({ briefing, token, submitted = false, canSubmit =
     return (
         <div className="min-h-screen bg-slate-50">
             <Head title={briefing.title || 'Briefing'} />
+            <FlashToaster />
             <header className="border-b border-slate-200 bg-white">
                 <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-4">
                     {briefing.company?.logo_url ? (

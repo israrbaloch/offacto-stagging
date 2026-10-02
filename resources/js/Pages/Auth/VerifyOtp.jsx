@@ -49,8 +49,16 @@ function resolveOtpContext(propContext, url) {
     return 'password_reset';
 }
 
+function firstError(errors, key) {
+    const value = errors?.[key];
+    if (!value) {
+        return '';
+    }
+    return Array.isArray(value) ? value[0] : value;
+}
+
 export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpContextProp }) {
-    const { flash, url } = usePage();
+    const { props, url } = usePage();
     const otpContext = useMemo(() => resolveOtpContext(otpContextProp, url), [otpContextProp, url]);
     const routes = OTP_ROUTES[otpContext] ?? OTP_ROUTES.password_reset;
 
@@ -59,9 +67,11 @@ export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpC
     const [resendIn, setResendIn] = useState(() => secondsUntil(resendAt));
     const [resending, setResending] = useState(false);
     const inputs = useRef([]);
-    const { errors, setData, data } = useForm({ code: '' });
+    const { setData, data } = useForm({ code: '' });
     const [processing, setProcessing] = useState(false);
     const submitting = useRef(false);
+
+    const codeError = firstError(props.errors, 'code');
 
     useEffect(() => {
         setExpiresIn(secondsUntil(expiresAt));
@@ -83,6 +93,11 @@ export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpC
         router.post(routes.verify, { code }, {
             preserveScroll: true,
             onStart: () => setProcessing(true),
+            onError: () => {
+                setDigits(['', '', '', '', '', '']);
+                setData('code', '');
+                requestAnimationFrame(() => inputs.current[0]?.focus());
+            },
             onFinish: () => {
                 submitting.current = false;
                 setProcessing(false);
@@ -134,8 +149,6 @@ export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpC
             <p className="mt-1 text-sm text-slate-500">
                 Code sent to <span className="font-medium text-slate-700">{email}</span>
             </p>
-            {flash?.status && <p className="mt-3 text-sm text-emerald-600">{flash.status}</p>}
-
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
@@ -159,13 +172,23 @@ export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpC
                                     inputs.current[index - 1]?.focus();
                                 }
                             }}
-                            className={`h-12 w-11 rounded-lg border text-center text-lg font-semibold outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 ${
-                                errors.code ? 'border-rose-400' : 'border-slate-200'
+                            aria-invalid={codeError ? 'true' : undefined}
+                            aria-describedby={codeError ? 'otp-code-error' : undefined}
+                            className={`h-12 w-11 rounded-lg border bg-white text-center text-lg font-semibold outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 ${
+                                codeError ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200'
                             }`}
                         />
                     ))}
                 </div>
-                {errors.code && <p className="text-xs text-rose-600">{errors.code}</p>}
+                {codeError && (
+                    <div
+                        id="otp-code-error"
+                        role="alert"
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+                    >
+                        {codeError}
+                    </div>
+                )}
 
                 <button
                     type="submit"

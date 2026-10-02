@@ -1,6 +1,7 @@
 import '../css/app.css';
 import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
+import { UiProvider } from './context/UiContext';
 import { setI18n } from './lib/i18n';
 
 createInertiaApp({
@@ -15,7 +16,11 @@ createInertiaApp({
     },
     setup({ el, App, props }) {
         setI18n(props.initialPage?.props?.locale, props.initialPage?.props?.translations);
-        createRoot(el).render(<App {...props} />);
+        createRoot(el).render(
+            <UiProvider>
+                <App {...props} />
+            </UiProvider>,
+        );
     },
     progress: {
         color: '#4054b2',

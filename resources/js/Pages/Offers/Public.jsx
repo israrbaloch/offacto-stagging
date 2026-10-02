@@ -1,5 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import FlashToaster from '../../Components/FlashToaster';
 import Logo from '../../Components/Logo';
 import { money } from '../../lib/utils';
 
@@ -67,6 +68,7 @@ export default function Public({ offer, token, canRespond }) {
     return (
         <div className="min-h-screen bg-slate-50">
             <Head title={`Quotation ${offer.offer_number || ''}`} />
+            <FlashToaster />
             <header className="border-b border-slate-200 bg-white">
                 <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4">
                     <div className="flex items-center gap-3">

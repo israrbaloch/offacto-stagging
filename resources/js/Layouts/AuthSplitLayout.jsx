@@ -1,9 +1,9 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
+import FlashToaster from '../Components/FlashToaster';
 import I18nSync from '../Components/I18nSync';
 import FloatingFavicons from '../Components/FloatingFavicons';
 import Logo from '../Components/Logo';
-import Toast from '../Components/Toast';
 import { t } from '../lib/i18n';
 
 export default function AuthSplitLayout({ title, asideFooter, children }) {
@@ -17,7 +17,7 @@ export default function AuthSplitLayout({ title, asideFooter, children }) {
         <div className="min-h-screen bg-slate-100 px-4 py-8">
             <I18nSync />
             <Head title={title} />
-            <Toast />
+            <FlashToaster />
             <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                 <aside className="auth-aside-bg relative hidden w-[42%] flex-col justify-center overflow-hidden px-10 py-10 lg:flex">
                     <FloatingFavicons count={8} minSize={36} maxSize={128} />

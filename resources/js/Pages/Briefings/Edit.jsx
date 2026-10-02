@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Icon from '../../Components/Icon';
 import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
@@ -30,6 +31,7 @@ function emptyQuestion(type = 'short_text') {
 }
 
 export default function Edit({ briefing, customers = {}, services = [], questionTypes = {}, shareUrl }) {
+    const { confirm, toast } = useUi();
     const customerOptions = optionsFromMap(customers);
     const serviceOptions = (services || []).map((service) => ({
         value: String(service.id),
@@ -117,9 +119,10 @@ export default function Edit({ briefing, customers = {}, services = [], question
         try {
             await navigator.clipboard.writeText(shareUrl);
             setCopied(true);
+            toast.success(t('common.copied'), 2500);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            window.prompt(t('common.copy_link_prompt'), shareUrl);
+            toast.warning(t('common.copy_failed'));
         }
     };
 
@@ -384,8 +387,16 @@ export default function Edit({ briefing, customers = {}, services = [], question
                     <button
                         type="button"
                         className="text-sm text-rose-600"
-                        onClick={() => {
-                            if (confirm(t('briefings.delete_confirm'))) router.delete(`/briefings/${briefing.id}`);
+                        onClick={async () => {
+                            if (
+                                await confirm({
+                                    message: t('briefings.delete_confirm'),
+                                    confirmLabel: t('briefings.delete'),
+                                    danger: true,
+                                })
+                            ) {
+                                router.delete(`/briefings/${briefing.id}`);
+                            }
                         }}
                     >
                         {t('briefings.delete')}

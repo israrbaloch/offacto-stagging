@@ -1,6 +1,8 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
 import Icon from '../Components/Icon';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
+import PageNotice from '../Components/PageNotice';
+import { useUi } from '../context/UiContext';
 import { t } from '../lib/i18n';
 
 function PlanCard({ plan, onSelect, processing, checkoutDisabled }) {
@@ -59,6 +61,7 @@ function PlanCard({ plan, onSelect, processing, checkoutDisabled }) {
 
 function BillingManagement() {
     const { activeCompany, billingRemindersEnabled, auth } = usePage().props;
+    const { confirm } = useUi();
     const cancelForm = useForm({});
     const remindersForm = useForm({ enabled: billingRemindersEnabled ?? true });
 
@@ -94,8 +97,14 @@ function BillingManagement() {
                 <button
                     type="button"
                     disabled={cancelForm.processing}
-                    onClick={() => {
-                        if (window.confirm(t('subscription.cancel_confirm'))) {
+                    onClick={async () => {
+                        if (
+                            await confirm({
+                                message: t('subscription.cancel_confirm'),
+                                confirmLabel: t('subscription.cancel_plan'),
+                                danger: true,
+                            })
+                        ) {
                             cancelForm.post('/subscription/cancel', { preserveScroll: true });
                         }
                     }}
@@ -133,24 +142,14 @@ export default function Upgrade({ plans = [], trialExpired = false, paymentConfi
                         </p>
                     )}
                     {flash?.status === 'payment-processing' && (
-                        <p className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+                        <PageNotice variant="info" className="mt-3 text-left">
                             {t('upgrade.payment_processing')}
-                        </p>
-                    )}
-                    {flash?.status === 'subscription-cancelled' && (
-                        <p className="mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                            {t('subscription.cancel_success')}
-                        </p>
-                    )}
-                    {flash?.status === 'subscription-already-cancelled' && (
-                        <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                            {t('subscription.cancel_already')}
-                        </p>
+                        </PageNotice>
                     )}
                     {!paymentConfigured && (
-                        <p className="mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <PageNotice variant="warning" className="mt-3 text-left">
                             {t('upgrade.payment_not_configured')}
-                        </p>
+                        </PageNotice>
                     )}
                 </div>
 

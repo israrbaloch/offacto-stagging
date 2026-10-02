@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import FlashToaster from '../Components/FlashToaster';
 import I18nSync from '../Components/I18nSync';
 import Logo from '../Components/Logo';
-import Toast from '../Components/Toast';
 import { t } from '../lib/i18n';
 
 const nav = [
@@ -19,7 +19,7 @@ export default function AdminLayout({ title, children }) {
         <div className="min-h-screen bg-slate-100">
             <I18nSync />
             <Head title={title} />
-            <Toast />
+            <FlashToaster />
             <header className="border-b border-slate-200 bg-slate-900 text-white">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
                     <div className="flex items-center gap-6">
