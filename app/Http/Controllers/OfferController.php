@@ -274,6 +274,7 @@ class OfferController extends Controller
         return Inertia::render('Offers/Show', [
             'offer' => OfferPresentation::forStaffDetail($offer),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
+            'publicQuoteUrl' => $offer->publicUrl(),
         ]);
     }
 
@@ -405,6 +406,7 @@ class OfferController extends Controller
                 ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email']),
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
             'publicQuoteUrl' => $offer->publicUrl(),
+            'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
         ]);
     }
 
@@ -582,6 +584,7 @@ class OfferController extends Controller
                 return redirect()->back()->with('error', 'Select a customer before sending.');
             }
 
+            $channels = $request->validated()['channels'];
             $offer->loadMissing(['customer', 'items.service', 'company.companySetting', 'attachments']);
             if (! $offer->share_token) {
                 $offer->update(['share_token' => \Illuminate\Support\Str::random(40)]);
@@ -592,18 +595,39 @@ class OfferController extends Controller
                 $offer->update(['status' => $sentStatus->id]);
             }
 
-            $rawMessage = $request->validated()['message'] ?? $offer->email_message ?? '';
-            $body = OfferMessage::merge($rawMessage, $offer);
+            if (in_array('email', $channels, true)) {
+                $rawMessage = $request->validated()['message'] ?? $offer->email_message ?? '';
+                $body = OfferMessage::merge($rawMessage, $offer);
 
-            $legalIds = $request->validated()['legal_document_ids'] ?? null;
-            $legalQuery = CompanyLegalDocument::where('company_id', $activeCompany->id);
-            $legalDocs = $legalIds === null
-                ? $legalQuery->where('attach_to_quotes_default', true)->get()
-                : $legalQuery->whereIn('id', $legalIds)->get();
+                $legalIds = $request->validated()['legal_document_ids'] ?? null;
+                $legalQuery = CompanyLegalDocument::where('company_id', $activeCompany->id);
+                $legalDocs = $legalIds === null
+                    ? $legalQuery->where('attach_to_quotes_default', true)->get()
+                    : $legalQuery->whereIn('id', $legalIds)->get();
 
-            Mail::to($request->validated()['email'])->send(
-                new OfferSent($offer, $body, $legalDocs->all())
-            );
+                Mail::to($request->validated()['email'])->send(
+                    new OfferSent($offer, $body, $legalDocs->all())
+                );
+            }
+
+            if (in_array('postbode', $channels, true)) {
+                $settings = CompanyIntegrations::settings($activeCompany);
+                if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
+                    return redirect()->back()->with('error', 'Postbode is not configured for this workspace.');
+                }
+
+                $postbode = app(PostbodeSendService::class);
+                $result = $postbode->sendOffer(
+                    $offer,
+                    $settings,
+                    $request->has('registered') ? $request->boolean('registered') : null,
+                );
+                $offer->update([
+                    'postbode_sent_at' => now(),
+                    'postbode_postal_uuid' => $result['uuid'],
+                    'postbode_status' => $result['status'],
+                ]);
+            }
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -611,7 +635,7 @@ class OfferController extends Controller
                 ]);
             }
 
-            return redirect()->route('offers.index')->with('status', 'offer-sent');
+            return redirect()->back()->with('status', 'offer-sent');
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([

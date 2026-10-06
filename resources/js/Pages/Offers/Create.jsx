@@ -9,6 +9,7 @@ import SelectMenu from '../../Components/SelectMenu';
 import OfferAcceptancePanel from '../../Components/OfferAcceptancePanel';
 import OfferBlocksEditor from '../../Components/OfferBlocksEditor';
 import CopyLinkButton from '../../Components/CopyLinkButton';
+import SendOfferModal from '../../Components/SendOfferModal';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
@@ -74,6 +75,7 @@ export default function Create({
     customersData = [],
     legalDocuments = [],
     publicQuoteUrl = null,
+    postbodeConfigured = false,
 }) {
     const { activeCompany } = usePage().props;
     const { toast } = useUi();
@@ -90,6 +92,7 @@ export default function Create({
         blocks: false,
     });
     const [previewOpen, setPreviewOpen] = useState(false);
+    const [sendOpen, setSendOpen] = useState(false);
     const [savedAt, setSavedAt] = useState(offer?.updated_at || null);
     const [saving, setSaving] = useState(false);
     const [title, setTitle] = useState(parsed.title);
@@ -167,26 +170,20 @@ export default function Create({
         form.put(`/offers/${offer.id}`);
     };
 
-    const sendQuote = () => {
+    const openSendModal = () => {
         if (!offer?.id) return;
         if (!form.data.customer_id) {
             toast.error(t('offers.send_need_customer'));
             return;
         }
-        if (!selectedCustomer?.email) {
-            toast.error(t('offers.send_need_email'));
-            return;
-        }
+        setSendOpen(true);
+    };
+
+    const saveThen = (callback) => {
         form.transform(() => payloadFromState());
         form.put(`/offers/${offer.id}`, {
             preserveScroll: true,
-            onSuccess: () => {
-                router.post(`/offers/${offer.id}/send`, {
-                    email: selectedCustomer.email,
-                    message: emailMessage,
-                    legal_document_ids: selectedLegal,
-                });
-            },
+            onSuccess: callback,
         });
     };
 
@@ -247,7 +244,7 @@ export default function Create({
                             <button
                                 type="button"
                                 disabled={form.processing || activeCompany?.trial_expired || activeCompany?.pending_approval}
-                                onClick={sendQuote}
+                                onClick={openSendModal}
                                 className="rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
                             >
                                 Send quote
@@ -549,6 +546,17 @@ export default function Create({
                     </div>
                 </div>
             )}
+            <SendOfferModal
+                open={sendOpen}
+                onClose={() => setSendOpen(false)}
+                offerId={offer?.id}
+                defaultEmail={selectedCustomer?.email || ''}
+                defaultMessage={emailMessage}
+                publicUrl={publicQuoteUrl || ''}
+                postbodeConfigured={postbodeConfigured}
+                legalDocumentIds={selectedLegal}
+                onBeforeSend={(runSend) => saveThen(runSend)}
+            />
         </AuthenticatedLayout>
     );
 }

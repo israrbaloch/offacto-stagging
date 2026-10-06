@@ -30,6 +30,7 @@ Route::post('/b/{token}', [PublicBriefingController::class, 'submit'])->name('br
 Route::get('/q/{token}', [PublicOfferController::class, 'show'])->name('offers.public');
 Route::post('/q/{token}/accept', [PublicOfferController::class, 'accept'])->name('offers.public.accept');
 Route::post('/q/{token}/decline', [PublicOfferController::class, 'decline'])->name('offers.public.decline');
+Route::get('/q/{token}/preview', [PublicOfferController::class, 'preview'])->name('offers.public.preview');
 Route::get('/q/{token}/download', [PublicOfferController::class, 'download'])->name('offers.public.download');
 
 Route::post('/webhooks/mollie', MollieWebhookController::class)->name('webhooks.mollie');

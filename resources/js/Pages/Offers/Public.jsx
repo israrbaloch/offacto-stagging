@@ -1,63 +1,19 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import FlashToaster from '../../Components/FlashToaster';
 import Logo from '../../Components/Logo';
 import OfferBlockView from '../../Components/OfferBlockView';
+import PdfPreviewModal from '../../Components/PdfPreviewModal';
+import SafeHtml from '../../Components/SafeHtml';
+import SignatureField from '../../Components/SignatureField';
+import VoiceNoteField from '../../Components/VoiceNoteField';
+import { t } from '../../lib/i18n';
 import { money } from '../../lib/utils';
-
-function SignaturePad({ onChange, strokeColor = '#0f172a' }) {
-    const canvasRef = useRef(null);
-    const drawing = useRef(false);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-    }, [strokeColor]);
-
-    function start(event) {
-        drawing.current = true;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        const rect = canvas.getBoundingClientRect();
-        ctx.beginPath();
-        ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top);
-    }
-
-    function move(event) {
-        if (!drawing.current) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(event.clientX - rect.left, event.clientY - rect.top);
-        ctx.stroke();
-    }
-
-    function end() {
-        drawing.current = false;
-        onChange(canvasRef.current?.toDataURL('image/png') || '');
-    }
-
-    return (
-        <canvas
-            ref={canvasRef}
-            width={480}
-            height={160}
-            className="w-full rounded-xl border border-slate-200 bg-white"
-            onMouseDown={start}
-            onMouseMove={move}
-            onMouseUp={end}
-            onMouseLeave={end}
-        />
-    );
-}
 
 export default function Public({ offer, token, canRespond }) {
     const [signature, setSignature] = useState('');
-    const accept = useForm({ signature: '', voice_note: null });
+    const [pdfOpen, setPdfOpen] = useState(false);
+    const accept = useForm({ signature: '', signature_file: null, voice_note: null });
     const primary = offer.company?.theme?.primary || '#4054b2';
     const secondary = offer.company?.theme?.secondary || '#0f172a';
 
@@ -83,13 +39,14 @@ export default function Public({ offer, token, canRespond }) {
                             <div className="text-xs text-slate-400">Quotation {offer.offer_number}</div>
                         </div>
                     </div>
-                    <a
-                        href={`/q/${token}/download`}
+                    <button
+                        type="button"
+                        onClick={() => setPdfOpen(true)}
                         className="rounded-full border px-4 py-2 text-sm font-medium hover:bg-slate-50"
                         style={{ borderColor: primary, color: primary }}
                     >
-                        Download PDF
-                    </a>
+                        {t('offers.preview_pdf')}
+                    </button>
                 </div>
             </header>
 
@@ -117,8 +74,8 @@ export default function Public({ offer, token, canRespond }) {
                     )}
 
                     <div className="prose prose-sm mt-8 max-w-none text-slate-700">
-                        {offer.intro && <p>{offer.intro}</p>}
-                        {offer.desc && <p>{offer.desc}</p>}
+                        {offer.intro && <SafeHtml value={offer.intro} />}
+                        {offer.desc && <SafeHtml value={offer.desc} />}
                     </div>
 
                     {(offer.blocks || []).length > 0 && (
@@ -159,42 +116,56 @@ export default function Public({ offer, token, canRespond }) {
                     {canRespond && (
                         <div className="mt-10 space-y-4 border-t border-slate-100 pt-8">
                             <div>
-                                <div className="mb-2 text-sm font-medium text-slate-700">Signature (optional)</div>
-                                <SignaturePad onChange={setSignature} strokeColor={secondary} />
+                                <div className="mb-2 text-sm font-medium text-slate-700">{t('offers.signature_optional')}</div>
+                                <SignatureField
+                                    value={signature}
+                                    onChange={setSignature}
+                                    strokeColor={secondary}
+                                    error={accept.errors.signature || accept.errors.signature_file}
+                                />
                             </div>
                             <div>
-                                <div className="mb-2 text-sm font-medium text-slate-700">Voice note (optional)</div>
-                                <input
-                                    type="file"
-                                    accept="audio/*"
-                                    className="mb-4 block w-full text-sm"
-                                    onChange={(e) => accept.setData('voice_note', e.target.files?.[0] || null)}
+                                <div className="mb-2 text-sm font-medium text-slate-700">{t('offers.voice_optional')}</div>
+                                <VoiceNoteField
+                                    value={accept.data.voice_note}
+                                    onChange={(file) => accept.setData('voice_note', file)}
+                                    error={accept.errors.voice_note}
                                 />
                             </div>
                             <div className="flex flex-wrap gap-3">
                                 <button
                                     type="button"
                                     onClick={() => {
+                                        accept.clearErrors();
                                         accept.setData('signature', signature);
+                                        accept.setData('signature_file', null);
                                         accept.post(`/q/${token}/accept`, { forceFormData: true });
                                     }}
                                     className="rounded-full px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
                                     style={{ background: primary }}
                                 >
-                                    Accept quotation
+                                    {t('offers.accept_quote')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => router.post(`/q/${token}/decline`)}
                                     className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                                 >
-                                    Decline
+                                    {t('offers.decline_quote')}
                                 </button>
                             </div>
                         </div>
                     )}
                 </div>
             </main>
+
+            <PdfPreviewModal
+                open={pdfOpen}
+                onClose={() => setPdfOpen(false)}
+                previewUrl={`/q/${token}/preview`}
+                downloadUrl={`/q/${token}/download`}
+                title={t('offers.pdf_preview_title')}
+            />
         </div>
     );
 }

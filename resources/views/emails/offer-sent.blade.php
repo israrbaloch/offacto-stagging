@@ -132,7 +132,15 @@
         @endif
     </div>
 
+    @php($publicLink = $offer->publicUrl())
+    <div style="margin: 24px 0; padding: 16px; background: #f8fafc; border-radius: 8px; text-align: center;">
+        <p style="margin: 0 0 12px; font-size: 14px; color: #334155;">View and respond to this quotation online:</p>
+        <a href="{{ $publicLink }}" style="display: inline-block; padding: 10px 18px; background: {{ $primaryColor ?? '#4054b2' }}; color: #fff; text-decoration: none; border-radius: 999px; font-weight: 600; font-size: 14px;">Open quotation</a>
+        <p style="margin: 12px 0 0; font-size: 12px; color: #64748b; word-break: break-all;">{{ $publicLink }}</p>
+    </div>
+
     <div class="footer">
+        <p>A PDF copy is attached to this email.</p>
         <p>This offer was sent by {{ $offer->company->company_name }}.</p>
         <p>For questions, please contact: {{ $offer->company->email }}</p>
     </div>

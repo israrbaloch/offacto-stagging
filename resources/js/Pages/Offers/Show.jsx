@@ -1,9 +1,8 @@
-import { router, useForm, usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Button from '../../Components/Button';
-import Input from '../../Components/Input';
-import Modal from '../../Components/Modal';
 import PostbodeSendModal from '../../Components/PostbodeSendModal';
+import SendOfferModal from '../../Components/SendOfferModal';
 import OfferAcceptancePanel from '../../Components/OfferAcceptancePanel';
 import OfferPreview from '../../Components/OfferPreview';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
@@ -11,16 +10,11 @@ import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { customerName, formatDate } from '../../lib/utils';
 
-export default function Show({ offer, postbodeConfigured = false }) {
+export default function Show({ offer, postbodeConfigured = false, publicQuoteUrl = '' }) {
     const { activeCompany } = usePage().props;
     const { confirm } = useUi();
-    const [open, setOpen] = useState(false);
+    const [sendOpen, setSendOpen] = useState(false);
     const [postbodeOpen, setPostbodeOpen] = useState(false);
-    const form = useForm({
-        email: offer.customer?.email || '',
-        subject: `Offer ${offer.offer_number}`,
-        message: offer.email_message || '',
-    });
     const status = String(offer.status_relation?.name || '').toLowerCase();
     const isSent = ['sent', 'accepted', 'invoiced'].includes(status);
     const company = offer.company || activeCompany || {};
@@ -52,7 +46,7 @@ export default function Show({ offer, postbodeConfigured = false }) {
                     <Button href={`/invoices/from-offer/${offer.id}`} variant="secondary">
                         Create invoice
                     </Button>
-                    <Button onClick={() => setOpen(true)}>Send</Button>
+                    <Button onClick={() => setSendOpen(true)}>Send</Button>
                     {isSent && postbodeConfigured && (
                         <Button variant="secondary" onClick={() => setPostbodeOpen(true)}>
                             {t('integrations.postbode_send_short')}
@@ -127,25 +121,15 @@ export default function Show({ offer, postbodeConfigured = false }) {
                     vatRate={21}
                 />
             </div>
-            <Modal
-                open={open}
-                title="Send offer"
-                onClose={() => setOpen(false)}
-                footer={
-                    <Button
-                        disabled={form.processing}
-                        onClick={() => form.post(`/offers/${offer.id}/send`, { onSuccess: () => setOpen(false) })}
-                    >
-                        Send
-                    </Button>
-                }
-            >
-                <div className="space-y-3">
-                    <Input label="Email" type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
-                    <Input label="Subject" value={form.data.subject} onChange={(e) => form.setData('subject', e.target.value)} />
-                    <Input label="Message" value={form.data.message} onChange={(e) => form.setData('message', e.target.value)} />
-                </div>
-            </Modal>
+            <SendOfferModal
+                open={sendOpen}
+                onClose={() => setSendOpen(false)}
+                offerId={offer.id}
+                defaultEmail={offer.customer?.email || ''}
+                defaultMessage={offer.email_message || ''}
+                publicUrl={publicQuoteUrl}
+                postbodeConfigured={postbodeConfigured}
+            />
             <PostbodeSendModal
                 open={postbodeOpen}
                 onClose={() => setPostbodeOpen(false)}

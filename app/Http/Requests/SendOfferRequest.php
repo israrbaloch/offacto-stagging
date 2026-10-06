@@ -3,30 +3,39 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class SendOfferRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email', 'max:255'],
+            'channels' => ['required', 'array', 'min:1'],
+            'channels.*' => ['in:email,whatsapp,postbode'],
+            'email' => ['nullable', 'email', 'max:255'],
             'message' => ['nullable', 'string'],
             'template' => ['nullable', 'string'],
             'legal_document_ids' => ['nullable', 'array'],
             'legal_document_ids.*' => ['integer', 'exists:company_legal_documents,id'],
+            'registered' => ['nullable', 'boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $channels = $this->input('channels', []);
+            if (in_array('email', $channels, true) && ! filled($this->input('email'))) {
+                $validator->errors()->add('email', 'Email is required when sending by email.');
+            }
+        });
     }
 }

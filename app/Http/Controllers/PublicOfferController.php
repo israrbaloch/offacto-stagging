@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Offer;
+use App\Support\OfferSignature;
 use App\Support\PublicStorage;
 use App\Models\SiteSetting;
 use App\Models\Status;
@@ -41,20 +42,30 @@ class PublicOfferController extends Controller
             return back()->with('error', 'This quotation was already declined.');
         }
 
+        $request->validate([
+            'signature' => ['nullable', 'string', 'max:3500000'],
+            'signature_file' => ['nullable', 'file', 'mimes:png', 'max:2048'],
+            'voice_note' => ['nullable', 'file', 'mimes:mp3,wav,webm,ogg,m4a', 'max:5120'],
+        ]);
+
         $voicePath = $offer->voice_note_path;
         if ($request->hasFile('voice_note')) {
-            $request->validate(['voice_note' => ['file', 'mimes:mp3,wav,webm,ogg', 'max:10240']]);
             if ($voicePath) {
                 Storage::disk('public')->delete($voicePath);
             }
             $voicePath = $request->file('voice_note')->store('offer-voice/'.$offer->id, 'public');
         }
 
+        $signatureData = OfferSignature::normalize(
+            $request->input('signature'),
+            $request->file('signature_file'),
+        );
+
         $accepted = Status::forTable('offers')->where('name', 'Accepted')->first();
         $offer->update([
             'status' => $accepted?->id ?? $offer->status,
             'accepted_at' => now(),
-            'signature_data' => $request->input('signature'),
+            'signature_data' => $signatureData,
             'voice_note_path' => $voicePath,
         ]);
 
@@ -72,6 +83,22 @@ class PublicOfferController extends Controller
         $offer->update(['declined_at' => now()]);
 
         return back()->with('status', 'offer-declined');
+    }
+
+    public function preview(string $token): Response
+    {
+        $offer = Offer::where('share_token', $token)
+            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation'])
+            ->firstOrFail();
+
+        $pdf = Pdf::loadView('pdf.offer', [
+            'offer' => $offer,
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+        ])->setPaper('a4');
+
+        $filename = 'quotation-'.($offer->offer_number ?? $offer->id).'.pdf';
+
+        return $pdf->stream($filename);
     }
 
     public function download(string $token): Response
