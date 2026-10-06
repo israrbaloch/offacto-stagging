@@ -88,6 +88,7 @@ export default function Create({
         assignment: true,
         lines: true,
         copyright: true,
+        paymentTerms: false,
         email: false,
         blocks: false,
     });
@@ -114,6 +115,7 @@ export default function Create({
         intro: parsed.intro,
         desc: offer?.desc || '',
         notes: parsedNotes.notes,
+        payment_terms: offer?.payment_terms || '',
         status: offer?.status || defaultStatusId || '',
     });
 
@@ -126,6 +128,7 @@ export default function Create({
         notes: [copyright && `Copyright: ${copyright}`, conditions && `Special conditions: ${conditions}`, form.data.notes]
             .filter(Boolean)
             .join('\n\n'),
+        payment_terms: form.data.payment_terms?.trim() || null,
         status: form.data.status,
         email_message: emailMessage,
         items: items
@@ -226,14 +229,6 @@ export default function Create({
                             >
                                 Preview offer
                             </button>
-                            {isSent && (
-                                <a
-                                    href={`/offers/${offer.id}/download`}
-                                    className="rounded-full border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
-                                >
-                                    Download PDF
-                                </a>
-                            )}
                             <button
                                 type="submit"
                                 disabled={form.processing}
@@ -358,6 +353,30 @@ export default function Create({
                             </div>
                         )}
                         <LineItemsEditor items={items} setItems={setItems} services={servicesData} vatRate={vatRate} error={form.errors.items} />
+                    </Section>
+
+                    <Section
+                        id="payment-terms"
+                        title={t('offers.payment_terms_label')}
+                        hint={t('offers.payment_terms_hint')}
+                        open={open.paymentTerms}
+                        onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
+                    >
+                        <label className="block">
+                            <span className={labelClass}>
+                                {t('offers.payment_terms_label')} <span className="font-normal text-slate-400">({t('common.optional')})</span>
+                            </span>
+                            <textarea
+                                className={fieldClass}
+                                rows={4}
+                                placeholder={t('offers.payment_terms_placeholder')}
+                                value={form.data.payment_terms}
+                                onChange={(e) => form.setData('payment_terms', e.target.value)}
+                            />
+                            {form.errors.payment_terms && (
+                                <p className="mt-1 text-xs text-rose-600">{form.errors.payment_terms}</p>
+                            )}
+                        </label>
                     </Section>
 
                     <Section
@@ -530,14 +549,8 @@ export default function Create({
                                     notes={[copyright && `Copyright: ${copyright}`, conditions && `Special conditions: ${conditions}`, form.data.notes]
                                         .filter(Boolean)
                                         .join('\n\n')}
+                                    paymentTerms={form.data.payment_terms}
                                     vatRate={vatRate}
-                                    sender={{
-                                        name: [activeCompany?.first_name, activeCompany?.surname].filter(Boolean).join(' '),
-                                        title: activeCompany?.self_employed_activity,
-                                    }}
-                                    client={{
-                                        name: [selectedCustomer?.first_name, selectedCustomer?.surname].filter(Boolean).join(' '),
-                                    }}
                                     theme={activeCompany?.theme}
                                     logoUrl={activeCompany?.invoice_logo_url}
                                 />

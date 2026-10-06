@@ -1,7 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Button from '../../Components/Button';
-import PostbodeSendModal from '../../Components/PostbodeSendModal';
 import SendOfferModal from '../../Components/SendOfferModal';
 import OfferAcceptancePanel from '../../Components/OfferAcceptancePanel';
 import OfferPreview from '../../Components/OfferPreview';
@@ -14,7 +13,6 @@ export default function Show({ offer }) {
     const { activeCompany } = usePage().props;
     const { confirm } = useUi();
     const [sendOpen, setSendOpen] = useState(false);
-    const [postbodeOpen, setPostbodeOpen] = useState(false);
     const status = String(offer.status_relation?.name || '').toLowerCase();
     const isSent = ['sent', 'accepted', 'invoiced'].includes(status);
     const company = offer.company || activeCompany || {};
@@ -31,14 +29,9 @@ export default function Show({ offer }) {
                 </div>
                 <div className="flex gap-2">
                     {isSent && (
-                        <>
-                            <Button href={`/offers/${offer.id}/preview`} as="a" variant="secondary">
-                                Preview PDF
-                            </Button>
-                            <Button href={`/offers/${offer.id}/download`} as="a" variant="secondary">
-                                Download PDF
-                            </Button>
-                        </>
+                        <Button href={`/offers/${offer.id}/preview`} as="a" variant="secondary" target="_blank" rel="noreferrer">
+                            Preview PDF
+                        </Button>
                     )}
                     <Button href={`/offers/${offer.id}/edit`} variant="secondary">
                         Edit
@@ -47,11 +40,6 @@ export default function Show({ offer }) {
                         Create invoice
                     </Button>
                     <Button onClick={() => setSendOpen(true)}>Send</Button>
-                    {isSent && (
-                        <Button variant="secondary" onClick={() => setPostbodeOpen(true)}>
-                            {t('integrations.postbode_send_short')}
-                        </Button>
-                    )}
                     <Button
                         variant="danger"
                         onClick={async () => {
@@ -109,12 +97,11 @@ export default function Show({ offer }) {
                         price: item.price,
                     }))}
                     notes={offer.notes}
-                    sender={{
-                        name: [company.first_name, company.surname].filter(Boolean).join(' '),
-                        title: company.self_employed_activity,
-                    }}
-                    client={{
-                        name: [customer.first_name, customer.surname].filter(Boolean).join(' '),
+                    paymentTerms={offer.payment_terms}
+                    totalsOverride={{
+                        subtotal: offer.subtotal,
+                        tax: offer.tax_amount,
+                        total: offer.total,
                     }}
                     theme={activeCompany?.theme}
                     logoUrl={activeCompany?.invoice_logo_url}
@@ -127,12 +114,6 @@ export default function Show({ offer }) {
                 offerId={offer.id}
                 defaultEmail={offer.customer?.email || ''}
                 defaultMessage={offer.email_message || ''}
-            />
-            <PostbodeSendModal
-                open={postbodeOpen}
-                onClose={() => setPostbodeOpen(false)}
-                actionUrl={`/offers/${offer.id}/postbode`}
-                documentLabel={offer.offer_number}
             />
         </AuthenticatedLayout>
     );

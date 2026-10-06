@@ -38,6 +38,7 @@ class StoreOfferRequest extends FormRequest
             'intro' => ['nullable', 'string'],
             'desc' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'payment_terms' => ['nullable', 'string', 'max:5000'],
             'status' => [
                 'required',
                 'integer',

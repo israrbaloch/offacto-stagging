@@ -33,6 +33,7 @@ class Offer extends Model
         'desc',
         'attachment',
         'notes',
+        'payment_terms',
         'email_message',
         'status',
         'share_token',

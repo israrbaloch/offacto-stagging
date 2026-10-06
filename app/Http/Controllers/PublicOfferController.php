@@ -135,8 +135,15 @@ class PublicOfferController extends Controller
             'total' => $offer->total,
             'subtotal' => $offer->subtotal,
             'tax_amount' => $offer->tax_amount,
+            'notes' => $offer->notes,
+            'payment_terms' => $offer->payment_terms,
             'company' => [
                 'name' => $offer->company?->company_name,
+                'email' => $offer->company?->email,
+                'street' => $offer->company?->street,
+                'house' => $offer->company?->house,
+                'postal_code' => $offer->company?->postal_code,
+                'city' => $offer->company?->city,
                 'logo_url' => PublicStorage::url($settings?->invoice_logo),
                 'theme' => [
                     'primary' => $theme['primary'] ?? '#4054b2',
@@ -146,11 +153,18 @@ class PublicOfferController extends Controller
             'customer' => [
                 'name' => $offer->customer?->org_name
                     ?: trim(($offer->customer?->first_name.' '.$offer->customer?->surname)),
+                'attn' => $offer->customer?->org_name
+                    ? trim(($offer->customer?->first_name.' '.$offer->customer?->surname))
+                    : null,
+                'email' => $offer->customer?->email,
+                'address' => $offer->customer?->office_address,
             ],
             'items' => $offer->items->map(fn ($item) => [
                 'description' => $item->description,
+                'service_name' => $item->service?->name,
                 'quantity' => $item->quantity,
                 'unit_price' => $item->price,
+                'price' => $item->price,
                 'total' => $item->total,
             ]),
             'blocks' => $offer->blocks?->map(function ($block) {

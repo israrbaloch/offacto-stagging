@@ -4,6 +4,17 @@
     $theme = is_array($settings?->theme) ? $settings->theme : [];
     $primary = $theme['primary'] ?? '#4054b2';
     $secondary = $theme['secondary'] ?? '#0f172a';
+    $headerBg = $primary.'14';
+    $customer = $offer->customer;
+    $fromName = $company?->company_name ?: trim(($company?->first_name.' '.$company?->surname));
+    $toName = $customer?->org_name ?: trim(($customer?->first_name.' '.$customer?->surname)) ?: 'Client to be selected';
+    $client = trim(($customer?->first_name.' '.$customer?->surname));
+    $vatRate = $vatRate ?? 21;
+    $companyLogo = $settings?->invoice_logo ? public_path('storage/'.$settings->invoice_logo) : null;
+    $logo = ($companyLogo && is_file($companyLogo))
+        ? $companyLogo
+        : public_path('assets/images/logo-offacto.svg');
+    $scope = $offer->desc ?: $offer->intro;
 @endphp
 <!DOCTYPE html>
 <html>
@@ -12,120 +23,94 @@
     <title>Quotation {{ $offer->offer_number }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 10pt; color: #334155; line-height: 1.45; }
-        .page { padding: 28px 32px; }
-        .top { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
-        .title { font-size: 26pt; font-weight: bold; color: {{ $primary ?? '#4054b2' }}; letter-spacing: -0.5px; }
-        .meta { margin-top: 8px; font-size: 8.5pt; color: #64748b; }
-        .meta strong { color: {{ $secondary }}; }
-        .party-label { font-size: 7.5pt; letter-spacing: 1.2px; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
-        .party-name { font-size: 10pt; font-weight: bold; color: {{ $secondary }}; margin-bottom: 3px; }
-        .party-detail { font-size: 8.5pt; color: #64748b; line-height: 1.55; }
-        .right { text-align: left; width: 58%; }
-        .section { margin-bottom: 22px; }
-        .section-title { font-size: 11pt; font-weight: bold; color: {{ $secondary }}; margin-bottom: 8px; }
-        .section-body { font-size: 9pt; color: #475569; line-height: 1.6; }
-        .section-body ul { margin: 4px 0 8px 16px; }
-        .section-body li { margin: 2px 0; }
-        table.items { width: 100%; border-collapse: collapse; margin-bottom: 22px; }
-        table.items th { font-size: 7.5pt; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; text-align: left; padding: 0 0 8px; border-bottom: 1px solid #e2e8f0; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 10pt; color: #475569; line-height: 1.5; }
+        .page-content { padding: 36px 40px 28px; }
+        .head-row { width: 100%; margin-bottom: 24px; }
+        .doc-no { text-align: right; font-size: 8pt; letter-spacing: 2px; text-transform: uppercase; color: #94a3b8; font-weight: bold; }
+        .logo { max-height: 42px; max-width: 180px; }
+        .title { margin-top: 20px; font-size: 28pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: {{ $secondary }}; }
+        .date-line { margin-top: 8px; font-size: 10pt; color: #64748b; }
+        .parties { width: 100%; margin-top: 28px; border-collapse: collapse; }
+        .parties td { width: 50%; vertical-align: top; font-size: 9.5pt; color: #64748b; line-height: 1.55; }
+        .parties .right { text-align: right; }
+        .party-heading { font-size: 10pt; font-weight: bold; color: #0f172a; margin-bottom: 6px; }
+        .party-name { font-weight: bold; color: #1e293b; margin-bottom: 4px; }
+        .scope { margin-top: 24px; font-size: 9.5pt; color: #64748b; line-height: 1.6; }
+        table.items { width: 100%; border-collapse: collapse; margin-top: 28px; border: 1px solid #e2e8f0; }
+        table.items th { background: {{ $headerBg }}; color: {{ $secondary }}; font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; }
         table.items th.num { text-align: right; }
-        table.items td { padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 9pt; vertical-align: top; }
+        table.items td { padding: 10px 12px; border-top: 1px solid #f1f5f9; font-size: 9.5pt; vertical-align: top; color: #334155; }
         table.items td.num { text-align: right; white-space: nowrap; }
-        .item-name { font-weight: bold; color: {{ $secondary }}; }
-        .item-desc { font-size: 8pt; color: #94a3b8; margin-top: 2px; }
-        .bottom { width: 100%; border-collapse: collapse; }
-        .terms { background: #f8fafc; padding: 12px 14px; font-size: 8pt; color: {{ $secondary }}; line-height: 1.5; border-left: 3px solid {{ $primary }}; }
-        .totals { width: 230px; margin-left: auto; }
-        .totals td { padding: 5px 0; font-size: 9pt; }
-        .totals .label { color: #64748b; }
-        .totals .value { text-align: right; font-weight: bold; color: {{ $secondary }}; }
-        .totals .grand .label, .totals .grand .value { font-size: 13pt; color: {{ $primary }}; padding-top: 8px; }
-        .auth-label { font-size: 7.5pt; letter-spacing: 1.2px; text-transform: uppercase; color: #94a3b8; margin: 28px 0 12px; }
-        .sign { width: 100%; border-collapse: collapse; }
-        .sign-name { font-weight: bold; color: {{ $secondary }}; }
-        .sign-line { border-bottom: 1px solid #cbd5e1; height: 28px; margin-bottom: 6px; color: #94a3b8; font-size: 8pt; }
-        .muted { color: #94a3b8; font-size: 8pt; }
-        .logo { max-height: 28px; margin-bottom: 10px; }
+        table.items td.item-title { font-weight: bold; color: #1e293b; }
+        table.items td.item-desc { font-size: 8pt; color: #94a3b8; padding-top: 0; }
+        table.items tfoot td { border-top: 1px solid #e2e8f0; padding: 6px 12px; font-size: 9pt; }
+        table.items tfoot td.num { text-align: right; }
+        table.items tfoot .total-row td { border-top: 2px solid #cbd5e1; padding-top: 10px; padding-bottom: 10px; font-weight: bold; font-size: 11pt; color: #0f172a; }
+        table.items tfoot .total-row td.amount { color: {{ $primary }}; }
+        .footer-notes { margin-top: 24px; font-size: 9.5pt; color: #475569; line-height: 1.55; }
+        .footer-notes strong { color: #0f172a; }
+        .wave { display: block; width: 100%; height: 72px; margin: 0; padding: 0; }
     </style>
 </head>
 <body>
-@php
-    $customer = $offer->customer;
-    $fromName = $company?->company_name ?: trim(($company?->first_name.' '.$company?->surname));
-    $toName = $customer?->org_name ?: trim(($customer?->first_name.' '.$customer?->surname)) ?: 'Client to be selected';
-    $vatRate = $vatRate ?? 21;
-    $logo = $settings?->invoice_logo ? public_path('storage/'.$settings->invoice_logo) : null;
-    $scope = trim(preg_replace('/^.*\n\n/s', '', (string) $offer->intro, 1)) ?: $offer->intro;
-    $scope = $offer->desc ?: $scope;
-    $sender = trim(($company?->first_name.' '.$company?->surname));
-    $client = trim(($customer?->first_name.' '.$customer?->surname));
-@endphp
-<div class="page">
-    <table class="top">
+<div class="page-content">
+    <table class="head-row">
         <tr>
-            <td style="width:42%; vertical-align:top;">
-                @if($logo && is_file($logo))
-                    <img src="{{ $logo }}" class="logo" alt="Logo">
-                @endif
-                <div class="title">Quotation</div>
-                <div class="meta">
-                    <div><strong>#{{ $offer->offer_number }}</strong></div>
-                    <div>Date: {{ optional($offer->offer_date)->format('M j, Y') ?: '—' }}</div>
-                    <div>Valid until: {{ optional($offer->valid_until)->format('M j, Y') ?: '—' }}</div>
-                </div>
+            <td style="width: 60%; vertical-align: top;">
+                <img src="{{ $logo }}" class="logo" alt="Logo">
             </td>
-            <td class="right" style="vertical-align:top;">
-                <table style="width:100%;">
-                    <tr>
-                        <td style="width:50%; vertical-align:top; padding-right:16px;">
-                            <div class="party-label">From</div>
-                            <div class="party-name">{{ $fromName ?: 'Your company' }}</div>
-                            <div class="party-detail">
-                                {{ trim(($company?->street.' '.$company?->house)) }}<br>
-                                {{ trim(($company?->postal_code.' '.$company?->city)) }}<br>
-                                {{ $company?->email }}
-                            </div>
-                        </td>
-                        <td style="width:50%; vertical-align:top;">
-                            <div class="party-label">To</div>
-                            <div class="party-name">{{ $toName }}</div>
-                            <div class="party-detail">
-                                @if($client && $customer?->org_name)
-                                    Attn: {{ $client }}<br>
-                                @endif
-                                {{ $customer?->office_address ?: '—' }}<br>
-                                {{ $customer?->email }}
-                            </div>
-                        </td>
-                    </tr>
-                </table>
+            <td style="width: 40%; vertical-align: top;" class="doc-no">
+                No. {{ $offer->offer_number }}
+            </td>
+        </tr>
+    </table>
+
+    <div class="title">Quotation</div>
+    <div class="date-line">Date: {{ optional($offer->offer_date)->format('F j, Y') ?: '—' }}</div>
+    @if($offer->valid_until)
+        <div class="date-line">Valid until: {{ $offer->valid_until->format('F j, Y') }}</div>
+    @endif
+
+    <table class="parties">
+        <tr>
+            <td>
+                <div class="party-heading">Billed to:</div>
+                <div class="party-name">{{ $toName }}</div>
+                @if($client && $customer?->org_name)
+                    Attn: {{ $client }}<br>
+                @endif
+                {{ $customer?->office_address ?: '' }}<br>
+                {{ $customer?->email }}
+            </td>
+            <td class="right">
+                <div class="party-heading">From:</div>
+                <div class="party-name">{{ $fromName ?: 'Your company' }}</div>
+                {{ trim(($company?->street.' '.$company?->house)) }}<br>
+                {{ trim(($company?->postal_code.' '.$company?->city)) }}<br>
+                {{ $company?->email }}
             </td>
         </tr>
     </table>
 
     @if($scope)
-    <div class="section">
-        <div class="section-title">Project Scope</div>
-        <div class="section-body">@include('partials.rich', ['html' => $offer->desc ?: $offer->intro])</div>
-    </div>
+        <div class="scope">@include('partials.rich', ['html' => $scope])</div>
     @endif
 
     <table class="items">
         <thead>
             <tr>
-                <th>Description</th>
-                <th class="num" style="width:50px;">Qty</th>
-                <th class="num" style="width:90px;">Price</th>
-                <th class="num" style="width:90px;">Total</th>
+                <th>Item</th>
+                <th class="num" style="width: 72px;">Quantity</th>
+                <th class="num" style="width: 88px;">Price</th>
+                <th class="num" style="width: 88px;">Amount</th>
             </tr>
         </thead>
         <tbody>
             @forelse($offer->items as $item)
                 <tr>
                     <td>
-                        <div class="item-name">{{ $item->service->name ?? 'Line item' }}</div>
-                        @if($item->description)
+                        <div class="item-title">{{ $item->service->name ?? ($item->description ?: 'Line item') }}</div>
+                        @if($item->service?->name && $item->description && $item->description !== $item->service->name)
                             <div class="item-desc">{{ $item->description }}</div>
                         @endif
                     </td>
@@ -135,57 +120,43 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="4" class="muted">No quotation lines yet.</td>
+                    <td colspan="4" style="text-align: center; color: #94a3b8; padding: 24px;">No quotation lines yet.</td>
                 </tr>
             @endforelse
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2"></td>
+                <td class="num" style="color: #64748b; font-size: 8.5pt;">Subtotal</td>
+                <td class="num">€ {{ number_format($offer->subtotal, 2, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td colspan="2"></td>
+                <td class="num" style="color: #64748b; font-size: 8.5pt;">VAT ({{ $vatRate }}%)</td>
+                <td class="num">€ {{ number_format($offer->tax_amount, 2, ',', '.') }}</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="2"></td>
+                <td class="num">Total</td>
+                <td class="num amount">€ {{ number_format($offer->total, 2, ',', '.') }}</td>
+            </tr>
+        </tfoot>
     </table>
 
-    <table class="bottom">
-        <tr>
-            <td style="width:55%; vertical-align:top; padding-right:20px;">
-                <div class="terms">
-                    Payment is due according to the terms in this quotation. 50% may be requested upon approval, with the remainder on delivery, unless otherwise agreed in writing.
-                    @if($offer->notes)
-                        <br><br>{{ $offer->notes }}
-                    @endif
-                </div>
-            </td>
-            <td style="width:45%; vertical-align:top;">
-                <table class="totals">
-                    <tr>
-                        <td class="label">Subtotal</td>
-                        <td class="value">€ {{ number_format($offer->subtotal, 2, ',', '.') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">VAT ({{ $vatRate }}%)</td>
-                        <td class="value">€ {{ number_format($offer->tax_amount, 2, ',', '.') }}</td>
-                    </tr>
-                    <tr class="grand">
-                        <td class="label">Total</td>
-                        <td class="value">€ {{ number_format($offer->total, 2, ',', '.') }}</td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-
-    <div class="auth-label">Authorization</div>
-    <table class="sign">
-        <tr>
-            <td style="width:48%; vertical-align:top; padding-right:8%;">
-                <div class="sign-name">{{ $sender ?: $fromName }}</div>
-                <div class="muted">{{ $company?->self_employed_activity ?: 'Authorized representative' }}</div>
-                <div class="muted">{{ optional($offer->offer_date)->format('M j, Y') }}</div>
-            </td>
-            <td style="width:48%; vertical-align:top;">
-                <div class="sign-line">Sign here...</div>
-                <div class="sign-name">{{ $client ?: 'Client' }}</div>
-                <div class="muted">Authorized representative</div>
-                <div class="muted">Date</div>
-            </td>
-        </tr>
-    </table>
+    @if(filled($offer->payment_terms) || filled($offer->notes))
+        <div class="footer-notes" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+            @if(filled($offer->payment_terms))
+                <p><strong style="color: {{ $secondary }};">Payment terms:</strong> {{ $offer->payment_terms }}</p>
+            @endif
+            @if(filled($offer->notes))
+                <p style="margin-top: 10px;"><strong style="color: {{ $secondary }};">Note:</strong> {{ $offer->notes }}</p>
+            @endif
+        </div>
+    @endif
 </div>
+<svg class="wave" viewBox="0 0 1200 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path fill="{{ $primary }}" fill-opacity="0.12" d="M0,40 C200,80 400,0 600,35 C800,70 1000,20 1200,50 L1200,100 L0,100 Z"/>
+    <path fill="{{ $secondary }}" fill-opacity="0.18" d="M0,55 C250,95 450,25 650,60 C850,90 1050,35 1200,65 L1200,100 L0,100 Z"/>
+</svg>
 </body>
 </html>

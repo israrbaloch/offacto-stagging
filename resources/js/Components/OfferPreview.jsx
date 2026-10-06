@@ -1,3 +1,4 @@
+import Logo from './Logo';
 import SafeHtml from './SafeHtml';
 import { money } from '../lib/utils';
 
@@ -5,7 +6,24 @@ function prettyDate(value) {
     if (!value) return '—';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function QuotationWave({ primary, secondary }) {
+    return (
+        <svg className="block h-[72px] w-full" viewBox="0 0 1200 100" preserveAspectRatio="none" aria-hidden>
+            <path
+                fill={primary}
+                fillOpacity="0.12"
+                d="M0,40 C200,80 400,0 600,35 C800,70 1000,20 1200,50 L1200,100 L0,100 Z"
+            />
+            <path
+                fill={secondary}
+                fillOpacity="0.18"
+                d="M0,55 C250,95 450,25 650,60 C850,90 1050,35 1200,65 L1200,100 L0,100 Z"
+            />
+        </svg>
+    );
 }
 
 export default function OfferPreview({
@@ -17,132 +35,176 @@ export default function OfferPreview({
     scope,
     items = [],
     notes,
+    paymentTerms,
     vatRate = 21,
-    sender = {},
-    client = {},
+    totalsOverride,
     theme = {},
     logoUrl,
+    middleContent = null,
 }) {
     const primary = theme.primary || '#4054b2';
     const secondary = theme.secondary || '#0f172a';
+    const headerBg = `${primary}14`;
+
     const priced = items.filter((item) => item.kind !== 'text');
-    const subtotal = priced.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
-    const vat = subtotal * (Number(vatRate) / 100);
-    const total = subtotal + vat;
+    const calcSubtotal = priced.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || item.unit_price || 0), 0);
+    const subtotal = totalsOverride?.subtotal ?? calcSubtotal;
+    const vat = totalsOverride?.tax ?? calcSubtotal * (Number(vatRate) / 100);
+    const total = totalsOverride?.total ?? subtotal + vat;
+    const effectiveVatRate = totalsOverride?.vatRate ?? vatRate;
+
     const fromLine = [from.street, from.house].filter(Boolean).join(' ');
     const fromCity = [from.postal_code, from.city].filter(Boolean).join(' ');
 
+    const lineAmount = (item) => {
+        if (item.kind === 'text') return null;
+        if (item.total != null) return Number(item.total);
+        return Number(item.quantity || 0) * Number(item.price ?? item.unit_price ?? 0);
+    };
+
     return (
-        <div className="bg-white px-8 py-10 text-slate-700 sm:px-10">
-            <div className="flex flex-col gap-8 lg:flex-row lg:justify-between">
+        <div className="overflow-hidden bg-white text-slate-700">
+            <div className="px-8 py-10 sm:px-12 sm:py-12">
+            <div className="flex items-start justify-between gap-6">
+                <div className="min-h-[48px]">
+                    {logoUrl ? (
+                        <img src={logoUrl} alt="" className="h-10 w-auto max-w-[180px] object-contain" />
+                    ) : (
+                        <Logo className="h-10 w-auto max-w-[180px]" />
+                    )}
+                </div>
+                <div className="text-right text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
+                    No. {number || '—'}
+                </div>
+            </div>
+
+            <h1 className="mt-8 text-4xl font-bold uppercase tracking-wide sm:text-5xl" style={{ color: secondary }}>
+                Quotation
+            </h1>
+            <p className="mt-2 text-sm text-slate-600">Date: {prettyDate(date)}</p>
+            {validUntil && <p className="text-sm text-slate-600">Valid until: {prettyDate(validUntil)}</p>}
+
+            <div className="mt-10 grid gap-10 sm:grid-cols-2">
                 <div>
-                    {logoUrl && <img src={logoUrl} alt="" className="mb-3 h-8 w-auto object-contain" />}
-                    <div className="text-4xl font-semibold tracking-tight" style={{ color: primary }}>Quotation</div>
-                    <div className="mt-3 text-sm text-slate-500">
-                        <div className="font-semibold text-slate-900">#{number || '—'}</div>
-                        <div>Date: {prettyDate(date)}</div>
-                        <div>Valid until: {prettyDate(validUntil)}</div>
+                    <p className="text-sm font-bold text-slate-900">Billed to:</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-800">{to.name || 'Client to be selected'}</p>
+                    <div className="mt-1 space-y-0.5 text-sm text-slate-600">
+                        {to.attn && <p>Attn: {to.attn}</p>}
+                        {to.address && <p className="whitespace-pre-line">{to.address}</p>}
+                        {to.email && <p>{to.email}</p>}
                     </div>
                 </div>
-                <div className="grid min-w-[280px] grid-cols-2 gap-8 text-sm">
-                    <div>
-                        <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">From</div>
-                        <div className="mt-1 font-semibold" style={{ color: secondary }}>{from.name || 'Your company'}</div>
-                        <div className="mt-1 text-slate-500">
-                            {fromLine && <div>{fromLine}</div>}
-                            {fromCity && <div>{fromCity}</div>}
-                            {from.email && <div>{from.email}</div>}
-                        </div>
-                    </div>
-                    <div>
-                        <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">To</div>
-                        <div className="mt-1 font-semibold text-slate-900">{to.name || 'Client to be selected'}</div>
-                        <div className="mt-1 text-slate-500">
-                            {to.attn && <div>Attn: {to.attn}</div>}
-                            <div>{to.address || '—'}</div>
-                            {to.email && <div>{to.email}</div>}
-                        </div>
+                <div className="sm:text-right">
+                    <p className="text-sm font-bold text-slate-900">From:</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-800">{from.name || 'Your company'}</p>
+                    <div className="mt-1 space-y-0.5 text-sm text-slate-600 sm:ml-auto sm:max-w-xs">
+                        {fromLine && <p>{fromLine}</p>}
+                        {fromCity && <p>{fromCity}</p>}
+                        {from.email && <p>{from.email}</p>}
                     </div>
                 </div>
             </div>
 
             {scope && (
-                <div className="mt-10">
-                    <h3 className="text-lg font-semibold" style={{ color: secondary }}>Project Scope</h3>
-                    <SafeHtml value={scope} className="mt-2 text-sm leading-6 text-slate-600" />
+                <div className="mt-10 text-sm leading-relaxed text-slate-600">
+                    <SafeHtml value={scope} />
                 </div>
             )}
 
-            <table className="mt-10 w-full text-left text-sm">
-                <thead>
-                    <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-400">
-                        <th className="pb-2 font-medium">Description</th>
-                        <th className="w-16 pb-2 text-right font-medium">Qty</th>
-                        <th className="w-24 pb-2 text-right font-medium">Price</th>
-                        <th className="w-24 pb-2 text-right font-medium">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {items.length === 0 && (
+            {middleContent}
+
+            <div className="mt-10 overflow-hidden rounded-sm border border-slate-200">
+                <table className="w-full text-left text-sm">
+                    <thead>
+                        <tr style={{ backgroundColor: headerBg }}>
+                            <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: secondary }}>
+                                Item
+                            </th>
+                            <th className="w-24 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide" style={{ color: secondary }}>
+                                Quantity
+                            </th>
+                            <th className="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide" style={{ color: secondary }}>
+                                Price
+                            </th>
+                            <th className="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide" style={{ color: secondary }}>
+                                Amount
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.length === 0 && (
+                            <tr>
+                                <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
+                                    No quotation lines yet.
+                                </td>
+                            </tr>
+                        )}
+                        {items.map((item, index) => {
+                            const amount = lineAmount(item);
+                            const label = item.service_name || item.description || 'Line item';
+                            return (
+                                <tr key={index} className="border-t border-slate-100">
+                                    <td className="px-4 py-3 font-medium text-slate-800">
+                                        {label}
+                                        {item.service_name && item.description && item.description !== item.service_name && (
+                                            <span className="mt-0.5 block text-xs font-normal text-slate-500">{item.description}</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-slate-700">{item.kind === 'text' ? '—' : item.quantity}</td>
+                                    <td className="px-4 py-3 text-right text-slate-700">
+                                        {item.kind === 'text' ? '—' : money(item.price ?? item.unit_price)}
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-medium text-slate-800">
+                                        {amount == null ? '—' : money(amount)}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                    <tfoot>
+                        <tr className="border-t border-slate-200">
+                            <td colSpan={2} className="px-4 py-2" />
+                            <td className="px-4 py-2 text-right text-xs text-slate-500">Subtotal</td>
+                            <td className="px-4 py-2 text-right text-sm text-slate-700">{money(subtotal)}</td>
+                        </tr>
                         <tr>
-                            <td colSpan="4" className="py-6 text-slate-400">
-                                No quotation lines yet.
+                            <td colSpan={2} />
+                            <td className="px-4 py-2 text-right text-xs text-slate-500">VAT ({effectiveVatRate}%)</td>
+                            <td className="px-4 py-2 text-right text-sm text-slate-700">{money(vat)}</td>
+                        </tr>
+                        <tr className="border-t border-slate-300">
+                            <td colSpan={2} />
+                            <td className="px-4 py-3 text-right text-sm font-bold text-slate-900">Total</td>
+                            <td className="px-4 py-3 text-right text-base font-bold" style={{ color: primary }}>
+                                {money(total)}
                             </td>
                         </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            {(paymentTerms?.trim() || notes) && (
+                <div className="mt-8 space-y-2 border-t border-slate-200 pt-6 text-sm text-slate-700">
+                    {paymentTerms?.trim() && (
+                        <p className="whitespace-pre-wrap">
+                            <span className="font-bold" style={{ color: secondary }}>
+                                Payment terms:{' '}
+                            </span>
+                            {paymentTerms.trim()}
+                        </p>
                     )}
-                    {items.map((item, index) => {
-                        const line = Number(item.quantity || 0) * Number(item.price || 0);
-                        return (
-                            <tr key={index} className="border-b border-slate-100">
-                                <td className="py-3 pr-4">
-                                    <div className="font-semibold text-slate-900">{item.service_name || 'Line item'}</div>
-                                    {item.description && <div className="mt-0.5 text-xs text-slate-400">{item.description}</div>}
-                                </td>
-                                <td className="py-3 text-right">{item.kind === 'text' ? '—' : item.quantity}</td>
-                                <td className="py-3 text-right">{item.kind === 'text' ? '—' : money(item.price)}</td>
-                                <td className="py-3 text-right">{item.kind === 'text' ? '—' : money(line)}</td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-                <div className="rounded-xl px-4 py-3 text-sm leading-6" style={{ backgroundColor: '#f8fafc', color: secondary, borderLeft: `3px solid ${primary}` }}>
-                    Payment is due according to the terms in this quotation. 50% may be requested upon approval, with the
-                    remainder on delivery, unless otherwise agreed in writing.
-                    {notes && <SafeHtml value={notes} className="mt-3 text-indigo-700" />}
+                    {notes && (
+                        <div className={paymentTerms?.trim() ? 'mt-2' : ''}>
+                            <span className="font-bold" style={{ color: secondary }}>
+                                Note:{' '}
+                            </span>
+                            <SafeHtml value={notes} className="mt-1 inline-block text-slate-600" />
+                        </div>
+                    )}
                 </div>
-                <div className="md:justify-self-end md:w-64 space-y-2 text-sm">
-                    <div className="flex justify-between text-slate-500">
-                        <span>Subtotal</span>
-                        <span className="font-semibold text-slate-900">{money(subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-slate-500">
-                        <span>VAT ({vatRate}%)</span>
-                        <span className="font-semibold text-slate-900">{money(vat)}</span>
-                    </div>
-                    <div className="flex justify-between pt-1 text-lg font-semibold" style={{ color: primary }}>
-                        <span>Total</span>
-                        <span>{money(total)}</span>
-                    </div>
-                </div>
+            )}
             </div>
-
-            <div className="mt-12 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">Authorization</div>
-            <div className="mt-4 grid gap-8 sm:grid-cols-2">
-                <div>
-                    <div className="font-semibold text-slate-900">{sender.name || from.name}</div>
-                    <div className="text-sm text-slate-400">{sender.title || 'Authorized representative'}</div>
-                    <div className="text-sm text-slate-400">{prettyDate(date)}</div>
-                </div>
-                <div>
-                    <div className="mb-2 border-b border-slate-300 pb-6 text-sm text-slate-400">Sign here...</div>
-                    <div className="font-semibold text-slate-900">{client.name || 'Client'}</div>
-                    <div className="text-sm text-slate-400">Authorized representative</div>
-                    <div className="text-sm text-slate-400">Date</div>
-                </div>
-            </div>
+            <QuotationWave primary={primary} secondary={secondary} />
         </div>
     );
 }

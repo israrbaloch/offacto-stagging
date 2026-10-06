@@ -211,6 +211,7 @@ class OfferController extends Controller
                 'intro' => $request->validated()['intro'] ?? null,
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
+                'payment_terms' => $request->validated()['payment_terms'] ?? null,
                 'status' => $request->validated()['status'],
             ]);
 
@@ -425,6 +426,7 @@ class OfferController extends Controller
                 'intro' => $request->validated()['intro'] ?? null,
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
+                'payment_terms' => $request->validated()['payment_terms'] ?? null,
                 'email_message' => $request->validated()['email_message'] ?? $offer->email_message,
                 'status' => $request->validated()['status'],
             ]);

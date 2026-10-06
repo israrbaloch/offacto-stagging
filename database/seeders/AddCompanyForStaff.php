@@ -74,8 +74,8 @@ class AddCompanyForStaff extends Seeder
             'company_id' => $company->id,
             'invoice_logo' => null,
             'theme' => json_encode([
-                'primary' => '#4054B2',
-                'secondary' => '#454545',
+                'primary' => '#11134E',
+                'secondary' => '#7B0033',
             ]),
             'numbering_series' => $numberingSeries->id,
         ]);

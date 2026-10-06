@@ -127,7 +127,34 @@ function SignatureCanvas({ onChange, strokeColor = '#0f172a' }) {
     );
 }
 
-export default function SignatureField({ value, onChange, strokeColor = '#0f172a', error }) {
+function modeTabClass(active, nested) {
+    if (nested) {
+        return active
+            ? 'rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm'
+            : 'rounded-md px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900';
+    }
+    return `rounded-full px-3 py-1.5 text-xs font-medium ${active ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`;
+}
+
+function ModeTabs({ nested, children }) {
+    if (nested) {
+        return (
+            <div className="border-l-2 border-slate-300 pl-4">
+                <p className="text-xs font-medium text-slate-500">{t('offers.accept_method')}</p>
+                <div className="mt-2 inline-flex gap-0.5 rounded-lg bg-slate-200/80 p-0.5" role="tablist">
+                    {children}
+                </div>
+            </div>
+        );
+    }
+    return (
+        <div className="flex gap-2" role="tablist">
+            {children}
+        </div>
+    );
+}
+
+export default function SignatureField({ value, onChange, strokeColor = '#0f172a', error, nested = false }) {
     const [mode, setMode] = useState('draw');
     const [localError, setLocalError] = useState('');
     const fileInput = useRef(null);
@@ -193,22 +220,26 @@ export default function SignatureField({ value, onChange, strokeColor = '#0f172a
 
     return (
         <div className="space-y-3">
-            <div className="flex gap-2">
+            <ModeTabs nested={nested}>
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={mode === 'draw'}
                     onClick={() => setMode('draw')}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${mode === 'draw' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+                    className={modeTabClass(mode === 'draw', nested)}
                 >
                     {t('offers.signature_draw')}
                 </button>
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={mode === 'upload'}
                     onClick={() => setMode('upload')}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${mode === 'upload' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+                    className={modeTabClass(mode === 'upload', nested)}
                 >
                     {t('offers.signature_upload')}
                 </button>
-            </div>
+            </ModeTabs>
 
             {mode === 'draw' && <SignatureCanvas onChange={onChange} strokeColor={strokeColor} />}
 
