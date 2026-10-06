@@ -46,6 +46,9 @@ class AdminServiceController extends Controller
         return Inertia::render('Admin/Services/Index', [
             'services' => $services,
             'statuses' => $statuses,
+            'filters' => [
+                'status' => $request->input('status', ''),
+            ],
         ]);
     }
 

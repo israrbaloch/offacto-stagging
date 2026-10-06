@@ -98,12 +98,16 @@
         <div class="scope">@include('partials.rich', ['html' => $scope])</div>
     @endif
 
+    @php
+        $qtyHeader = \App\Support\ServiceBilling::quantityHeaderForItems($offer->items);
+        $priceHeader = \App\Support\ServiceBilling::priceHeaderForItems($offer->items);
+    @endphp
     <table class="items">
         <thead>
             <tr>
                 <th>Item</th>
-                <th class="num" style="width: 72px;">Quantity</th>
-                <th class="num" style="width: 88px;">Price</th>
+                <th class="num" style="width: 72px;">{{ $qtyHeader }}</th>
+                <th class="num" style="width: 88px;">{{ $priceHeader }}</th>
                 <th class="num" style="width: 88px;">Amount</th>
             </tr>
         </thead>
@@ -116,7 +120,13 @@
                             <div class="item-desc">{{ $item->description }}</div>
                         @endif
                     </td>
-                    <td class="num">{{ $item->quantity }}</td>
+                    <td class="num">
+                        @if(\App\Support\ServiceBilling::isHourly($item->service))
+                            {{ $item->quantity }} h
+                        @else
+                            {{ $item->quantity }}
+                        @endif
+                    </td>
                     <td class="num">€ {{ number_format((float) $item->price, 2, ',', '.') }}</td>
                     <td class="num">€ {{ number_format((float) $item->total, 2, ',', '.') }}</td>
                 </tr>

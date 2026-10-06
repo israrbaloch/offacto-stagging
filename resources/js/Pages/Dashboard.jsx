@@ -192,7 +192,14 @@ export default function Dashboard({
                                 <div className="mt-2 flex items-end gap-3">
                                     <div className="font-serif text-4xl font-semibold text-slate-900">{money(stats.revenue)}</div>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-400">{t('dashboard.expenses_net', { expenses: money(stats.expenses), net: money(stats.netResult) })}</p>
+                                <p className="mt-1 text-xs text-slate-400">
+                                    {stats.expensesTracked === false
+                                        ? t('dashboard.expenses_not_tracked', { net: money(stats.netResult) })
+                                        : t('dashboard.expenses_net', {
+                                              expenses: money(stats.expenses),
+                                              net: money(stats.netResult),
+                                          })}
+                                </p>
                             </div>
                         </div>
                         <div className="mt-4">

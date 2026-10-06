@@ -14,6 +14,13 @@ class StoreServiceRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('billing_mode') === 'hourly') {
+            $this->merge(['unit' => 'hour']);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

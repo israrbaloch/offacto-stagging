@@ -48,23 +48,18 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // Get top paying customers based on accepted/invoiced offers
+        // Top customers by invoice payments received
         $topCustomers = Customer::where('company_id', $activeCompany->id)
-            ->with(['offers' => function ($query) {
-                $query->whereHas('statusRelation', function ($q) {
-                    $q->whereIn('name', ['Accepted', 'Invoiced', 'Paid']);
-                })->with('items');
-            }])
+            ->with(['invoices' => fn ($query) => $query->with(['payments', 'items'])])
             ->get()
             ->map(function ($customer) {
-                $customer->total_invoiced = $customer->offers->sum(function ($offer) {
-                    return $offer->total;
-                });
+                $customer->total_invoiced = round($customer->invoices->sum(
+                    fn (Invoice $invoice) => (float) $invoice->amount_paid
+                ), 2);
+
                 return $customer;
             })
-            ->filter(function ($customer) {
-                return $customer->total_invoiced > 0;
-            })
+            ->filter(fn ($customer) => $customer->total_invoiced > 0)
             ->sortByDesc('total_invoiced')
             ->take(5)
             ->values();
@@ -104,18 +99,15 @@ class DashboardController extends Controller
         $currentYear = now()->year;
         $startOfYear = now()->startOfYear();
 
-        // Calculate revenue from accepted/invoiced/paid offers this year
-        $revenueOffers = Offer::where('company_id', $companyId)
-            ->whereHas('statusRelation', function ($query) {
-                $query->whereIn('name', ['Accepted', 'Invoiced', 'Paid']);
-            })
-            ->whereYear('created_at', $currentYear)
-            ->with('items')
+        // YTD collected on invoices (matches cashflow chart: paid amounts by invoice date)
+        $invoicesYtd = Invoice::where('company_id', $companyId)
+            ->whereYear('invoice_date', $currentYear)
+            ->with(['payments', 'items'])
             ->get();
 
-        $revenue = $revenueOffers->sum(function ($offer) {
-            return $offer->total;
-        });
+        $revenue = round($invoicesYtd->sum(
+            fn (Invoice $invoice) => (float) $invoice->amount_paid
+        ), 2);
 
         // Open offers total
         $openOffers = Offer::where('company_id', $companyId)
@@ -129,15 +121,13 @@ class DashboardController extends Controller
             return $offer->total;
         });
 
-        // For now, expenses would need an Expense model which doesn't exist
-        // Setting to 0 for now
         $expenses = 0;
-
         $netResult = $revenue - $expenses;
 
         return [
             'revenue' => $revenue,
             'expenses' => $expenses,
+            'expensesTracked' => false,
             'netResult' => $netResult,
             'openOffersTotal' => $openOffersTotal,
             'periodStart' => $startOfYear->format('F j, Y'),
@@ -153,6 +143,7 @@ class DashboardController extends Controller
         return [
             'revenue' => 0,
             'expenses' => 0,
+            'expensesTracked' => false,
             'netResult' => 0,
             'openOffersTotal' => 0,
             'periodStart' => now()->startOfYear()->format('F j, Y'),

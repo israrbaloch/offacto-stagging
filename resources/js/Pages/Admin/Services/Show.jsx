@@ -4,6 +4,8 @@ import AdminLayout from '../../../Layouts/AdminLayout';
 import { money } from '../../../lib/utils';
 
 export default function Show({ service }) {
+    const isPending = String(service.status_relation?.name || '').toLowerCase() === 'pending';
+
     return (
         <AdminLayout title={service.name}>
             <div className="mb-6 flex items-center justify-between">
@@ -17,10 +19,14 @@ export default function Show({ service }) {
                     <Button href={`/admin/services/${service.id}/edit`} variant="secondary">
                         Edit
                     </Button>
-                    <Button onClick={() => router.post(`/admin/services/${service.id}/approve`)}>Approve</Button>
-                    <Button variant="danger" onClick={() => router.post(`/admin/services/${service.id}/reject`)}>
-                        Reject
-                    </Button>
+                    {isPending && (
+                        <>
+                            <Button onClick={() => router.post(`/admin/services/${service.id}/approve`)}>Approve</Button>
+                            <Button variant="danger" onClick={() => router.post(`/admin/services/${service.id}/reject`)}>
+                                Reject
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm">{service.description || 'No description.'}</div>

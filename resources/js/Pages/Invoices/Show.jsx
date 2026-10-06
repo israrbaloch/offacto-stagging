@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Button from '../../Components/Button';
 import { Select } from '../../Components/Input';
 import InvoicePreview from '../../Components/InvoicePreview';
+import InvoiceReminderModal from '../../Components/InvoiceReminderModal';
 import SendInvoiceModal from '../../Components/SendInvoiceModal';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { useUi } from '../../context/UiContext';
@@ -19,12 +20,14 @@ export default function Show({
     const { activeCompany } = usePage().props;
     const { confirm } = useUi();
     const [sendOpen, setSendOpen] = useState(false);
+    const [reminderOpen, setReminderOpen] = useState(false);
     const recurring = useForm({
         is_recurring: Boolean(invoice.is_recurring),
         recurring_interval: invoice.recurring_interval || 'monthly',
     });
 
     const isDraft = String(invoice.status_relation?.name || '').toLowerCase() === 'draft';
+    const canRemind = !isDraft && invoice.payment_status !== 'paid' && Boolean(invoice.customer?.email);
     const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(
         `Invoice ${invoice.invoice_number} — ${money(invoice.amount_due)} due ${formatDate(invoice.due_date)}`,
     )}`;
@@ -53,6 +56,11 @@ export default function Show({
                         Edit
                     </Button>
                     <Button onClick={() => setSendOpen(true)}>{t('invoices.send_modal_title')}</Button>
+                    {canRemind && (
+                        <Button variant="secondary" onClick={() => setReminderOpen(true)}>
+                            {t('invoices.reminder_send')}
+                        </Button>
+                    )}
                     {!isDraft && invoice.payment_status !== 'paid' && (
                         <Button
                             variant="secondary"
@@ -105,22 +113,30 @@ export default function Show({
                             checked={recurring.data.is_recurring}
                             onChange={(e) => recurring.setData('is_recurring', e.target.checked)}
                         />
-                        Recurring invoice
+                        {t('invoices.recurring_enable')}
                     </label>
                     {recurring.data.is_recurring && (
                         <Select
                             value={recurring.data.recurring_interval}
                             onChange={(e) => recurring.setData('recurring_interval', e.target.value)}
                             options={[
-                                { value: 'weekly', label: 'Weekly' },
-                                { value: 'monthly', label: 'Monthly' },
-                                { value: 'yearly', label: 'Yearly' },
+                                { value: 'weekly', label: t('invoices.recurring_weekly') },
+                                { value: 'monthly', label: t('invoices.recurring_monthly') },
+                                { value: 'yearly', label: t('invoices.recurring_yearly') },
                             ]}
                         />
                     )}
                     <Button variant="secondary" onClick={() => recurring.post(`/invoices/${invoice.id}/recurring`)}>
-                        Save recurring
+                        {t('invoices.recurring_save')}
                     </Button>
+                    {invoice.is_recurring && invoice.next_run_at && (
+                        <span className="text-slate-600">
+                            {t('invoices.recurring_next_run', { date: formatDate(invoice.next_run_at) })}
+                        </span>
+                    )}
+                    {invoice.parent_invoice_id && (
+                        <span className="text-slate-500">{t('invoices.recurring_from_template')}</span>
+                    )}
                     {invoice.mollie_checkout_url && (
                         <a href={invoice.mollie_checkout_url} className="text-indigo-600 hover:underline" target="_blank" rel="noreferrer">
                             Open Mollie checkout
@@ -135,15 +151,8 @@ export default function Show({
                             {invoice.postbode_status ? ` · ${invoice.postbode_status}` : ''}
                         </span>
                     )}
-                    {invoice.reminder_enabled && !invoice.reminder_sent_at && invoice.reminder_send_on && (
-                        <span className="text-slate-600">
-                            {t('invoices.reminder_scheduled', { date: formatDate(invoice.reminder_send_on) })}
-                        </span>
-                    )}
-                    {invoice.reminder_sent_at && (
-                        <span className="text-emerald-600">{t('invoices.reminder_sent', { date: formatDate(invoice.reminder_sent_at) })}</span>
-                    )}
                 </div>
+                <p className="mt-3 text-xs leading-relaxed text-slate-500">{t('invoices.recurring_hint')}</p>
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -173,6 +182,8 @@ export default function Show({
                         quantity: item.quantity,
                         price: item.price,
                         total: item.total,
+                        billing_mode: item.service?.billing_mode,
+                        unit: item.service?.unit,
                     }))}
                     notes={invoice.notes}
                     copyrightLabel={copyrightLabel}
@@ -255,8 +266,12 @@ export default function Show({
                 peppolConfigured={peppolConfigured}
                 mollieConfigured={mollieConfigured && invoice.payment_status !== 'paid'}
                 whatsappShareUrl={whatsappShareUrl}
-                dueDate={invoice.due_date}
-                canScheduleReminder={invoice.payment_status !== 'paid'}
+            />
+            <InvoiceReminderModal
+                open={reminderOpen}
+                onClose={() => setReminderOpen(false)}
+                invoiceId={invoice.id}
+                defaultEmail={invoice.customer?.email || ''}
             />
         </AuthenticatedLayout>
     );

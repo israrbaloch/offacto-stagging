@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import Icon from '../../Components/Icon';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
@@ -49,7 +49,9 @@ function StatCard({ label, value, accent, icon = 'wrench' }) {
 }
 
 export default function Index({ services = [] }) {
+    const { auth, adminQueue } = usePage().props;
     const { confirm } = useUi();
+    const isAdmin = Boolean(auth?.user?.is_admin);
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [filter, setFilter] = useState('all');
 
@@ -72,6 +74,18 @@ export default function Index({ services = [] }) {
     return (
         <AuthenticatedLayout title={t('services.title')}>
             <div className="space-y-6">
+                {isAdmin && stats.pending > 0 && (
+                    <div className="flex flex-col gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-950 sm:flex-row sm:items-center sm:justify-between">
+                        <p>{t('services.admin_pending_hint')}</p>
+                        <Link
+                            href="/admin/services?status=Pending"
+                            className="font-semibold text-indigo-700 underline underline-offset-2 hover:text-indigo-900"
+                        >
+                            {t('services.review_in_admin')}
+                            {(adminQueue?.pendingServices || 0) > 0 ? ` (${adminQueue.pendingServices})` : ''}
+                        </Link>
+                    </div>
+                )}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{t('services.title')}</h1>
@@ -163,6 +177,9 @@ export default function Index({ services = [] }) {
                                             <td className="px-3 py-4 text-slate-500">{service.unit || '—'}</td>
                                             <td className="px-3 py-4">
                                                 <StatusPill tone={statusTone(status)}>{status}</StatusPill>
+                                                {String(status).toLowerCase() === 'pending' && !isAdmin && (
+                                                    <p className="mt-1 max-w-xs text-xs text-slate-500">{t('services.pending_banner')}</p>
+                                                )}
                                             </td>
                                             <td className="px-3 py-4 text-right font-serif text-slate-900">{money(service.price)}</td>
                                             <td className="px-5 py-4 text-right sm:px-6">

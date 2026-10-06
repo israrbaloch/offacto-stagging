@@ -87,12 +87,16 @@ class DemoDataSeeder extends Seeder
             ['name' => 'Monthly retainer', 'description' => 'Ongoing design and support.', 'price' => 1400, 'unit' => 'month'],
             ['name' => 'Photography', 'description' => 'On-location product shoot.', 'price' => 750, 'unit' => 'day'],
         ])->map(function (array $row) use ($company, $serviceActive) {
+            $unit = $row['unit'];
+            $billingMode = in_array($unit, ['hour', 'hours', 'hr', 'hrs'], true) ? 'hourly' : 'fixed';
+
             return Service::create([
                 'company_id' => $company->id,
                 'name' => $row['name'],
                 'description' => $row['description'],
                 'price' => $row['price'],
-                'unit' => $row['unit'],
+                'unit' => $unit,
+                'billing_mode' => $billingMode,
                 'status' => $serviceActive,
             ]);
         });

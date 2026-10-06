@@ -1,7 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import EmailRecipientsField from './EmailRecipientsField';
-import { Select } from './Input';
 import {
     ChannelCard,
     DeliveryChannelsPanel,
@@ -12,13 +11,6 @@ import {
     SendModalFrame,
 } from './SendModalUi';
 import { t } from '../lib/i18n';
-
-const REMINDER_OFFSETS = [
-    { value: '7', labelKey: 'invoices.reminder_7_before' },
-    { value: '3', labelKey: 'invoices.reminder_3_before' },
-    { value: '0', labelKey: 'invoices.reminder_on_due' },
-    { value: '-3', labelKey: 'invoices.reminder_3_after' },
-];
 
 function parseDefaultEmails(defaultEmail) {
     if (!defaultEmail || typeof defaultEmail !== 'string') {
@@ -89,8 +81,6 @@ export default function SendInvoiceModal({
     peppolConfigured = false,
     mollieConfigured = false,
     whatsappShareUrl = '',
-    dueDate = '',
-    canScheduleReminder = true,
     onBeforeSend,
 }) {
     const [channelError, setChannelError] = useState('');
@@ -102,8 +92,6 @@ export default function SendInvoiceModal({
         registered: false,
         attach_ubl: false,
         cc_company: false,
-        reminder_enabled: false,
-        reminder_days_before_due: '3',
     });
 
     const wasOpen = useRef(false);
@@ -118,13 +106,11 @@ export default function SendInvoiceModal({
                 registered: false,
                 attach_ubl: false,
                 cc_company: false,
-                reminder_enabled: Boolean(dueDate) && canScheduleReminder,
-                reminder_days_before_due: '3',
             });
             form.clearErrors();
         }
         wasOpen.current = open;
-    }, [open, defaultEmail, defaultMessage, legalDocumentIds, dueDate, canScheduleReminder]);
+    }, [open, defaultEmail, defaultMessage, legalDocumentIds]);
 
     const channelDefs = buildInvoiceChannels({ postbodeConfigured, peppolConfigured, mollieConfigured });
 
@@ -161,12 +147,7 @@ export default function SendInvoiceModal({
             return;
         }
 
-        const payload = {
-            ...form.data,
-            reminder_days_before_due: form.data.reminder_enabled
-                ? Number(form.data.reminder_days_before_due)
-                : null,
-        };
+        const payload = { ...form.data };
 
         const openWhatsapp = payload.channels.includes('whatsapp') && whatsappShareUrl;
 
@@ -224,35 +205,6 @@ export default function SendInvoiceModal({
                                         />
                                         <span>{t('integrations.postbode_registered_shipment')}</span>
                                     </label>
-                                </div>
-                            )}
-                            {dueDate && canScheduleReminder && (
-                                <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
-                                    <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                        {t('invoices.reminder_section')}
-                                    </h4>
-                                    <label className="flex items-start gap-2 text-sm text-slate-700">
-                                        <input
-                                            type="checkbox"
-                                            className="mt-0.5"
-                                            checked={form.data.reminder_enabled}
-                                            onChange={(e) => form.setData('reminder_enabled', e.target.checked)}
-                                        />
-                                        <span>{t('invoices.reminder_schedule')}</span>
-                                    </label>
-                                    {form.data.reminder_enabled && (
-                                        <Select
-                                            label={t('invoices.reminder_when')}
-                                            value={String(form.data.reminder_days_before_due)}
-                                            onChange={(e) => form.setData('reminder_days_before_due', e.target.value)}
-                                            options={REMINDER_OFFSETS.map((opt) => ({
-                                                value: opt.value,
-                                                label: t(opt.labelKey),
-                                            }))}
-                                            error={form.errors.reminder_days_before_due}
-                                        />
-                                    )}
-                                    <p className="text-xs text-slate-500">{t('invoices.reminder_schedule_hint')}</p>
                                 </div>
                             )}
                         </>

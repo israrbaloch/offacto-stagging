@@ -53,7 +53,12 @@ export default function Sidebar() {
     const user = props.auth?.user;
     const appearance = props.appearance;
     const activeCompany = props.activeCompany;
+    const adminQueue = props.adminQueue;
     void props.locale;
+
+    const isAdmin = Boolean(user?.is_admin);
+    const isStaffOnly = Boolean(user?.is_staff) && !isAdmin;
+    const adminPending = (adminQueue?.pendingServices || 0) + (adminQueue?.pendingCompanies || 0);
 
     return (
         <aside className="auth-aside-bg relative hidden h-full w-[250px] shrink-0 flex-col overflow-hidden rounded-l-3xl lg:flex">
@@ -83,24 +88,63 @@ export default function Sidebar() {
             </div>
 
             <nav className="relative z-10 mt-6 space-y-1 px-3 pb-6">
-                {mainNav.map((item) => (
-                    <NavLink key={item.href} item={item} url={url} />
-                ))}
-                {user?.is_admin && (
+                {isAdmin && (
                     <Link
                         href="/admin"
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-500 hover:bg-white/70"
+                        className={`mb-2 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ${
+                            url.startsWith('/admin')
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-slate-800 text-white hover:bg-slate-900'
+                        }`}
                     >
-                        {t('nav.admin')}
+                        <span className="flex items-center gap-2">
+                            <Icon name="settings" className="h-4 w-4" />
+                            {t('nav.admin_panel')}
+                        </span>
+                        {adminPending > 0 && (
+                            <span className="rounded-full bg-amber-400 px-2 py-0.5 text-xs font-semibold text-slate-900">
+                                {adminPending}
+                            </span>
+                        )}
                     </Link>
+                )}
+                {isStaffOnly && (
+                    <Link
+                        href="/staff"
+                        className={`mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
+                            url.startsWith('/staff')
+                                ? 'bg-indigo-100 text-indigo-800'
+                                : 'border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50'
+                        }`}
+                    >
+                        <Icon name="grid" className="h-4 w-4" />
+                        {t('nav.staff_tools')}
+                    </Link>
+                )}
+                {!isAdmin && (
+                    <>
+                        {mainNav.map((item) => (
+                            <NavLink key={item.href} item={item} url={url} />
+                        ))}
+                    </>
+                )}
+                {isAdmin && (
+                    <>
+                        <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                            {t('nav.company_workspace')}
+                        </p>
+                        {mainNav.map((item) => (
+                            <NavLink key={item.href} item={item} url={url} />
+                        ))}
+                    </>
                 )}
                 <div className="my-3 border-t border-indigo-100" />
                 {footerNav.map((item) => (
                     <NavLink key={item.href} item={item} url={url} />
                 ))}
-                {user?.is_admin && (
+                {isAdmin && (
                     <NavLink
-                        item={{ href: '/settings', label: 'nav.settings', icon: 'settings' }}
+                        item={{ href: '/settings', label: 'nav.platform_settings', icon: 'settings' }}
                         url={url}
                     />
                 )}

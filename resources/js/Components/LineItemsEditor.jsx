@@ -1,19 +1,28 @@
 import Icon from './Icon';
 import SelectMenu from './SelectMenu';
+import {
+    attachServiceFields,
+    lineIsHourly,
+    priceColumnLabel,
+    quantityColumnLabel,
+} from '../lib/serviceBilling';
 import { money } from '../lib/utils';
 
 export default function LineItemsEditor({ items, setItems, services = [], vatRate = 21, error }) {
     const addService = (service) => {
         setItems([
             ...items,
-            {
-                kind: 'service',
-                service_id: service.id,
-                service_name: service.name,
-                description: service.description || '',
-                quantity: 1,
-                price: Number(service.price || 0),
-            },
+            attachServiceFields(
+                {
+                    kind: 'service',
+                    service_id: service.id,
+                    service_name: service.name,
+                    description: service.description || '',
+                    quantity: 1,
+                    price: Number(service.price || 0),
+                },
+                service,
+            ),
         ]);
     };
 
@@ -54,17 +63,19 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
     const changeService = (index, serviceId) => {
         const service = services.find((item) => String(item.id) === String(serviceId));
         setItems(
-            items.map((item, i) =>
-                i === index
-                    ? {
-                          ...item,
-                          service_id: service?.id || '',
-                          service_name: service?.name || item.service_name,
-                          description: item.description || service?.description || '',
-                          price: service ? Number(service.price || 0) : item.price,
-                      }
-                    : item,
-            ),
+            items.map((item, i) => {
+                if (i !== index) {
+                    return item;
+                }
+                const next = {
+                    ...item,
+                    service_id: service?.id || '',
+                    service_name: service?.name || item.service_name,
+                    description: item.description || service?.description || '',
+                    price: service ? Number(service.price || 0) : item.price,
+                };
+                return service ? attachServiceFields(next, service) : next;
+            }),
         );
     };
 
@@ -73,6 +84,8 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
     const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
     const vat = subtotal * (Number(vatRate) / 100);
     const total = subtotal + vat;
+    const qtyHeader = quantityColumnLabel(items, services);
+    const priceHeader = priceColumnLabel(items, services);
 
     return (
         <div>
@@ -81,8 +94,8 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                     <thead>
                         <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-400">
                             <th className="pb-3 pr-3 font-medium">Description</th>
-                            <th className="w-24 pb-3 pr-3 font-medium">Number</th>
-                            <th className="w-36 pb-3 pr-3 font-medium">Price (excl. VAT)</th>
+                            <th className="w-24 pb-3 pr-3 font-medium">{qtyHeader}</th>
+                            <th className="w-36 pb-3 pr-3 font-medium">{priceHeader}</th>
                             <th className="w-28 pb-3 pr-3 font-medium">Total</th>
                             <th className="w-16 pb-3" />
                         </tr>
@@ -123,10 +136,12 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                                         {!isText && (
                                             <input
                                                 type="number"
-                                                min="1"
+                                                min={lineIsHourly(item, services) ? '0.25' : '1'}
+                                                step={lineIsHourly(item, services) ? '0.25' : '1'}
                                                 className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-100"
                                                 value={item.quantity}
                                                 onChange={(e) => update(index, 'quantity', e.target.value)}
+                                                aria-label={lineIsHourly(item, services) ? 'Hours' : 'Quantity'}
                                             />
                                         )}
                                     </td>
@@ -180,7 +195,14 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                                         className="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
                                     >
                                         <span className="block font-medium">{service.name}</span>
-                                        <span className="block text-xs text-slate-400">{money(service.price)}</span>
+                                        <span className="block text-xs text-slate-400">
+                                            {money(service.price)}
+                                            {service.billing_mode === 'hourly' || String(service.unit || '').toLowerCase().includes('hour')
+                                                ? ' / hr'
+                                                : service.unit
+                                                  ? ` / ${service.unit}`
+                                                  : ''}
+                                        </span>
                                     </button>
                                 ))}
                             </div>

@@ -18,7 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
         $schedule->command('invoices:generate-recurring')->daily();
-        $schedule->command('invoices:payment-reminders')->daily();
         $schedule->command('subscriptions:process')->daily();
     })
     ->withMiddleware(function (Middleware $middleware): void {

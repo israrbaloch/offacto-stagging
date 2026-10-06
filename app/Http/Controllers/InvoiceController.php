@@ -21,6 +21,7 @@ use App\Models\Status;
 use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Support\InvoiceMessage;
+use App\Support\RecurringInvoice;
 use App\Services\MolliePaymentService;
 use App\Services\Postbode\PostbodeApiException;
 use App\Services\Postbode\PostbodeSendService;
@@ -423,6 +424,7 @@ class InvoiceController extends Controller
                 'description' => $service->description ?? '',
                 'price' => (float)$service->price,
                 'unit' => $service->unit ?? '',
+                'billing_mode' => $service->billing_mode ?? 'fixed',
             ];
         })->values();
 
@@ -437,6 +439,8 @@ class InvoiceController extends Controller
                 'quantity' => $item->quantity,
                 'price' => (float)$item->price,
                 'total' => (float)$item->total,
+                'billing_mode' => $item->service->billing_mode ?? 'fixed',
+                'unit' => $item->service->unit ?? '',
             ];
         })->values();
 
@@ -731,8 +735,6 @@ class InvoiceController extends Controller
                 }
                 $peppol->send($invoice);
             }
-
-            $this->syncInvoiceReminderSchedule($invoice, $request->validated());
 
             if ($invoice->isDraft()) {
                 $sentStatus = Status::forTable('invoices')->where('name', 'Sent')->first();
@@ -1088,13 +1090,14 @@ class InvoiceController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'message' => ['nullable', 'string'],
-            'email' => ['required', 'email'],
+            'message' => ['nullable', 'string', 'max:10000'],
+            'email' => ['required', 'email', 'max:255'],
         ]);
 
+        $message = $request->input('message');
         Mail::to($request->input('email'))->send(new InvoiceReminder(
             $invoice,
-            $request->input('message', '')
+            is_string($message) ? $message : '',
         ));
 
         return back()->with('status', 'reminder-sent');
@@ -1174,14 +1177,27 @@ class InvoiceController extends Controller
 
         $validated = $request->validate([
             'is_recurring' => ['required', 'boolean'],
-            'recurring_interval' => ['nullable', 'in:weekly,monthly,yearly'],
+            'recurring_interval' => ['nullable', 'required_if:is_recurring,true', 'in:weekly,monthly,yearly'],
         ]);
 
-        $invoice->update([
-            'is_recurring' => $validated['is_recurring'],
-            'recurring_interval' => $validated['is_recurring'] ? ($validated['recurring_interval'] ?? 'monthly') : null,
-            'next_run_at' => $validated['is_recurring'] ? now()->addMonth() : null,
-        ]);
+        $enabled = (bool) $validated['is_recurring'];
+        $interval = $enabled ? ($validated['recurring_interval'] ?? 'monthly') : null;
+
+        $payload = [
+            'is_recurring' => $enabled,
+            'recurring_interval' => $interval,
+        ];
+
+        if (! $enabled) {
+            $payload['next_run_at'] = null;
+        } else {
+            $intervalChanged = $invoice->recurring_interval !== $interval;
+            if (! $invoice->is_recurring || ! $invoice->next_run_at || $intervalChanged) {
+                $payload['next_run_at'] = RecurringInvoice::initialNextRun($interval);
+            }
+        }
+
+        $invoice->update($payload);
 
         return back()->with('status', 'recurring-updated');
     }
@@ -1199,31 +1215,4 @@ class InvoiceController extends Controller
         return app(NumberingSeriesService::class)->nextForCompany($companyId, 'credit_notes');
     }
 
-    /**
-     * @param  array<string, mixed>  $validated
-     */
-    private function syncInvoiceReminderSchedule(Invoice $invoice, array $validated): void
-    {
-        if (! ($validated['reminder_enabled'] ?? false) || ! $invoice->due_date) {
-            $invoice->update([
-                'reminder_enabled' => false,
-                'reminder_days_before_due' => null,
-                'reminder_send_on' => null,
-            ]);
-
-            return;
-        }
-
-        $daysBefore = (int) ($validated['reminder_days_before_due'] ?? 0);
-        $sendOn = $daysBefore >= 0
-            ? $invoice->due_date->copy()->subDays($daysBefore)
-            : $invoice->due_date->copy()->addDays(abs($daysBefore));
-
-        $invoice->update([
-            'reminder_enabled' => true,
-            'reminder_days_before_due' => $daysBefore,
-            'reminder_send_on' => $sendOn,
-            'reminder_sent_at' => null,
-        ]);
-    }
 }

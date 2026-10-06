@@ -349,6 +349,7 @@ class OfferController extends Controller
                 'description' => $service->description ?? '',
                 'price' => (float)$service->price,
                 'unit' => $service->unit ?? '',
+                'billing_mode' => $service->billing_mode ?? 'fixed',
             ];
         })->values();
 
@@ -363,6 +364,8 @@ class OfferController extends Controller
                 'quantity' => $item->quantity,
                 'price' => (float)$item->price,
                 'total' => (float)$item->total,
+                'billing_mode' => $item->service->billing_mode ?? 'fixed',
+                'unit' => $item->service->unit ?? '',
             ];
         })->values();
 

@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Http\Middleware\SetLocale;
+use App\Models\Company;
+use App\Models\Service;
 use App\Support\PublicStorage;
 use App\Support\SubscriptionReminder;
 use Illuminate\Http\Request;
@@ -96,6 +98,12 @@ class HandleInertiaRequests extends Middleware
                 'status' => $request->session()->get('status'),
                 'error' => $request->session()->get('error'),
             ],
+            'adminQueue' => $user && $user->hasRole('admin')
+                ? [
+                    'pendingServices' => Service::whereHas('statusRelation', fn ($q) => $q->where('name', 'Pending'))->count(),
+                    'pendingCompanies' => Company::pending()->count(),
+                ]
+                : null,
         ];
     }
 

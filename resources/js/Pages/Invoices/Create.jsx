@@ -551,8 +551,6 @@ export default function Create({
                 peppolConfigured={peppolConfigured}
                 mollieConfigured={mollieConfigured}
                 whatsappShareUrl={whatsappShareUrl || ''}
-                dueDate={form.data.due_date || invoice?.due_date}
-                canScheduleReminder={invoice?.payment_status !== 'paid'}
                 onBeforeSend={(runSend) => saveThen(runSend)}
             />
         </AuthenticatedLayout>

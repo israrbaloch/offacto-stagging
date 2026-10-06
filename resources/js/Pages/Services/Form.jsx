@@ -1,4 +1,5 @@
 import { Link, useForm } from '@inertiajs/react';
+import { useEffect } from 'react';
 import Icon from '../../Components/Icon';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 
@@ -42,6 +43,12 @@ export default function Form({ service = null }) {
         unit: service?.unit || '',
         billing_mode: service?.billing_mode || 'fixed',
     });
+
+    useEffect(() => {
+        if (data.billing_mode === 'hourly' && data.unit !== 'hour') {
+            setData('unit', 'hour');
+        }
+    }, [data.billing_mode, data.unit, setData]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -94,15 +101,46 @@ export default function Form({ service = null }) {
                             <Field label="Price" error={errors.price}>
                                 <input type="number" step="0.01" min="0" className={fieldClass} value={data.price} onChange={(e) => setData('price', e.target.value)} />
                             </Field>
-                            <Field label="Unit" error={errors.unit}>
-                                <input className={fieldClass} placeholder="hour, piece, project…" value={data.unit} onChange={(e) => setData('unit', e.target.value)} />
-                            </Field>
                             <Field label="Billing mode" error={errors.billing_mode}>
-                                <select className={fieldClass} value={data.billing_mode} onChange={(e) => setData('billing_mode', e.target.value)}>
+                                <select
+                                    className={fieldClass}
+                                    value={data.billing_mode}
+                                    onChange={(e) => {
+                                        const mode = e.target.value;
+                                        setData({
+                                            ...data,
+                                            billing_mode: mode,
+                                            unit: mode === 'hourly' ? 'hour' : data.unit,
+                                        });
+                                    }}
+                                >
                                     <option value="fixed">Fixed price</option>
                                     <option value="hourly">Hourly</option>
                                 </select>
                             </Field>
+                            <Field label="Unit" error={errors.unit}>
+                                {data.billing_mode === 'hourly' ? (
+                                    <input
+                                        className={`${fieldClass} cursor-not-allowed bg-slate-100 text-slate-600`}
+                                        value="hour"
+                                        readOnly
+                                        tabIndex={-1}
+                                        aria-readonly="true"
+                                    />
+                                ) : (
+                                    <input
+                                        className={fieldClass}
+                                        placeholder="piece, project, day…"
+                                        value={data.unit}
+                                        onChange={(e) => setData('unit', e.target.value)}
+                                    />
+                                )}
+                            </Field>
+                            {data.billing_mode === 'hourly' && (
+                                <p className="text-xs text-slate-500">
+                                    On quotes and invoices, quantity is treated as hours and price as the hourly rate (no built-in timer).
+                                </p>
+                            )}
                         </div>
                     </Card>
                 </div>

@@ -19,7 +19,14 @@ export default function Dashboard({
 
     return (
         <AdminLayout title="Admin">
-            <h1 className="mb-6 text-2xl font-semibold">Admin overview</h1>
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+                <h1 className="text-2xl font-semibold">Admin overview</h1>
+                {(serviceStats.pending || 0) > 0 && (
+                    <Link href="/admin/services?status=Pending" className="text-sm font-medium text-indigo-600 hover:underline">
+                        {serviceStats.pending} pending service(s) →
+                    </Link>
+                )}
+            </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {groups.map((group) => (
                     <section key={group.title} className="rounded-2xl border border-slate-200 bg-white p-5">

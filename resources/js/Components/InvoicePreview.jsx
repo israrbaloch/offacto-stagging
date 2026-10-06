@@ -1,6 +1,7 @@
 import Logo from './Logo';
 import SafeHtml from './SafeHtml';
 import { DEFAULT_BRAND_PRIMARY, DEFAULT_BRAND_SECONDARY } from '../lib/brand';
+import { formatQuantityDisplay, lineIsHourly, priceColumnLabel, quantityColumnLabel } from '../lib/serviceBilling';
 import { money } from '../lib/utils';
 
 function prettyDate(value) {
@@ -48,6 +49,8 @@ export default function InvoicePreview({
     const headerBg = `${primary}14`;
 
     const priced = items.filter((item) => item.kind !== 'text');
+    const qtyHeader = quantityColumnLabel(items, []);
+    const priceHeader = priceColumnLabel(items, []).replace(' (excl. VAT)', '');
     const calcSubtotal = priced.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || item.unit_price || 0), 0);
     const subtotal = totalsOverride?.subtotal ?? calcSubtotal;
     const vat = totalsOverride?.tax ?? calcSubtotal * (Number(vatRate) / 100);
@@ -123,10 +126,10 @@ export default function InvoicePreview({
                                     Item
                                 </th>
                                 <th className="w-24 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide" style={{ color: secondary }}>
-                                    Quantity
+                                    {qtyHeader}
                                 </th>
                                 <th className="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide" style={{ color: secondary }}>
-                                    Price
+                                    {priceHeader}
                                 </th>
                                 <th className="w-28 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide" style={{ color: secondary }}>
                                     Amount
@@ -152,9 +155,13 @@ export default function InvoicePreview({
                                                 <span className="mt-0.5 block text-xs font-normal text-slate-500">{item.description}</span>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 text-right text-slate-700">{item.kind === 'text' ? '—' : item.quantity}</td>
                                         <td className="px-4 py-3 text-right text-slate-700">
-                                            {item.kind === 'text' ? '—' : money(item.price ?? item.unit_price)}
+                                            {formatQuantityDisplay(item, [])}
+                                        </td>
+                                        <td className="px-4 py-3 text-right text-slate-700">
+                                            {item.kind === 'text'
+                                                ? '—'
+                                                : `${money(item.price ?? item.unit_price)}${lineIsHourly(item, []) ? '/h' : ''}`}
                                         </td>
                                         <td className="px-4 py-3 text-right font-medium text-slate-800">
                                             {amount == null ? '—' : money(amount)}

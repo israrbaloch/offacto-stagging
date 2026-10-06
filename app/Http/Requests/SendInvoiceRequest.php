@@ -27,8 +27,6 @@ class SendInvoiceRequest extends FormRequest
         return [
             'channels' => ['required', 'array', 'min:1'],
             'channels.*' => ['in:email,postbode,whatsapp,peppol,mollie'],
-            'reminder_enabled' => ['nullable', 'boolean'],
-            'reminder_days_before_due' => ['nullable', 'integer', 'between:-30,30'],
             'emails' => ['nullable', 'array'],
             'emails.*' => ['email', 'max:255'],
             'email' => ['nullable', 'email'],
@@ -48,9 +46,6 @@ class SendInvoiceRequest extends FormRequest
             $emails = array_values(array_filter($this->input('emails', []), fn ($e) => filled($e)));
             if (in_array('email', $channels, true) && $emails === []) {
                 $validator->errors()->add('emails', __('offers.send_emails_required'));
-            }
-            if ($this->boolean('reminder_enabled') && ! $this->has('reminder_days_before_due')) {
-                $validator->errors()->add('reminder_days_before_due', __('invoices.reminder_offset_required'));
             }
         });
     }
