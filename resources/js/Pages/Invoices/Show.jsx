@@ -1,51 +1,37 @@
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Button from '../../Components/Button';
-import Input, { Select } from '../../Components/Input';
-import Modal from '../../Components/Modal';
-import PostbodeSendModal from '../../Components/PostbodeSendModal';
+import { Select } from '../../Components/Input';
+import InvoicePreview from '../../Components/InvoicePreview';
+import SendInvoiceModal from '../../Components/SendInvoiceModal';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
-import { customerName, formatDate, money, optionsFromMap } from '../../lib/utils';
+import { customerName, formatDate, money } from '../../lib/utils';
 
 export default function Show({
     invoice,
-    paymentMethods = {},
+    ipTransferTypes = {},
     peppolConfigured = false,
     mollieConfigured = false,
     postbodeConfigured = false,
 }) {
+    const { activeCompany } = usePage().props;
     const { confirm } = useUi();
     const [sendOpen, setSendOpen] = useState(false);
-    const [postbodeOpen, setPostbodeOpen] = useState(false);
-    const [payOpen, setPayOpen] = useState(false);
-    const [reminderOpen, setReminderOpen] = useState(false);
-    const send = useForm({
-        email: invoice.customer?.email || '',
-        message: '',
-        attach_ubl: false,
-        cc_company: false,
-    });
-    const pay = useForm({
-        amount: invoice.amount_due || invoice.total || '',
-        payment_date: new Date().toISOString().slice(0, 10),
-        payment_method: 'bank_transfer',
-        reference: '',
-        notes: '',
-    });
-    const reminder = useForm({
-        email: invoice.customer?.email || '',
-        message: '',
-    });
     const recurring = useForm({
         is_recurring: Boolean(invoice.is_recurring),
         recurring_interval: invoice.recurring_interval || 'monthly',
     });
 
-    const whatsappText = encodeURIComponent(
-        `Invoice ${invoice.invoice_number} — ${money(invoice.amount_due)} due ${formatDate(invoice.due_date)}`
-    );
+    const isDraft = String(invoice.status_relation?.name || '').toLowerCase() === 'draft';
+    const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(
+        `Invoice ${invoice.invoice_number} — ${money(invoice.amount_due)} due ${formatDate(invoice.due_date)}`,
+    )}`;
+
+    const company = invoice.company || activeCompany || {};
+    const customer = invoice.customer || {};
+    const copyrightLabel = ipTransferTypes[invoice.ip_transfer_type] || '';
 
     return (
         <AuthenticatedLayout title={invoice.invoice_number}>
@@ -53,86 +39,63 @@ export default function Show({
                 <div>
                     <h1 className="text-2xl font-semibold">{invoice.invoice_number}</h1>
                     <p className="text-sm text-slate-500">
-                        {customerName(invoice.customer)} · {formatDate(invoice.invoice_date)} · {invoice.status_relation?.name} · {invoice.payment_status}
+                        {customerName(invoice.customer)} · {formatDate(invoice.invoice_date)} · {invoice.status_relation?.name} ·{' '}
+                        {invoice.payment_status}
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    {!isDraft && (
+                        <Button href={`/invoices/${invoice.id}/preview`} as="a" variant="secondary" target="_blank" rel="noreferrer">
+                            Preview PDF
+                        </Button>
+                    )}
                     <Button href={`/invoices/${invoice.id}/edit`} variant="secondary">
                         Edit
                     </Button>
-                    <Button href={`/invoices/${invoice.id}/download`} as="a">
-                        PDF
-                    </Button>
-                    <Button href={`/invoices/${invoice.id}/ubl`} as="a" variant="secondary">
-                        UBL
-                    </Button>
-                    <Button onClick={() => setSendOpen(true)}>Send</Button>
-                    <Button variant="secondary" onClick={() => setReminderOpen(true)}>
-                        Reminder
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        onClick={async () => {
-                            if (
-                                await confirm({
-                                    message: t('invoices.credit_note_confirm'),
-                                    confirmLabel: t('common.confirm'),
-                                })
-                            ) {
-                                router.post(`/invoices/${invoice.id}/credit-note`);
-                            }
-                        }}
-                    >
-                        Credit note
-                    </Button>
-                    {mollieConfigured && invoice.payment_status !== 'paid' && (
+                    <Button onClick={() => setSendOpen(true)}>{t('invoices.send_modal_title')}</Button>
+                    {!isDraft && invoice.payment_status !== 'paid' && (
                         <Button
                             variant="secondary"
-                            onClick={() => router.post(`/invoices/${invoice.id}/mollie`)}
+                            onClick={async () => {
+                                if (
+                                    await confirm({
+                                        message: t('invoices.credit_note_confirm'),
+                                        confirmLabel: t('common.confirm'),
+                                    })
+                                ) {
+                                    router.post(`/invoices/${invoice.id}/credit-note`);
+                                }
+                            }}
                         >
-                            Mollie pay link
+                            Credit note
                         </Button>
                     )}
-                    {peppolConfigured && (
-                        <Button variant="secondary" onClick={() => router.post(`/invoices/${invoice.id}/peppol`)}>
-                            Send Peppol
+                    {isDraft && (
+                        <Button
+                            variant="danger"
+                            onClick={async () => {
+                                if (
+                                    await confirm({
+                                        message: t('invoices.delete_confirm'),
+                                        confirmLabel: t('common.delete'),
+                                        danger: true,
+                                    })
+                                ) {
+                                    router.delete(`/invoices/${invoice.id}`);
+                                }
+                            }}
+                        >
+                            Delete
                         </Button>
                     )}
-                    <Button
-                        variant="secondary"
-                        as="a"
-                        href={`https://wa.me/?text=${whatsappText}`}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        WhatsApp
-                    </Button>
-                    {postbodeConfigured && (
-                        <Button variant="secondary" onClick={() => setPostbodeOpen(true)}>
-                            {t('integrations.postbode_send_short')}
-                        </Button>
-                    )}
-                    <Button variant="secondary" onClick={() => setPayOpen(true)}>
-                        Record payment
-                    </Button>
-                    <Button
-                        variant="danger"
-                        onClick={async () => {
-                            if (
-                                await confirm({
-                                    message: t('invoices.delete_confirm'),
-                                    confirmLabel: t('common.delete'),
-                                    danger: true,
-                                })
-                            ) {
-                                router.delete(`/invoices/${invoice.id}`);
-                            }
-                        }}
-                    >
-                        Delete
-                    </Button>
                 </div>
             </div>
+
+            {invoice.needs_resend && (
+                <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {t('invoices.resend_required_banner')}
+                </div>
+            )}
 
             <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -155,10 +118,7 @@ export default function Show({
                             ]}
                         />
                     )}
-                    <Button
-                        variant="secondary"
-                        onClick={() => recurring.post(`/invoices/${invoice.id}/recurring`)}
-                    >
+                    <Button variant="secondary" onClick={() => recurring.post(`/invoices/${invoice.id}/recurring`)}>
                         Save recurring
                     </Button>
                     {invoice.mollie_checkout_url && (
@@ -175,70 +135,97 @@ export default function Show({
                             {invoice.postbode_status ? ` · ${invoice.postbode_status}` : ''}
                         </span>
                     )}
+                    {invoice.reminder_enabled && !invoice.reminder_sent_at && invoice.reminder_send_on && (
+                        <span className="text-slate-600">
+                            {t('invoices.reminder_scheduled', { date: formatDate(invoice.reminder_send_on) })}
+                        </span>
+                    )}
+                    {invoice.reminder_sent_at && (
+                        <span className="text-emerald-600">{t('invoices.reminder_sent', { date: formatDate(invoice.reminder_sent_at) })}</span>
+                    )}
                 </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                <p className="whitespace-pre-wrap text-sm text-slate-600">{invoice.intro}</p>
-                <p className="mt-4 whitespace-pre-wrap text-sm">{invoice.desc}</p>
-                <table className="mt-6 w-full text-left text-sm">
-                    <thead className="text-slate-500">
-                        <tr>
-                            <th className="py-2">Item</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {(invoice.items || []).map((item) => (
-                            <tr key={item.id} className="border-t border-slate-100">
-                                <td className="py-2">{item.service?.name || item.description}</td>
-                                <td>{item.quantity}</td>
-                                <td>{money(item.price)}</td>
-                                <td>{money(item.total)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <div className="mt-4 space-y-1 text-right text-sm">
-                    <div>Total {money(invoice.total)}</div>
-                    <div>Due {money(invoice.amount_due)}</div>
-                </div>
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <InvoicePreview
+                    number={invoice.invoice_number}
+                    date={invoice.invoice_date}
+                    dueDate={invoice.due_date}
+                    offerNumber={invoice.offer?.offer_number}
+                    from={{
+                        name: company.company_name,
+                        street: company.street,
+                        house: company.house,
+                        postal_code: company.postal_code,
+                        city: company.city,
+                        email: company.email,
+                    }}
+                    to={{
+                        name: customer.org_name || [customer.first_name, customer.surname].filter(Boolean).join(' '),
+                        attn: customer.org_name ? [customer.first_name, customer.surname].filter(Boolean).join(' ') : '',
+                        address: customer.office_address,
+                        email: customer.email,
+                    }}
+                    scope={invoice.desc || invoice.intro}
+                    items={(invoice.items || []).map((item) => ({
+                        service_name: item.service?.name,
+                        description: item.description,
+                        quantity: item.quantity,
+                        price: item.price,
+                        total: item.total,
+                    }))}
+                    notes={invoice.notes}
+                    copyrightLabel={copyrightLabel}
+                    totalsOverride={{
+                        subtotal: invoice.subtotal,
+                        tax: invoice.tax_amount,
+                        total: invoice.total,
+                    }}
+                    theme={activeCompany?.theme}
+                    logoUrl={activeCompany?.invoice_logo_url}
+                />
             </div>
+            <p className="mt-3 text-sm text-slate-500">
+                Amount due: <span className="font-semibold text-slate-800">{money(invoice.amount_due)}</span>
+                {invoice.payment_status && <span className="ml-2 text-slate-400">· {invoice.payment_status}</span>}
+            </p>
 
             <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-                <h2 className="mb-3 font-semibold">Attachments</h2>
+                <h2 className="mb-3 font-semibold">{t('invoices.section_attachments')}</h2>
                 <ul className="mb-3 space-y-2">
                     {(invoice.attachments || []).map((file) => (
                         <li key={file.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm">
                             <span className="truncate">{file.original_name}</span>
-                            <button
-                                type="button"
-                                className="text-rose-600 hover:underline"
-                                onClick={() => router.delete(`/invoices/${invoice.id}/attachments/${file.id}`)}
-                            >
-                                Remove
-                            </button>
+                            {isDraft && (
+                                <button
+                                    type="button"
+                                    className="text-rose-600 hover:underline"
+                                    onClick={() => router.delete(`/invoices/${invoice.id}/attachments/${file.id}`)}
+                                >
+                                    Remove
+                                </button>
+                            )}
                         </li>
                     ))}
                 </ul>
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 hover:border-indigo-300">
-                    <input
-                        type="file"
-                        accept="application/pdf"
-                        className="hidden"
-                        onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const data = new FormData();
-                            data.append('file', file);
-                            router.post(`/invoices/${invoice.id}/attachments`, data, { forceFormData: true });
-                            e.target.value = '';
-                        }}
-                    />
-                    Upload PDF attachment
-                </label>
+                {isDraft && (
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 hover:border-indigo-300">
+                        <input
+                            type="file"
+                            accept="application/pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const data = new FormData();
+                                data.append('file', file);
+                                router.post(`/invoices/${invoice.id}/attachments`, data, { forceFormData: true });
+                                e.target.value = '';
+                            }}
+                        />
+                        Upload PDF attachment
+                    </label>
+                )}
             </section>
 
             {(invoice.payments || []).length > 0 && (
@@ -257,58 +244,19 @@ export default function Show({
                 </section>
             )}
 
-            <Modal
+            <SendInvoiceModal
                 open={sendOpen}
-                title="Send invoice"
                 onClose={() => setSendOpen(false)}
-                footer={
-                    <Button disabled={send.processing} onClick={() => send.post(`/invoices/${invoice.id}/send`, { onSuccess: () => setSendOpen(false) })}>
-                        Send
-                    </Button>
-                }
-            >
-                <div className="space-y-3">
-                    <Input label="Email" type="email" value={send.data.email} onChange={(e) => send.setData('email', e.target.value)} error={send.errors.email} />
-                    <Input label="Message" value={send.data.message} onChange={(e) => send.setData('message', e.target.value)} />
-                </div>
-            </Modal>
-            <Modal
-                open={reminderOpen}
-                title="Payment reminder"
-                onClose={() => setReminderOpen(false)}
-                footer={
-                    <Button disabled={reminder.processing} onClick={() => reminder.post(`/invoices/${invoice.id}/reminder`, { onSuccess: () => setReminderOpen(false) })}>
-                        Send reminder
-                    </Button>
-                }
-            >
-                <div className="space-y-3">
-                    <Input label="Email" type="email" value={reminder.data.email} onChange={(e) => reminder.setData('email', e.target.value)} error={reminder.errors.email} />
-                    <Input label="Message" value={reminder.data.message} onChange={(e) => reminder.setData('message', e.target.value)} />
-                </div>
-            </Modal>
-            <Modal
-                open={payOpen}
-                title="Record payment"
-                onClose={() => setPayOpen(false)}
-                footer={
-                    <Button disabled={pay.processing} onClick={() => pay.post(`/invoices/${invoice.id}/payment`, { onSuccess: () => setPayOpen(false) })}>
-                        Save payment
-                    </Button>
-                }
-            >
-                <div className="space-y-3">
-                    <Input label="Amount" type="number" step="0.01" value={pay.data.amount} onChange={(e) => pay.setData('amount', e.target.value)} error={pay.errors.amount} />
-                    <Input label="Date" type="date" value={pay.data.payment_date} onChange={(e) => pay.setData('payment_date', e.target.value)} error={pay.errors.payment_date} />
-                    <Select label="Method" value={pay.data.payment_method} onChange={(e) => pay.setData('payment_method', e.target.value)} options={optionsFromMap(paymentMethods)} />
-                    <Input label="Reference" value={pay.data.reference} onChange={(e) => pay.setData('reference', e.target.value)} />
-                </div>
-            </Modal>
-            <PostbodeSendModal
-                open={postbodeOpen}
-                onClose={() => setPostbodeOpen(false)}
-                actionUrl={`/invoices/${invoice.id}/postbode`}
-                documentLabel={invoice.invoice_number}
+                invoiceId={invoice.id}
+                documentNumber={invoice.invoice_number}
+                defaultEmail={invoice.customer?.email || ''}
+                defaultMessage={invoice.email_message || ''}
+                postbodeConfigured={postbodeConfigured}
+                peppolConfigured={peppolConfigured}
+                mollieConfigured={mollieConfigured && invoice.payment_status !== 'paid'}
+                whatsappShareUrl={whatsappShareUrl}
+                dueDate={invoice.due_date}
+                canScheduleReminder={invoice.payment_status !== 'paid'}
             />
         </AuthenticatedLayout>
     );

@@ -112,6 +112,7 @@ export default function Show({ offer }) {
                 open={sendOpen}
                 onClose={() => setSendOpen(false)}
                 offerId={offer.id}
+                documentNumber={offer.offer_number}
                 defaultEmail={offer.customer?.email || ''}
                 defaultMessage={offer.email_message || ''}
             />

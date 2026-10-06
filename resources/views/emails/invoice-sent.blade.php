@@ -333,6 +333,14 @@
             </div>
             @endif
 
+            @if(filled($invoice->mollie_checkout_url) && !$invoice->isPaid())
+            <div style="text-align:center;margin-bottom:25px;">
+                <a href="{{ $invoice->mollie_checkout_url }}" style="display:inline-block;background:#11134E;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
+                    Pay online (Mollie)
+                </a>
+            </div>
+            @endif
+
             @if($invoice->company->companySetting && ($invoice->company->companySetting->iban || $invoice->company->companySetting->bank_name))
             <div class="payment-info">
                 <h3>Payment Information</h3>

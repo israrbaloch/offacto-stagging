@@ -100,7 +100,7 @@ export default function EmailRecipientsField({ label, value = [], onChange, erro
                 {emails.map((email, index) => (
                     <span
                         key={`${email}-${index}`}
-                        className="inline-flex max-w-full items-center gap-1 rounded-full bg-slate-100 py-0.5 pl-2.5 pr-1 text-slate-800"
+                        className="inline-flex max-w-full items-center gap-1 rounded-md bg-indigo-50 py-0.5 pl-2.5 pr-1 text-indigo-900"
                     >
                         <span className="truncate">{email}</span>
                         <button
@@ -122,7 +122,11 @@ export default function EmailRecipientsField({ label, value = [], onChange, erro
                     inputMode="email"
                     autoComplete="off"
                     value={draft}
-                    placeholder={emails.length === 0 ? placeholder || t('offers.send_emails_placeholder') : ''}
+                    placeholder={
+                        emails.length === 0
+                            ? placeholder || t('offers.send_emails_placeholder')
+                            : t('offers.send_emails_add_more')
+                    }
                     onChange={(e) => {
                         setDraft(e.target.value);
                         setLocalError('');

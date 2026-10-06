@@ -563,9 +563,11 @@ export default function Create({
                 open={sendOpen}
                 onClose={() => setSendOpen(false)}
                 offerId={offer?.id}
+                documentNumber={offer?.offer_number || nextOfferNumber}
                 defaultEmail={selectedCustomer?.email || ''}
                 defaultMessage={emailMessage}
                 legalDocumentIds={selectedLegal}
+                postbodeConfigured={postbodeConfigured}
                 onBeforeSend={(runSend) => saveThen(runSend)}
             />
         </AuthenticatedLayout>

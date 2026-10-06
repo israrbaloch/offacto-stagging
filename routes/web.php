@@ -12,6 +12,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BriefingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\MolliePaymentReturnController;
 use App\Http\Controllers\MollieWebhookController;
 use App\Http\Controllers\PublicBriefingController;
 use App\Http\Controllers\PublicOfferController;
@@ -34,6 +35,7 @@ Route::get('/q/{token}/preview', [PublicOfferController::class, 'preview'])->nam
 Route::get('/q/{token}/download', [PublicOfferController::class, 'download'])->name('offers.public.download');
 
 Route::post('/webhooks/mollie', MollieWebhookController::class)->name('webhooks.mollie');
+Route::get('/payment/mollie/return', MolliePaymentReturnController::class)->name('payments.mollie.return');
 
 Route::post('/locale', function (\Illuminate\Http\Request $request) {
     $locale = $request->validate([
@@ -143,6 +145,7 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
     Route::get('offers/{offer}/voice-note', [OfferController::class, 'downloadVoiceNote'])->name('offers.voice-note');
     Route::post('invoices/{invoice}/attachments', [InvoiceController::class, 'storeAttachment'])->name('invoices.attachments.store');
     Route::delete('invoices/{invoice}/attachments/{attachment}', [InvoiceController::class, 'destroyAttachment'])->name('invoices.attachments.destroy');
+    Route::get('invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->name('invoices.preview');
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
     Route::get('invoices/{invoice}/ubl', [InvoiceController::class, 'downloadUbl'])->name('invoices.ubl');
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.payment');

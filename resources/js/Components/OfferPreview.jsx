@@ -1,5 +1,6 @@
 import Logo from './Logo';
 import SafeHtml from './SafeHtml';
+import { DEFAULT_BRAND_PRIMARY, DEFAULT_BRAND_SECONDARY } from '../lib/brand';
 import { money } from '../lib/utils';
 
 function prettyDate(value) {
@@ -42,8 +43,8 @@ export default function OfferPreview({
     logoUrl,
     middleContent = null,
 }) {
-    const primary = theme.primary || '#4054b2';
-    const secondary = theme.secondary || '#0f172a';
+    const primary = theme.primary || DEFAULT_BRAND_PRIMARY;
+    const secondary = theme.secondary || DEFAULT_BRAND_SECONDARY;
     const headerBg = `${primary}14`;
 
     const priced = items.filter((item) => item.kind !== 'text');

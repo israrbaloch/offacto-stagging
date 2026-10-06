@@ -110,6 +110,7 @@ export default function CompanyIntegrationsPanel({ integrations = {}, links = {}
                 <p className={`text-xs font-medium ${integrations.mollie_configured ? 'text-emerald-700' : 'text-amber-700'}`}>
                     {integrations.mollie_configured ? t('settings.mollie_ready') : t('settings.mollie_missing')}
                 </p>
+                <p className="text-xs leading-relaxed text-slate-500">{t('integrations.mollie_webhook_hint')}</p>
             </section>
 
             <section className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">

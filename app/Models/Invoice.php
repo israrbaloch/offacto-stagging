@@ -42,6 +42,12 @@ class Invoice extends Model
         'desc',
         'attachment',
         'notes',
+        'email_message',
+        'reminder_enabled',
+        'reminder_days_before_due',
+        'reminder_send_on',
+        'reminder_sent_at',
+        'needs_resend',
         'status',
         'payment_status',
         'ip_transfer_type',
@@ -72,6 +78,10 @@ class Invoice extends Model
             'peppol_sent_at' => 'datetime',
             'postbode_sent_at' => 'datetime',
             'is_recurring' => 'boolean',
+            'reminder_enabled' => 'boolean',
+            'reminder_send_on' => 'date',
+            'reminder_sent_at' => 'datetime',
+            'needs_resend' => 'boolean',
         ];
     }
 

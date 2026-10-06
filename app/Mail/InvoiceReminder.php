@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Invoice;
+use App\Models\SiteSetting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -41,7 +42,11 @@ class InvoiceReminder extends Mailable
 
     public function attachments(): array
     {
-        $pdf = Pdf::loadView('pdf.invoice', ['invoice' => $this->invoice])->output();
+        $this->invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer']);
+        $pdf = Pdf::loadView('pdf.invoice', [
+            'invoice' => $this->invoice,
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+        ])->setPaper('a4')->output();
 
         return [
             Attachment::fromData(

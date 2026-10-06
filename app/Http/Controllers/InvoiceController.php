@@ -7,6 +7,7 @@ use App\Http\Requests\SendInvoiceRequest;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
 use App\Mail\InvoiceSent;
+use App\Models\CompanyLegalDocument;
 use App\Models\Customer;
 use App\Mail\InvoiceReminder;
 use App\Models\Invoice;
@@ -19,6 +20,7 @@ use App\Models\SiteSetting;
 use App\Models\Status;
 use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
+use App\Support\InvoiceMessage;
 use App\Services\MolliePaymentService;
 use App\Services\Postbode\PostbodeApiException;
 use App\Services\Postbode\PostbodeSendService;
@@ -220,7 +222,7 @@ class InvoiceController extends Controller
 
         $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany->id)
-            ->with(['items.service'])
+            ->with(['items.service', 'attachments'])
             ->firstOrFail();
 
         $defaultStatus = Status::where('for', 'invoices')->where('name', 'Draft')->first()
@@ -236,9 +238,23 @@ class InvoiceController extends Controller
             'intro' => $offer->intro,
             'desc' => $offer->desc,
             'notes' => $offer->notes,
+            'email_message' => $offer->email_message,
             'status' => $defaultStatus?->id,
             'payment_status' => Invoice::PAYMENT_UNPAID,
         ]);
+
+        foreach ($offer->attachments as $attachment) {
+            if (! Storage::disk('public')->exists($attachment->file_path)) {
+                continue;
+            }
+            $basename = basename($attachment->file_path);
+            $newPath = 'invoice-attachments/'.$invoice->id.'/'.$basename;
+            Storage::disk('public')->copy($attachment->file_path, $newPath);
+            $invoice->attachments()->create([
+                'file_path' => $newPath,
+                'original_name' => $attachment->original_name,
+            ]);
+        }
 
         foreach ($offer->items as $item) {
             $invoiceItem = new InvoiceItem([
@@ -350,11 +366,18 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
-            ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'payments', 'offer', 'attachments'])
+            ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'payments', 'offer', 'attachments', 'company'])
             ->firstOrFail();
+
+        if ($invoice->mollie_payment_id && ! $invoice->isPaid()) {
+            app(MolliePaymentService::class)->syncInvoicePayment($invoice->mollie_payment_id);
+            $invoice->refresh();
+            $invoice->load(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'payments', 'offer', 'attachments', 'company']);
+        }
 
         return Inertia::render('Invoices/Show', [
             'invoice' => $invoice,
+            'ipTransferTypes' => Invoice::getIpTransferTypes(),
             'paymentMethods' => Invoice::getPaymentMethods(),
             'peppolConfigured' => filled(config('services.peppol.endpoint')) && filled(config('services.peppol.token')),
             'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
@@ -419,6 +442,10 @@ class InvoiceController extends Controller
 
         return Inertia::render('Invoices/Create', [
             'invoice' => $invoice->loadMissing('offer'),
+            'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
+            'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
+            'peppolConfigured' => filled(config('services.peppol.endpoint')) && filled(config('services.peppol.token')),
+            'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,
@@ -453,6 +480,7 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
+            ->with('statusRelation')
             ->first();
 
         if (!$invoice) {
@@ -465,6 +493,8 @@ class InvoiceController extends Controller
             return redirect()->back()->with('error', 'Invoice not found or access denied.');
         }
 
+        $wasSent = ! $invoice->isDraft();
+
         DB::beginTransaction();
         try {
             // Update invoice
@@ -475,8 +505,10 @@ class InvoiceController extends Controller
                 'intro' => $request->validated()['intro'] ?? null,
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
+                'email_message' => $request->validated()['email_message'] ?? $invoice->email_message,
                 'status' => $request->validated()['status'],
                 'ip_transfer_type' => $request->validated()['ip_transfer_type'] ?? null,
+                'needs_resend' => $wasSent ? true : $invoice->needs_resend,
             ]);
 
             // Delete existing items
@@ -509,7 +541,9 @@ class InvoiceController extends Controller
                 ]);
             }
 
-            return redirect()->route('invoices.index')->with('status', 'invoice-updated');
+            $flash = $wasSent ? 'invoice-updated-resend' : 'invoice-updated';
+
+            return redirect()->route('invoices.edit', $invoice->id)->with('status', $flash);
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -544,6 +578,7 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
+            ->with('statusRelation')
             ->first();
 
         if (!$invoice) {
@@ -554,6 +589,10 @@ class InvoiceController extends Controller
                 ], 403);
             }
             return redirect()->back()->with('error', 'Invoice not found or access denied.');
+        }
+
+        if (! $invoice->isDraft()) {
+            return redirect()->back()->with('error', 'Sent invoices cannot be deleted.');
         }
 
         $invoice->delete(); // Soft delete
@@ -570,7 +609,13 @@ class InvoiceController extends Controller
     /**
      * Send the invoice via email.
      */
-    public function send(SendInvoiceRequest $request, $invoice): JsonResponse|RedirectResponse
+    public function send(
+        SendInvoiceRequest $request,
+        $invoice,
+        PostbodeSendService $postbode,
+        PeppolSendService $peppol,
+        MolliePaymentService $mollie,
+    ): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -605,36 +650,90 @@ class InvoiceController extends Controller
         }
 
         try {
-            // Generate PDF
-            $invoice->loadMissing('attachments');
-            $pdf = Pdf::loadView('pdf.invoice', ['invoice' => $invoice]);
-            
-            // Generate UBL XML if requested
-            $ublXml = null;
-            if ($request->validated()['attach_ubl'] ?? false) {
-                $ublService = new UblInvoiceService();
-                $ublXml = $ublService->generate($invoice);
+            if (! $invoice->customer_id) {
+                return redirect()->back()->with('error', 'Select a customer before sending.');
             }
 
-            // Build mailable
-            $mailable = new InvoiceSent(
-                $invoice, 
-                $request->validated()['message'] ?? '',
-                $pdf->output(),
-                $ublXml
-            );
+            $channels = $request->validated()['channels'];
+            $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'attachments', 'company']);
 
-            // Send to customer
-            Mail::to($request->validated()['email'])->send($mailable);
+            $wantsMollie = in_array('mollie', $channels, true);
+            $wantsEmail = in_array('email', $channels, true);
 
-            // Send CC to company if requested
-            if ($request->validated()['cc_company'] ?? false) {
-                if ($activeCompany->email) {
-                    Mail::to($activeCompany->email)->send($mailable);
+            if ($wantsMollie && ! CompanyIntegrations::mollieConfigured($activeCompany)) {
+                return redirect()->back()->with('error', 'Mollie is not configured for this workspace.');
+            }
+
+            if (($wantsMollie || $wantsEmail) && CompanyIntegrations::mollieConfigured($activeCompany) && ! $invoice->isPaid()) {
+                $mollie->ensureCheckoutForSend($invoice, $activeCompany, $wantsMollie);
+                $invoice->refresh();
+            }
+
+            if ($wantsEmail) {
+                $pdf = $this->invoicePdf($invoice);
+
+                $ublXml = null;
+                if ($request->validated()['attach_ubl'] ?? false) {
+                    $ublService = new UblInvoiceService();
+                    $ublXml = $ublService->generate($invoice);
+                }
+
+                $rawMessage = $request->validated()['message'] ?? $invoice->email_message ?? '';
+                $body = InvoiceMessage::merge($rawMessage, $invoice);
+
+                $legalIds = $request->validated()['legal_document_ids'] ?? null;
+                $legalQuery = CompanyLegalDocument::where('company_id', $activeCompany->id);
+                $legalDocs = $legalIds === null
+                    ? $legalQuery->where('attach_to_quotes_default', true)->get()
+                    : $legalQuery->whereIn('id', $legalIds)->get();
+
+                $mailable = new InvoiceSent(
+                    $invoice,
+                    $body,
+                    $pdf->output(),
+                    $ublXml,
+                    $legalDocs->all(),
+                );
+
+                $recipients = array_values(array_unique($request->validated()['emails'] ?? []));
+                Mail::to($recipients)->send($mailable);
+
+                if ($request->validated()['cc_company'] ?? false) {
+                    if ($activeCompany->email) {
+                        Mail::to($activeCompany->email)->send($mailable);
+                    }
                 }
             }
 
-            // Update invoice status to "Sent" if it was Draft
+            if (in_array('postbode', $channels, true)) {
+                $settings = CompanyIntegrations::settings($activeCompany);
+                if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
+                    return redirect()->back()->with('error', 'Postbode is not configured for this workspace.');
+                }
+
+                $result = $postbode->sendInvoice(
+                    $invoice,
+                    $settings,
+                    $request->has('registered') ? $request->boolean('registered') : null,
+                );
+
+                $invoice->update([
+                    'postbode_sent_at' => now(),
+                    'postbode_postal_uuid' => $result['uuid'],
+                    'postbode_status' => $result['status'],
+                    'postbode_customer_reference' => $result['reference'],
+                ]);
+            }
+
+            if (in_array('peppol', $channels, true)) {
+                if (! filled(config('services.peppol.endpoint')) || ! filled(config('services.peppol.token'))) {
+                    return redirect()->back()->with('error', 'Peppol is not configured.');
+                }
+                $peppol->send($invoice);
+            }
+
+            $this->syncInvoiceReminderSchedule($invoice, $request->validated());
+
             if ($invoice->isDraft()) {
                 $sentStatus = Status::forTable('invoices')->where('name', 'Sent')->first();
                 if ($sentStatus) {
@@ -642,13 +741,24 @@ class InvoiceController extends Controller
                 }
             }
 
+            $invoice->update(['needs_resend' => false]);
+
+            $emailed = in_array('email', $channels, true);
+            $postbodeSent = in_array('postbode', $channels, true);
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Invoice sent successfully.',
                 ]);
             }
 
-            return redirect()->route('invoices.show', $invoice->id)->with('status', 'invoice-sent');
+            if ($postbodeSent && ! $emailed) {
+                return redirect()->back()->with('status', 'postbode-sent');
+            }
+
+            return redirect()->back()->with('status', 'invoice-sent');
+        } catch (PostbodeApiException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -715,9 +825,22 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Stream invoice PDF in the browser.
+     */
+    public function preview(Request $request, $invoice): Response|RedirectResponse
+    {
+        return $this->invoicePdfResponse($request, $invoice, 'preview');
+    }
+
+    /**
      * Download invoice as PDF.
      */
     public function download(Request $request, $invoice): Response|RedirectResponse
+    {
+        return $this->invoicePdfResponse($request, $invoice, 'download');
+    }
+
+    private function invoicePdfResponse(Request $request, $invoice, string $mode): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -728,17 +851,24 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
-            ->with(['customer', 'items.service', 'company.companySetting'])
             ->firstOrFail();
 
         $filename = 'invoice-' . ($invoice->invoice_number ?? $invoice->id) . '.pdf';
+        $pdf = $this->invoicePdf($invoice);
 
-        return $this->invoicePdf($invoice)->download($filename);
+        return $mode === 'preview'
+            ? $pdf->stream($filename)
+            : $pdf->download($filename);
     }
 
     private function invoicePdf(Invoice $invoice): DomPdf
     {
-        return Pdf::loadView('pdf.invoice', ['invoice' => $invoice]);
+        $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer']);
+
+        return Pdf::loadView('pdf.invoice', [
+            'invoice' => $invoice,
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+        ])->setPaper('a4');
     }
 
     private function applyInvoiceDateFilter($query, string $dateFilter): void
@@ -1067,5 +1197,33 @@ class InvoiceController extends Controller
     private function generateCreditNoteNumber(int $companyId): string
     {
         return app(NumberingSeriesService::class)->nextForCompany($companyId, 'credit_notes');
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncInvoiceReminderSchedule(Invoice $invoice, array $validated): void
+    {
+        if (! ($validated['reminder_enabled'] ?? false) || ! $invoice->due_date) {
+            $invoice->update([
+                'reminder_enabled' => false,
+                'reminder_days_before_due' => null,
+                'reminder_send_on' => null,
+            ]);
+
+            return;
+        }
+
+        $daysBefore = (int) ($validated['reminder_days_before_due'] ?? 0);
+        $sendOn = $daysBefore >= 0
+            ? $invoice->due_date->copy()->subDays($daysBefore)
+            : $invoice->due_date->copy()->addDays(abs($daysBefore));
+
+        $invoice->update([
+            'reminder_enabled' => true,
+            'reminder_days_before_due' => $daysBefore,
+            'reminder_send_on' => $sendOn,
+            'reminder_sent_at' => null,
+        ]);
     }
 }

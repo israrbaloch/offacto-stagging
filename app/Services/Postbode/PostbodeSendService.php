@@ -5,6 +5,7 @@ namespace App\Services\Postbode;
 use App\Models\CompanySetting;
 use App\Models\Invoice;
 use App\Models\Offer;
+use App\Models\SiteSetting;
 use App\Support\CompanyIntegrations;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
@@ -16,8 +17,11 @@ class PostbodeSendService
      */
     public function sendInvoice(Invoice $invoice, CompanySetting $settings, bool $registeredOverride = null): array
     {
-        $invoice->loadMissing(['customer', 'items.service', 'company.companySetting']);
-        $pdfBytes = Pdf::loadView('pdf.invoice', ['invoice' => $invoice])->output();
+        $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer']);
+        $pdfBytes = Pdf::loadView('pdf.invoice', [
+            'invoice' => $invoice,
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+        ])->setPaper('a4')->output();
         $filename = Str::slug($invoice->invoice_number ?: 'invoice-'.$invoice->id).'.pdf';
         $reference = $invoice->invoice_number ?: 'INV-'.$invoice->id;
 

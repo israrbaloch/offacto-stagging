@@ -1,9 +1,11 @@
 @php
+    use App\Support\BrandColors;
+
     $company = $offer->company;
     $settings = $company?->companySetting;
-    $theme = is_array($settings?->theme) ? $settings->theme : [];
-    $primary = $theme['primary'] ?? '#4054b2';
-    $secondary = $theme['secondary'] ?? '#0f172a';
+    $theme = BrandColors::resolve(is_array($settings?->theme) ? $settings->theme : null);
+    $primary = $theme['primary'];
+    $secondary = $theme['secondary'];
     $headerBg = $primary.'14';
     $customer = $offer->customer;
     $fromName = $company?->company_name ?: trim(($company?->first_name.' '.$company?->surname));

@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\CompanyLegalDocument;
 use App\Models\Invoice;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -28,11 +29,15 @@ class InvoiceSent extends Mailable
     /**
      * Create a new message instance.
      */
+    /**
+     * @param  array<int, CompanyLegalDocument>  $legalDocuments
+     */
     public function __construct(
         public Invoice $invoice,
         public string $customMessage = '',
         ?string $pdfContent = null,
-        ?string $ublContent = null
+        ?string $ublContent = null,
+        public array $legalDocuments = [],
     ) {
         $this->pdfContent = $pdfContent;
         $this->ublContent = $ublContent;
@@ -90,6 +95,14 @@ class InvoiceSent extends Mailable
             if (Storage::disk('public')->exists($attachment->file_path)) {
                 $attachments[] = Attachment::fromStorageDisk('public', $attachment->file_path)
                     ->as($attachment->original_name)
+                    ->withMime('application/pdf');
+            }
+        }
+
+        foreach ($this->legalDocuments as $document) {
+            if (Storage::disk('public')->exists($document->file_path)) {
+                $attachments[] = Attachment::fromStorageDisk('public', $document->file_path)
+                    ->as($document->original_name)
                     ->withMime('application/pdf');
             }
         }

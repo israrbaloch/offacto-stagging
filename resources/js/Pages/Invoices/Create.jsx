@@ -6,7 +6,9 @@ import InvoicePreview from '../../Components/InvoicePreview';
 import LineItemsEditor from '../../Components/LineItemsEditor';
 import RichTextEditor from '../../Components/RichTextEditor';
 import SelectMenu from '../../Components/SelectMenu';
+import SendInvoiceModal from '../../Components/SendInvoiceModal';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { optionsFromMap } from '../../lib/utils';
 
@@ -63,8 +65,13 @@ export default function Create({
     nextInvoiceNumber = '',
     customersData = [],
     ipTransferTypes = {},
+    legalDocuments = [],
+    postbodeConfigured = false,
+    peppolConfigured = false,
+    mollieConfigured = false,
 }) {
     const { activeCompany } = usePage().props;
+    const { toast } = useUi();
     const parsed = parseIntro(invoice?.intro || '');
     const parsedNotes = parseNotes(invoice?.notes || '');
     const ready = useRef(false);
@@ -75,8 +82,17 @@ export default function Create({
         lines: true,
         copyright: true,
         comments: true,
+        email: false,
     });
     const [previewOpen, setPreviewOpen] = useState(false);
+    const [sendOpen, setSendOpen] = useState(false);
+    const [emailMessage, setEmailMessage] = useState(
+        invoice?.email_message ||
+            'Hi #CLIENTNAME#,\n\nPlease find invoice #INVOICENUMBER# from #COMPANY# attached.\n\nPay online: #PAYLINK#\n\nThank you,\n#COMPANY#',
+    );
+    const [selectedLegal, setSelectedLegal] = useState(
+        legalDocuments.filter((doc) => doc.attach_to_quotes_default).map((doc) => doc.id),
+    );
     const [savedAt, setSavedAt] = useState(invoice?.updated_at || null);
     const [saving, setSaving] = useState(false);
     const [title, setTitle] = useState(parsed.title);
@@ -105,6 +121,7 @@ export default function Create({
         notes: [conditions && `Special conditions: ${conditions}`, form.data.notes].filter(Boolean).join('\n\n'),
         status: form.data.status,
         ip_transfer_type: form.data.ip_transfer_type || null,
+        email_message: emailMessage,
         items: items
             .filter((item) => item.service_id)
             .map((item) => ({
@@ -136,12 +153,17 @@ export default function Create({
         }, 1500);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.data, items, title, conditions, invoice?.id]);
+    }, [form.data, items, title, conditions, emailMessage, invoice?.id]);
 
     const customerOptions = optionsFromMap(customers);
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
-    const isSent = ['sent', 'paid'].includes(String(invoice?.status_relation?.name || '').toLowerCase())
-        || invoice?.payment_status === 'paid';
+    const isDraft = String(invoice?.status_relation?.name || 'draft').toLowerCase() === 'draft';
+    const isSent = !isDraft;
+    const whatsappShareUrl =
+        invoice?.id &&
+        `https://wa.me/?text=${encodeURIComponent(
+            `Invoice ${invoice.invoice_number} — due ${form.data.due_date || invoice.due_date || ''}`,
+        )}`;
     const copyrightLabel = ipTransferTypes[form.data.ip_transfer_type] || '';
 
     const submit = (e) => {
@@ -149,6 +171,23 @@ export default function Create({
         if (!invoice?.id) return;
         form.transform(() => payloadFromState());
         form.put(`/invoices/${invoice.id}`);
+    };
+
+    const saveThen = (callback) => {
+        form.transform(() => payloadFromState());
+        form.put(`/invoices/${invoice.id}`, {
+            preserveScroll: true,
+            onSuccess: callback,
+        });
+    };
+
+    const openSendModal = () => {
+        if (!invoice?.id) return;
+        if (!form.data.customer_id) {
+            toast.error(t('offers.send_need_customer'));
+            return;
+        }
+        setSendOpen(true);
     };
 
     const savedLabel = saving
@@ -160,6 +199,11 @@ export default function Create({
     return (
         <AuthenticatedLayout title={invoice ? t('invoices.edit_title') : t('invoices.new_title')}>
             <form onSubmit={submit}>
+                {invoice?.needs_resend && (
+                    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        {t('invoices.resend_required_banner')}
+                    </div>
+                )}
                 <div className="sticky top-0 z-10 -mx-4 mb-6 border-b border-slate-200 bg-slate-50/95 px-4 py-4 backdrop-blur lg:-mx-8 lg:px-8">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-center gap-3">
@@ -185,19 +229,31 @@ export default function Create({
                             </button>
                             {isSent && invoice?.id && (
                                 <a
-                                    href={`/invoices/${invoice.id}/download`}
-                                    className="rounded-full border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
+                                    href={`/invoices/${invoice.id}/preview`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
                                 >
-                                    Download PDF
+                                    Preview PDF
                                 </a>
                             )}
                             <button
                                 type="submit"
                                 disabled={form.processing}
-                                className="rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                                className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
                             >
                                 Save invoice
                             </button>
+                            {invoice?.id && (
+                                <button
+                                    type="button"
+                                    disabled={form.processing || activeCompany?.trial_expired || activeCompany?.pending_approval}
+                                    onClick={openSendModal}
+                                    className="rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                                >
+                                    {t('invoices.send_modal_title')}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -351,42 +407,84 @@ export default function Create({
 
                     {invoice?.id && (
                         <Section
-                            id="attachments"
-                            title={t('invoices.section_attachments')}
-                            hint={t('invoices.section_attachments_hint')}
-                            open={open.attachments ?? true}
+                            id="email"
+                            title={t('invoices.email_attachments')}
+                            hint={t('invoices.email_attachments_hint')}
+                            open={open.email}
                             onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
                         >
-                            <ul className="mb-3 space-y-2">
-                                {(invoice.attachments || []).map((file) => (
-                                    <li key={file.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                        <span className="truncate">{file.original_name}</span>
+                            <label className="block">
+                                <span className={labelClass}>E-mail</span>
+                                <div className="mb-2 flex flex-wrap gap-2 text-xs">
+                                    {['#CLIENTNAME#', '#COMPANY#', '#INVOICENUMBER#', '#PAYLINK#'].map((code) => (
                                         <button
+                                            key={code}
                                             type="button"
-                                            className="text-rose-600 hover:underline"
-                                            onClick={() => router.delete(`/invoices/${invoice.id}/attachments/${file.id}`)}
+                                            onClick={() => setEmailMessage((value) => `${value || ''}${value ? ' ' : ''}${code}`)}
+                                            className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
                                         >
-                                            Remove
+                                            {code}
                                         </button>
-                                    </li>
-                                ))}
-                            </ul>
-                            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm font-medium text-slate-600 hover:border-indigo-300">
-                                <input
-                                    type="file"
-                                    accept="application/pdf"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
-                                        const data = new FormData();
-                                        data.append('file', file);
-                                        router.post(`/invoices/${invoice.id}/attachments`, data, { forceFormData: true });
-                                        e.target.value = '';
-                                    }}
-                                />
-                                Choose a PDF
+                                    ))}
+                                </div>
+                                <RichTextEditor value={emailMessage} onChange={setEmailMessage} minHeight="10rem" />
                             </label>
+                            <div className="mt-5">
+                                <span className={labelClass}>{t('invoices.section_attachments')}</span>
+                                <ul className="mb-3 space-y-2">
+                                    {(invoice.attachments || []).map((file) => (
+                                        <li key={file.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                                            <span className="truncate">{file.original_name}</span>
+                                            <button
+                                                type="button"
+                                                className="text-rose-600 hover:underline"
+                                                onClick={() => router.delete(`/invoices/${invoice.id}/attachments/${file.id}`)}
+                                            >
+                                                Remove
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm font-medium text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/50">
+                                    <input
+                                        type="file"
+                                        accept="application/pdf"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const data = new FormData();
+                                            data.append('file', file);
+                                            router.post(`/invoices/${invoice.id}/attachments`, data, { forceFormData: true });
+                                            e.target.value = '';
+                                        }}
+                                    />
+                                    Choose a PDF
+                                </label>
+                            </div>
+                            {legalDocuments.length > 0 && (
+                                <div className="mt-5">
+                                    <span className={labelClass}>Legal documents</span>
+                                    <ul className="space-y-2">
+                                        {legalDocuments.map((doc) => (
+                                            <li key={doc.id}>
+                                                <label className="flex items-center gap-2 text-sm text-slate-700">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedLegal.includes(doc.id)}
+                                                        onChange={(e) => {
+                                                            setSelectedLegal((ids) =>
+                                                                e.target.checked ? [...ids, doc.id] : ids.filter((id) => id !== doc.id),
+                                                            );
+                                                        }}
+                                                    />
+                                                    {doc.original_name} ({doc.type})
+                                                </label>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </Section>
                     )}
                 </div>
@@ -398,7 +496,7 @@ export default function Create({
                         <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-3">
                             <div>
                                 <div className="text-sm font-semibold text-slate-900">Invoice preview</div>
-                                <div className="text-xs text-slate-400">Live preview of the invoice</div>
+                                <div className="text-xs text-slate-400">Live preview — PDF matches this layout when sent</div>
                             </div>
                             <button type="button" onClick={() => setPreviewOpen(false)} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-50" aria-label="Close preview">
                                 <Icon name="close" className="h-4 w-4" />
@@ -422,24 +520,41 @@ export default function Create({
                                     }}
                                     to={{
                                         name: selectedCustomer?.org_name || [selectedCustomer?.first_name, selectedCustomer?.surname].filter(Boolean).join(' '),
-                                        org: selectedCustomer?.org_name
+                                        attn: selectedCustomer?.org_name
                                             ? [selectedCustomer.first_name, selectedCustomer.surname].filter(Boolean).join(' ')
                                             : '',
                                         address: selectedCustomer?.office_address,
                                         email: selectedCustomer?.email,
                                     }}
-                                    intro={form.data.intro}
-                                    desc={form.data.desc}
+                                    scope={form.data.desc || form.data.intro}
                                     items={items}
-                                    comments={[conditions && `Special conditions: ${conditions}`, form.data.notes].filter(Boolean).join('\n\n')}
+                                    notes={[conditions && `Special conditions: ${conditions}`, form.data.notes].filter(Boolean).join('\n\n')}
                                     copyrightLabel={copyrightLabel}
                                     vatRate={vatRate}
+                                    theme={activeCompany?.theme}
+                                    logoUrl={activeCompany?.invoice_logo_url}
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+            <SendInvoiceModal
+                open={sendOpen}
+                onClose={() => setSendOpen(false)}
+                invoiceId={invoice?.id}
+                documentNumber={invoice?.invoice_number || nextInvoiceNumber}
+                defaultEmail={selectedCustomer?.email || ''}
+                defaultMessage={emailMessage}
+                legalDocumentIds={selectedLegal}
+                postbodeConfigured={postbodeConfigured}
+                peppolConfigured={peppolConfigured}
+                mollieConfigured={mollieConfigured}
+                whatsappShareUrl={whatsappShareUrl || ''}
+                dueDate={form.data.due_date || invoice?.due_date}
+                canScheduleReminder={invoice?.payment_status !== 'paid'}
+                onBeforeSend={(runSend) => saveThen(runSend)}
+            />
         </AuthenticatedLayout>
     );
 }
