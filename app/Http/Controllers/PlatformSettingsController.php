@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\SiteSetting;
 use App\Models\SubscriptionPlan;
 use App\Services\PlatformMollieService;
+use App\Support\PlanEntitlementCatalog;
+use App\Support\PlanEntitlements;
 use App\Support\PlatformLocales;
+use App\Models\Company;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -47,6 +50,7 @@ class PlatformSettingsController extends Controller
                 'mollie_live_key_set' => filled(SiteSetting::get('payment_mollie_live_key')),
             ],
             'plans' => SubscriptionPlan::ordered()->get()->map->toAdminArray(),
+            'planEntitlementCatalog' => PlanEntitlementCatalog::toAdminArray(),
             'currencyOptions' => ['EUR', 'USD', 'GBP'],
         ]);
     }
@@ -133,6 +137,9 @@ class PlatformSettingsController extends Controller
             'plans.*.feature_items' => ['required', 'array'],
             'plans.*.feature_items.*.included' => ['required', 'boolean'],
             'plans.*.feature_items.*.label' => ['required', 'array'],
+            'plans.*.entitlements' => ['required', 'array'],
+            'plans.*.entitlements.capabilities' => ['required', 'array'],
+            'plans.*.entitlements.limits' => ['required', 'array'],
         ]);
 
         foreach ($data['plans'] as $row) {
@@ -150,9 +157,54 @@ class PlatformSettingsController extends Controller
                         'label' => collect($item['label'] ?? [])->only($locales)->all(),
                     ];
                 })->values()->all(),
+                'entitlements' => PlanEntitlements::normalize($row['entitlements'] ?? null),
             ]);
         }
 
         return back()->with('status', 'plans-saved');
+    }
+
+    public function storePlan(Request $request): RedirectResponse
+    {
+        $locales = PlatformLocales::codes();
+
+        $data = $request->validate([
+            'slug' => ['required', 'string', 'max:32', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', 'unique:subscription_plans,slug'],
+            'price_cents' => ['required', 'integer', 'min:0'],
+            'currency' => ['required', Rule::in(['EUR', 'USD', 'GBP'])],
+            'is_active' => ['required', 'boolean'],
+            'is_highlighted' => ['required', 'boolean'],
+            'sort_order' => ['required', 'integer', 'min:0', 'max:255'],
+            'name_labels' => ['required', 'array'],
+            'description_labels' => ['required', 'array'],
+            'entitlements' => ['nullable', 'array'],
+        ]);
+
+        SubscriptionPlan::create([
+            'slug' => $data['slug'],
+            'price_cents' => $data['price_cents'],
+            'currency' => $data['currency'],
+            'is_active' => $data['is_active'],
+            'is_highlighted' => $data['is_highlighted'],
+            'sort_order' => $data['sort_order'],
+            'name_labels' => collect($data['name_labels'])->only($locales)->all(),
+            'description_labels' => collect($data['description_labels'])->only($locales)->all(),
+            'feature_items' => [],
+            'entitlements' => PlanEntitlements::normalize($data['entitlements'] ?? PlanEntitlementCatalog::defaultEntitlements()),
+        ]);
+
+        return back()->with('status', 'plan-created');
+    }
+
+    public function destroyPlan(SubscriptionPlan $plan): RedirectResponse
+    {
+        $inUse = Company::query()->where('subscription_plan', $plan->slug)->exists();
+        if ($inUse) {
+            return back()->with('error', __('settings.plan_delete_blocked'));
+        }
+
+        $plan->delete();
+
+        return back()->with('status', 'plan-deleted');
     }
 }

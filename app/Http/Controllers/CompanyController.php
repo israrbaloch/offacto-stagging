@@ -59,4 +59,15 @@ class CompanyController extends Controller
 
         return redirect()->back()->with('status', 'company-switched');
     }
+
+    public function clearWorkspace(Request $request): RedirectResponse
+    {
+        if (! $request->user()?->hasRole('admin')) {
+            abort(403);
+        }
+
+        $request->session()->forget('active_company_id');
+
+        return redirect()->route('dashboard')->with('status', 'workspace-cleared');
+    }
 }

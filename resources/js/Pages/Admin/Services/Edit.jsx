@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import Button from '../../../Components/Button';
 import Input, { Select, TextArea } from '../../../Components/Input';
-import AdminLayout from '../../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 export default function Edit({ service, statuses = [] }) {
     const options = Array.isArray(statuses)
@@ -17,7 +17,7 @@ export default function Edit({ service, statuses = [] }) {
     });
 
     return (
-        <AdminLayout title={`Edit ${service.name}`}>
+        <AuthenticatedLayout title={`Edit ${service.name}`}>
             <h1 className="mb-6 text-2xl font-semibold">Edit service</h1>
             <form
                 onSubmit={(e) => {
@@ -35,6 +35,6 @@ export default function Edit({ service, statuses = [] }) {
                     Save
                 </Button>
             </form>
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

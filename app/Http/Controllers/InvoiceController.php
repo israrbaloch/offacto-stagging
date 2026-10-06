@@ -185,7 +185,7 @@ class InvoiceController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
-        if ($deny = CompanyAccess::denyWrite($user, $activeCompany)) {
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'invoices', 'invoices.create')) {
             return $deny;
         }
 
@@ -217,7 +217,7 @@ class InvoiceController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
-        if ($deny = CompanyAccess::denyWrite($user, $activeCompany)) {
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'invoices', 'invoices.create')) {
             return $deny;
         }
 
@@ -287,6 +287,10 @@ class InvoiceController extends Controller
                 ], 422);
             }
             return redirect()->back()->with('error', 'No active company found.');
+        }
+
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'invoices', 'invoices.create')) {
+            return $deny;
         }
 
         DB::beginTransaction();
@@ -634,7 +638,7 @@ class InvoiceController extends Controller
             return redirect()->back()->with('error', 'No active company found.');
         }
 
-        if ($deny = CompanyAccess::denySend($user, $activeCompany)) {
+        if ($deny = CompanyAccess::denySend($user, $activeCompany, 'invoices.send')) {
             return $deny;
         }
 
@@ -1041,7 +1045,15 @@ class InvoiceController extends Controller
 
     public function createCreditNote(Request $request, $invoice): RedirectResponse
     {
-        $activeCompany = $request->user()?->activeCompany();
+        $user = $request->user();
+        $activeCompany = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany, false, 'invoices.credit_note')) {
+            return $deny;
+        }
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'invoices', 'invoices.create')) {
+            return $deny;
+        }
+
         $source = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany?->id)
             ->with('items')
@@ -1083,7 +1095,12 @@ class InvoiceController extends Controller
 
     public function sendReminder(Request $request, $invoice): RedirectResponse
     {
-        $activeCompany = $request->user()?->activeCompany();
+        $user = $request->user();
+        $activeCompany = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany, false, 'invoices.reminder')) {
+            return $deny;
+        }
+
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany?->id)
             ->with(['customer', 'items.service', 'company.companySetting'])
@@ -1105,7 +1122,12 @@ class InvoiceController extends Controller
 
     public function createMollieCheckout(Request $request, $invoice, MolliePaymentService $mollie): RedirectResponse|FoundationResponse
     {
-        $activeCompany = $request->user()?->activeCompany();
+        $user = $request->user();
+        $activeCompany = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany, false, 'invoices.mollie')) {
+            return $deny;
+        }
+
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany?->id)
             ->firstOrFail();
@@ -1117,7 +1139,12 @@ class InvoiceController extends Controller
 
     public function sendPeppol(Request $request, $invoice, PeppolSendService $peppol): RedirectResponse
     {
-        $activeCompany = $request->user()?->activeCompany();
+        $user = $request->user();
+        $activeCompany = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany, false, 'invoices.peppol')) {
+            return $deny;
+        }
+
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany?->id)
             ->with(['customer', 'items.service', 'company.companySetting'])
@@ -1130,7 +1157,12 @@ class InvoiceController extends Controller
 
     public function sendPostbode(Request $request, $invoice, PostbodeSendService $postbode): RedirectResponse
     {
-        $activeCompany = $request->user()?->activeCompany();
+        $user = $request->user();
+        $activeCompany = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany, false, 'invoices.postbode')) {
+            return $deny;
+        }
+
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany?->id)
             ->firstOrFail();
@@ -1170,7 +1202,12 @@ class InvoiceController extends Controller
 
     public function configureRecurring(Request $request, $invoice): RedirectResponse
     {
-        $activeCompany = $request->user()?->activeCompany();
+        $user = $request->user();
+        $activeCompany = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany, false, 'invoices.recurring')) {
+            return $deny;
+        }
+
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany?->id)
             ->firstOrFail();

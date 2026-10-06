@@ -6,6 +6,7 @@ use App\Http\Requests\StoreServiceRequest;
 use App\Http\Requests\UpdateServiceRequest;
 use App\Mail\Admin\ServicePendingApproval;
 use App\Models\Service;
+use App\Support\CompanyAccess;
 use App\Models\SiteSetting;
 use App\Models\Status;
 use Illuminate\Http\JsonResponse;
@@ -80,6 +81,10 @@ class ServiceController extends Controller
                 ], 422);
             }
             return redirect()->back()->with('error', 'No active company found.');
+        }
+
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'services', 'services.create')) {
+            return $deny;
         }
 
         $serviceData = [

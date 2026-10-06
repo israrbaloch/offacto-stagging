@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\SubscriptionPlan;
+use App\Support\PlanEntitlementCatalog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
 
@@ -34,6 +35,7 @@ class SubscriptionPlanSeeder extends Seeder
                     'Customer & briefing tools',
                     'Email sending',
                 ]),
+                'entitlements' => PlanEntitlementCatalog::presetForSlug('starter'),
             ],
             [
                 'slug' => 'growth',
@@ -57,6 +59,7 @@ class SubscriptionPlanSeeder extends Seeder
                     'Payment links (Mollie)',
                     'Priority support',
                 ]),
+                'entitlements' => PlanEntitlementCatalog::presetForSlug('growth'),
             ],
             [
                 'slug' => 'scale',
@@ -80,6 +83,7 @@ class SubscriptionPlanSeeder extends Seeder
                     'Multiple companies',
                     'Dedicated onboarding',
                 ]),
+                'entitlements' => PlanEntitlementCatalog::presetForSlug('scale'),
             ],
         ];
 

@@ -1,6 +1,7 @@
-import { useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import Icon from '../../Components/Icon';
+import PlanEntitlementBuilder from '../../Components/PlanEntitlementBuilder';
 import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { t } from '../../lib/i18n';
@@ -95,9 +96,11 @@ export default function SettingsIndex({
     platform = {},
     payment = {},
     plans = [],
+    planEntitlementCatalog = {},
     currencyOptions = ['EUR', 'USD', 'GBP'],
 }) {
     const [section, setSection] = useState('general');
+    const [showNewPlan, setShowNewPlan] = useState(false);
 
     const generalForm = useForm({ ...general });
     const platformForm = useForm({ ...platform });
@@ -108,6 +111,19 @@ export default function SettingsIndex({
         payment_mollie_live_key: '',
     });
     const plansForm = useForm({ plans });
+    const defaultEntitlements = planEntitlementCatalog?.defaults ?? { capabilities: {}, limits: {} };
+    const emptyLabels = useMemo(() => Object.fromEntries(locales.map((l) => [l, ''])), [locales]);
+    const newPlanForm = useForm({
+        slug: '',
+        price_cents: 0,
+        currency: overview.default_currency || 'EUR',
+        is_active: true,
+        is_highlighted: false,
+        sort_order: (plans?.length ?? 0) + 1,
+        name_labels: { ...emptyLabels },
+        description_labels: { ...emptyLabels },
+        entitlements: defaultEntitlements,
+    });
 
     const currencyLabels = useMemo(
         () => currencyOptions.map((c) => ({ value: c, label: c })),
@@ -118,6 +134,10 @@ export default function SettingsIndex({
         const next = [...plansForm.data.plans];
         next[index] = { ...next[index], [field]: value };
         plansForm.setData('plans', next);
+    };
+
+    const updatePlanEntitlements = (index, entitlements) => {
+        updatePlan(index, 'entitlements', entitlements);
     };
 
     const updatePlanFeature = (planIndex, featureIndex, field, value) => {
@@ -405,6 +425,57 @@ export default function SettingsIndex({
 
                         {section === 'plans' && (
                             <Panel title={t('settings.plans_title')} description={t('settings.plans_desc')}>
+                                <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPlan((v) => !v)}
+                                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
+                                    >
+                                        + {t('settings.add_plan')}
+                                    </button>
+                                </div>
+
+                                {showNewPlan && (
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            newPlanForm.post('/settings/plans', {
+                                                preserveScroll: true,
+                                                onSuccess: () => {
+                                                    setShowNewPlan(false);
+                                                    newPlanForm.reset();
+                                                },
+                                            });
+                                        }}
+                                        className="mb-8 space-y-5 rounded-2xl border border-indigo-200 bg-indigo-50/30 p-5 sm:p-6"
+                                    >
+                                        <p className="text-sm font-semibold text-slate-900">{t('settings.add_plan')}</p>
+                                        <label className="block max-w-md text-sm">
+                                            <span className="mb-1.5 block font-medium text-slate-700">{t('settings.new_plan_slug')}</span>
+                                            <input
+                                                className={fieldClass}
+                                                value={newPlanForm.data.slug}
+                                                onChange={(e) => newPlanForm.setData('slug', e.target.value.toLowerCase())}
+                                                placeholder="pro"
+                                            />
+                                            <span className="mt-1 block text-xs text-slate-500">{t('settings.new_plan_slug_hint')}</span>
+                                        </label>
+                                        <LocaleLabels
+                                            locales={locales}
+                                            labels={newPlanForm.data.name_labels}
+                                            onChange={(locale, value) =>
+                                                newPlanForm.setData('name_labels', { ...newPlanForm.data.name_labels, [locale]: value })
+                                            }
+                                        />
+                                        <PlanEntitlementBuilder
+                                            catalog={planEntitlementCatalog}
+                                            entitlements={newPlanForm.data.entitlements}
+                                            onChange={(entitlements) => newPlanForm.setData('entitlements', entitlements)}
+                                        />
+                                        <SaveButton processing={newPlanForm.processing} label={t('settings.add_plan')} />
+                                    </form>
+                                )}
+
                                 <form
                                     onSubmit={(e) => {
                                         e.preventDefault();
@@ -501,10 +572,21 @@ export default function SettingsIndex({
                                                 />
                                             </div>
 
-                                            <div className="mt-6">
+                                            <div className="mt-8">
+                                                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                                    {t('settings.plan_entitlements')}
+                                                </p>
+                                                <PlanEntitlementBuilder
+                                                    catalog={planEntitlementCatalog}
+                                                    entitlements={plan.entitlements ?? defaultEntitlements}
+                                                    onChange={(entitlements) => updatePlanEntitlements(planIndex, entitlements)}
+                                                />
+                                            </div>
+
+                                            <div className="mt-8">
                                                 <div className="mb-3 flex items-center justify-between">
                                                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                                        {t('settings.plan_features')}
+                                                        {t('settings.plan_marketing_features')}
                                                     </p>
                                                     <button
                                                         type="button"
@@ -546,6 +628,20 @@ export default function SettingsIndex({
                                                         </div>
                                                     ))}
                                                 </div>
+                                            </div>
+
+                                            <div className="mt-6 flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    className="text-sm font-medium text-rose-600 hover:text-rose-700"
+                                                    onClick={() => {
+                                                        if (window.confirm(t('settings.delete_plan') + '?')) {
+                                                            router.delete(`/settings/plans/${plan.id}`, { preserveScroll: true });
+                                                        }
+                                                    }}
+                                                >
+                                                    {t('settings.delete_plan')}
+                                                </button>
                                             </div>
                                         </div>
                                     ))}

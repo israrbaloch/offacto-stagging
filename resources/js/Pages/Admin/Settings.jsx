@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import Button from '../../Components/Button';
 import Input from '../../Components/Input';
-import AdminLayout from '../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 
 export default function Settings({ settings = {} }) {
     const initial = {};
@@ -13,7 +13,7 @@ export default function Settings({ settings = {} }) {
     const form = useForm(initial);
 
     return (
-        <AdminLayout title="Settings">
+        <AuthenticatedLayout title="Settings">
             <h1 className="mb-6 text-2xl font-semibold">Site settings</h1>
             <form
                 onSubmit={(e) => {
@@ -57,6 +57,6 @@ export default function Settings({ settings = {} }) {
                     Save settings
                 </Button>
             </form>
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

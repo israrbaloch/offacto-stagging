@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import Button from '../../../Components/Button';
 import Input, { Select } from '../../../Components/Input';
-import AdminLayout from '../../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 export default function Edit({ user, roles = [] }) {
     const form = useForm({
@@ -13,7 +13,7 @@ export default function Edit({ user, roles = [] }) {
     });
 
     return (
-        <AdminLayout title={`Edit ${user.name}`}>
+        <AuthenticatedLayout title={`Edit ${user.name}`}>
             <h1 className="mb-6 text-2xl font-semibold">Edit user</h1>
             <form
                 onSubmit={(e) => {
@@ -45,6 +45,6 @@ export default function Edit({ user, roles = [] }) {
                     Update role
                 </Button>
             </form>
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

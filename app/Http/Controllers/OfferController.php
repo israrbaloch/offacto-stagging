@@ -160,7 +160,7 @@ class OfferController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
-        if ($deny = CompanyAccess::denyWrite($user, $activeCompany)) {
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'offers', 'offers.create')) {
             return $deny;
         }
 
@@ -194,6 +194,10 @@ class OfferController extends Controller
                 ], 422);
             }
             return redirect()->back()->with('error', 'No active company found.');
+        }
+
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'offers', 'offers.create')) {
+            return $deny;
         }
 
         DB::beginTransaction();
@@ -538,7 +542,7 @@ class OfferController extends Controller
             return redirect()->back()->with('error', 'No active company found.');
         }
 
-        if ($deny = CompanyAccess::denySend($user, $activeCompany)) {
+        if ($deny = CompanyAccess::denySend($user, $activeCompany, 'offers.send')) {
             return $deny;
         }
 

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Country;
 use App\Models\Customer;
+use App\Support\CompanyAccess;
 use App\Models\Status;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -103,6 +104,10 @@ class CustomerController extends Controller
                 ], 422);
             }
             return redirect()->back()->with('error', 'No active company found.');
+        }
+
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'customers', 'customers.create')) {
+            return $deny;
         }
 
         $customer = Customer::create([

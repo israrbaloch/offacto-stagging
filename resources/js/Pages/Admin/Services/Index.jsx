@@ -1,6 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import Pagination from '../../../Components/Pagination';
-import AdminLayout from '../../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 import { money } from '../../../lib/utils';
 
 export default function Index({ services, statuses = [], filters = {} }) {
@@ -12,7 +12,7 @@ export default function Index({ services, statuses = [], filters = {} }) {
     };
 
     return (
-        <AdminLayout title="Admin services">
+        <AuthenticatedLayout title="Admin services">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold">Service approvals</h1>
@@ -94,6 +94,6 @@ export default function Index({ services, statuses = [], filters = {} }) {
                 </table>
             </div>
             <Pagination links={services?.links || []} />
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

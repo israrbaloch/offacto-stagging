@@ -31,7 +31,8 @@ function CompanyAvatar({ company, active = false }) {
 }
 
 export default function CompanySwitcher() {
-    const { companies, activeCompany } = usePage().props;
+    const { companies, activeCompany, auth } = usePage().props;
+    const isAdmin = Boolean(auth?.user?.is_admin);
     const [open, setOpen] = useState(false);
     const rootRef = useRef(null);
 
@@ -53,9 +54,11 @@ export default function CompanySwitcher() {
         };
     }, [open]);
 
-    if (!companies?.length) return null;
+    if (!companies?.length && !isAdmin) return null;
 
-    const current = companies.find((company) => company.id === activeCompany?.id) || companies[0];
+    const current = activeCompany
+        ? companies?.find((company) => company.id === activeCompany.id)
+        : null;
 
     return (
         <div ref={rootRef} className="relative">
@@ -66,15 +69,23 @@ export default function CompanySwitcher() {
             >
                 <CompanyAvatar company={current} active />
                 <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-slate-800">{current?.company_name || t('company.switcher.select')}</span>
-                    <span className="block text-[11px] text-slate-400">{current?.is_active === false ? t('common.inactive') : t('common.workspace')}</span>
+                    <span className="block truncate text-sm font-semibold text-slate-800">
+                        {current?.company_name || (isAdmin ? t('platform.no_company_selected') : t('company.switcher.select'))}
+                    </span>
+                    <span className="block text-[11px] text-slate-400">
+                        {isAdmin && !current
+                            ? t('platform.admin_mode')
+                            : current?.is_active === false
+                              ? t('common.inactive')
+                              : t('common.workspace')}
+                    </span>
                 </span>
                 <Icon name="chevron" className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
             </button>
 
             {open && (
                 <div className="absolute z-40 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-xl">
-                    {companies.map((company) => {
+                    {(companies || []).map((company) => {
                         const active = company.id === current?.id;
                         return (
                             <button
@@ -100,12 +111,25 @@ export default function CompanySwitcher() {
                             </button>
                         );
                     })}
-                    <div className="mt-1 border-t border-slate-100 px-2.5 py-2">
-                        <Link href="/companies/create" className="flex items-center gap-2 text-xs font-medium text-indigo-600 hover:text-indigo-700">
-                            <Icon name="plus" className="h-3.5 w-3.5" />
-                            {t('company.switcher.add')}
-                        </Link>
-                    </div>
+                    {!isAdmin && (
+                        <div className="mt-1 border-t border-slate-100 px-2.5 py-2">
+                            <Link href="/companies/create" className="flex items-center gap-2 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                                <Icon name="plus" className="h-3.5 w-3.5" />
+                                {t('company.switcher.add')}
+                            </Link>
+                        </div>
+                    )}
+                    {isAdmin && activeCompany && (
+                        <div className="mt-1 border-t border-slate-100 px-2.5 py-2">
+                            <button
+                                type="button"
+                                className="flex w-full items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-800"
+                                onClick={() => router.post('/company/clear-workspace')}
+                            >
+                                {t('platform.clear_workspace')}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

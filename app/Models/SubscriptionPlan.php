@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\PlanEntitlementCatalog;
+use App\Support\PlanEntitlements;
 use App\Support\PlatformLocales;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,6 +21,7 @@ class SubscriptionPlan extends Model
         'sort_order',
         'feature_keys',
         'feature_items',
+        'entitlements',
     ];
 
     protected function casts(): array
@@ -30,7 +33,20 @@ class SubscriptionPlan extends Model
             'feature_items' => 'array',
             'name_labels' => 'array',
             'description_labels' => 'array',
+            'entitlements' => 'array',
         ];
+    }
+
+    /**
+     * @return array{capabilities: array<string, bool>, limits: array<string, array{monthly: ?int, total: ?int}>}
+     */
+    public function resolvedEntitlements(): array
+    {
+        if (filled($this->entitlements)) {
+            return PlanEntitlements::normalize($this->entitlements);
+        }
+
+        return PlanEntitlementCatalog::presetForSlug($this->slug);
     }
 
     public function payments(): HasMany
@@ -171,6 +187,7 @@ class SubscriptionPlan extends Model
             'is_highlighted' => $this->is_highlighted,
             'sort_order' => $this->sort_order,
             'feature_items' => $this->normalizedFeatureItems(),
+            'entitlements' => $this->resolvedEntitlements(),
         ];
     }
 

@@ -1,11 +1,11 @@
 import { Link } from '@inertiajs/react';
 import Pagination from '../../../Components/Pagination';
-import AdminLayout from '../../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 export default function Index({ companies }) {
     const rows = companies?.data || [];
     return (
-        <AdminLayout title="Admin companies">
+        <AuthenticatedLayout title="Admin companies">
             <h1 className="mb-6 text-2xl font-semibold">Companies</h1>
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 <table className="w-full text-left text-sm">
@@ -34,6 +34,6 @@ export default function Index({ companies }) {
                 </table>
             </div>
             <Pagination links={companies?.links || []} />
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

@@ -8,8 +8,13 @@ use Illuminate\Http\RedirectResponse;
 
 class CompanyAccess
 {
-    public static function writeBlockReason(?User $user, ?Company $company, bool $sending = false): ?string
-    {
+    public static function writeBlockReason(
+        ?User $user,
+        ?Company $company,
+        bool $sending = false,
+        ?string $capabilityKey = null,
+        ?string $limitKey = null,
+    ): ?string {
         if ($user?->hasRole('admin')) {
             return null;
         }
@@ -40,18 +45,55 @@ class CompanyAccess
             return 'This company is inactive. You cannot send quotations.';
         }
 
+        if ($capabilityKey) {
+            $capReason = PlanEntitlements::blockCapabilityReason($user, $company, $capabilityKey);
+            if ($capReason) {
+                return $capReason;
+            }
+        }
+
+        if ($limitKey) {
+            $limitReason = PlanEntitlements::limitExceededReason($company, $limitKey);
+            if ($limitReason) {
+                return $limitReason;
+            }
+        }
+
         return null;
     }
 
-    public static function denyWrite(?User $user, ?Company $company, bool $sending = false): ?RedirectResponse
-    {
-        $reason = self::writeBlockReason($user, $company, $sending);
+    public static function denyWrite(
+        ?User $user,
+        ?Company $company,
+        bool $sending = false,
+        ?string $capabilityKey = null,
+        ?string $limitKey = null,
+    ): ?RedirectResponse {
+        $reason = self::writeBlockReason($user, $company, $sending, $capabilityKey, $limitKey);
 
         return $reason ? redirect()->back()->with('error', $reason) : null;
     }
 
-    public static function denySend(?User $user, ?Company $company): ?RedirectResponse
-    {
-        return self::denyWrite($user, $company, true);
+    public static function denySend(
+        ?User $user,
+        ?Company $company,
+        ?string $capabilityKey = null,
+    ): ?RedirectResponse {
+        return self::denyWrite($user, $company, true, $capabilityKey);
+    }
+
+    public static function denyCreate(
+        ?User $user,
+        ?Company $company,
+        string $limitKey,
+        string $createCapabilityKey,
+    ): ?RedirectResponse {
+        if ($user?->hasRole('admin')) {
+            return null;
+        }
+
+        $reason = PlanEntitlements::blockCreateReason($user, $company, $limitKey, $createCapabilityKey);
+
+        return $reason ? redirect()->back()->with('error', $reason) : null;
     }
 }

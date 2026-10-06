@@ -96,6 +96,7 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
     
     // Company switching
     Route::post('/company/switch/{company}', [CompanyController::class, 'switchCompany'])->name('company.switch');
+    Route::post('/company/clear-workspace', [CompanyController::class, 'clearWorkspace'])->name('company.clear');
 
     // User's companies (list and add)
     Route::get('/companies', [UserCompanyController::class, 'index'])->name('companies.index');
@@ -157,6 +158,8 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->group(function () {
     Route::patch('/settings/platform', [PlatformSettingsController::class, 'updatePlatform'])->name('settings.platform.update');
     Route::patch('/settings/payment-gateway', [PlatformSettingsController::class, 'updatePaymentGateway'])->name('settings.payment.update');
     Route::patch('/settings/plans', [PlatformSettingsController::class, 'updatePlans'])->name('settings.plans.update');
+    Route::post('/settings/plans', [PlatformSettingsController::class, 'storePlan'])->name('settings.plans.store');
+    Route::delete('/settings/plans/{plan}', [PlatformSettingsController::class, 'destroyPlan'])->name('settings.plans.destroy');
 });
 
 // Admin routes

@@ -8,6 +8,7 @@ use App\Mail\CompanySubmittedConfirmation;
 use App\Models\Company;
 use App\Models\Language;
 use App\Models\SiteSetting;
+use App\Support\PlanEntitlements;
 use App\Models\Status;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,10 @@ class UserCompanyController extends Controller
     public function store(StoreCompanyRequest $request): RedirectResponse
     {
         $user = $request->user();
+        if ($reason = PlanEntitlements::blockNewCompanyReason($user)) {
+            return redirect()->back()->with('error', $reason);
+        }
+
         $data = $request->validated();
 
         $companyData = [

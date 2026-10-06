@@ -1,10 +1,10 @@
 import { router } from '@inertiajs/react';
 import Button from '../../../Components/Button';
-import AdminLayout from '../../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 export default function Show({ user }) {
     return (
-        <AdminLayout title={user.name}>
+        <AuthenticatedLayout title={user.name}>
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold">{user.name}</h1>
@@ -23,6 +23,6 @@ export default function Show({ user }) {
                 <p>Roles: {(user.roles || []).map((r) => r.name).join(', ') || '—'}</p>
                 <p className="mt-2">Companies: {(user.companies || []).length}</p>
             </div>
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

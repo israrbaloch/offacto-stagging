@@ -5,9 +5,8 @@ import FloatingFavicons from './FloatingFavicons';
 import Icon from './Icon';
 import Logo from './Logo';
 
-const mainNav = [
+const workspaceNav = [
     { href: '/dashboard', label: 'nav.dashboard', icon: 'grid', exact: true },
-    { href: '/companies', label: 'nav.companies', icon: 'building' },
     { href: '/customers', label: 'nav.customers', icon: 'customers' },
     { href: '/services', label: 'nav.services', icon: 'wrench' },
     { href: '/briefings', label: 'nav.briefings', icon: 'clipboard' },
@@ -15,9 +14,14 @@ const mainNav = [
     { href: '/invoices', label: 'nav.invoices', icon: 'invoice' },
 ];
 
-const footerNav = [
-    { href: '/support', label: 'nav.support', icon: 'help' },
+const platformNav = [
+    { href: '/admin/users', label: 'nav.platform_users', icon: 'user' },
+    { href: '/admin/companies', label: 'nav.all_companies', icon: 'building' },
+    { href: '/admin/services', label: 'nav.service_approvals', icon: 'wrench', badgeKey: 'pendingServices' },
+    { href: '/settings', label: 'nav.platform_settings', icon: 'settings' },
 ];
+
+const footerNav = [{ href: '/support', label: 'nav.support', icon: 'help' }];
 
 function isActive(url, item) {
     if (item.exact) {
@@ -27,7 +31,7 @@ function isActive(url, item) {
     return matches.some((href) => url === href || url.startsWith(`${href}/`));
 }
 
-function NavLink({ item, url }) {
+function NavLink({ item, url, badge }) {
     const active = isActive(url, item);
 
     return (
@@ -43,7 +47,10 @@ function NavLink({ item, url }) {
                 <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-[var(--company-primary)]" />
             )}
             <Icon name={item.icon} />
-            {t(item.label)}
+            <span className="flex-1">{t(item.label)}</span>
+            {badge > 0 && (
+                <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-semibold text-slate-900">{badge}</span>
+            )}
         </Link>
     );
 }
@@ -57,8 +64,7 @@ export default function Sidebar() {
     void props.locale;
 
     const isAdmin = Boolean(user?.is_admin);
-    const isStaffOnly = Boolean(user?.is_staff) && !isAdmin;
-    const adminPending = (adminQueue?.pendingServices || 0) + (adminQueue?.pendingCompanies || 0);
+    const viewingCompany = Boolean(activeCompany);
 
     return (
         <aside className="auth-aside-bg relative hidden h-full w-[250px] shrink-0 flex-col overflow-hidden rounded-l-3xl lg:flex">
@@ -78,76 +84,50 @@ export default function Sidebar() {
                 <div className="mt-5">
                     <CompanySwitcher />
                 </div>
-                <Link
-                    href="/invoices/create"
-                    className="mt-4 flex items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
-                >
-                    <Icon name="plus" className="h-4 w-4" />
-                    {t('nav.create_invoice')}
-                </Link>
+                {viewingCompany && (
+                    <Link
+                        href="/invoices/create"
+                        className="mt-4 flex items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+                    >
+                        <Icon name="plus" className="h-4 w-4" />
+                        {t('nav.create_invoice')}
+                    </Link>
+                )}
             </div>
 
-            <nav className="relative z-10 mt-6 space-y-1 px-3 pb-6">
-                {isAdmin && (
-                    <Link
-                        href="/admin"
-                        className={`mb-2 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ${
-                            url.startsWith('/admin')
-                                ? 'bg-slate-900 text-white'
-                                : 'bg-slate-800 text-white hover:bg-slate-900'
-                        }`}
-                    >
-                        <span className="flex items-center gap-2">
-                            <Icon name="settings" className="h-4 w-4" />
-                            {t('nav.admin_panel')}
-                        </span>
-                        {adminPending > 0 && (
-                            <span className="rounded-full bg-amber-400 px-2 py-0.5 text-xs font-semibold text-slate-900">
-                                {adminPending}
-                            </span>
-                        )}
-                    </Link>
-                )}
-                {isStaffOnly && (
-                    <Link
-                        href="/staff"
-                        className={`mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
-                            url.startsWith('/staff')
-                                ? 'bg-indigo-100 text-indigo-800'
-                                : 'border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50'
-                        }`}
-                    >
-                        <Icon name="grid" className="h-4 w-4" />
-                        {t('nav.staff_tools')}
-                    </Link>
-                )}
-                {!isAdmin && (
-                    <>
-                        {mainNav.map((item) => (
-                            <NavLink key={item.href} item={item} url={url} />
-                        ))}
-                    </>
-                )}
+            <nav className="relative z-10 mt-6 flex-1 space-y-1 overflow-y-auto px-3 pb-6">
                 {isAdmin && (
                     <>
-                        <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                            {t('nav.company_workspace')}
+                        <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                            {t('nav.platform_control')}
                         </p>
-                        {mainNav.map((item) => (
-                            <NavLink key={item.href} item={item} url={url} />
+                        {platformNav.map((item) => (
+                            <NavLink
+                                key={item.href}
+                                item={item}
+                                url={url}
+                                badge={item.badgeKey === 'pendingServices' ? adminQueue?.pendingServices || 0 : 0}
+                            />
                         ))}
+                        <div className="my-3 border-t border-indigo-100" />
                     </>
                 )}
+
+                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    {viewingCompany ? t('nav.company_workspace') : t('nav.workspace_select_company')}
+                </p>
+                {workspaceNav.map((item) => (
+                    <NavLink key={item.href} item={item} url={url} />
+                ))}
+
+                {!isAdmin && (
+                    <NavLink item={{ href: '/companies', label: 'nav.companies', icon: 'building' }} url={url} />
+                )}
+
                 <div className="my-3 border-t border-indigo-100" />
                 {footerNav.map((item) => (
                     <NavLink key={item.href} item={item} url={url} />
                 ))}
-                {isAdmin && (
-                    <NavLink
-                        item={{ href: '/settings', label: 'nav.platform_settings', icon: 'settings' }}
-                        url={url}
-                    />
-                )}
             </nav>
         </aside>
     );

@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
             'companies' => $user
                 ? $user->accessibleCompanies()
                     ->with('companySetting:company_id,invoice_logo')
+                    ->orderBy('company_name')
                     ->get(['id', 'company_name', 'is_active'])
                     ->map(fn ($company) => [
                         'id' => $company->id,

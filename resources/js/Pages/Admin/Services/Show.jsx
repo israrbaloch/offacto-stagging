@@ -1,13 +1,13 @@
 import { router } from '@inertiajs/react';
 import Button from '../../../Components/Button';
-import AdminLayout from '../../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 import { money } from '../../../lib/utils';
 
 export default function Show({ service }) {
     const isPending = String(service.status_relation?.name || '').toLowerCase() === 'pending';
 
     return (
-        <AdminLayout title={service.name}>
+        <AuthenticatedLayout title={service.name}>
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold">{service.name}</h1>
@@ -30,6 +30,6 @@ export default function Show({ service }) {
                 </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm">{service.description || 'No description.'}</div>
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

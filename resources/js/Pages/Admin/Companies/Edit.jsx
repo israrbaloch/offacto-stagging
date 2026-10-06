@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import Button from '../../../Components/Button';
 import Input from '../../../Components/Input';
-import AdminLayout from '../../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 export default function Edit({ company }) {
     const form = useForm({
@@ -16,7 +16,7 @@ export default function Edit({ company }) {
     });
 
     return (
-        <AdminLayout title={`Edit ${company.company_name}`}>
+        <AuthenticatedLayout title={`Edit ${company.company_name}`}>
             <h1 className="mb-6 text-2xl font-semibold">Edit company</h1>
             <form
                 onSubmit={(e) => {
@@ -37,6 +37,6 @@ export default function Edit({ company }) {
                     Save
                 </Button>
             </form>
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

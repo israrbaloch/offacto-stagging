@@ -1,10 +1,10 @@
 import { router } from '@inertiajs/react';
 import Button from '../../../Components/Button';
-import AdminLayout from '../../../Layouts/AdminLayout';
+import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 
 export default function Show({ company }) {
     return (
-        <AdminLayout title={company.company_name}>
+        <AuthenticatedLayout title={company.company_name}>
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold">{company.company_name}</h1>
@@ -32,6 +32,6 @@ export default function Show({ company }) {
                     {company.street} {company.house}, {company.postal_code} {company.city}
                 </p>
             </div>
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

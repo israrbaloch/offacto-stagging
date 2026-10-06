@@ -45,7 +45,7 @@ class BriefingController extends Controller
             return redirect()->route('companies.index')->with('error', 'Select or create a company first.');
         }
 
-        if ($deny = CompanyAccess::denyWrite($request->user(), $company)) {
+        if ($deny = CompanyAccess::denyCreate($request->user(), $company, 'briefings', 'briefings.create')) {
             return $deny;
         }
 
@@ -98,7 +98,7 @@ class BriefingController extends Controller
             abort(403);
         }
 
-        if ($deny = CompanyAccess::denyWrite($request->user(), $company)) {
+        if ($deny = CompanyAccess::denyCreate($request->user(), $company, 'briefings', 'briefings.create')) {
             return $deny;
         }
 
@@ -265,7 +265,10 @@ class BriefingController extends Controller
             abort(403);
         }
 
-        if ($deny = CompanyAccess::denyWrite($request->user(), $company)) {
+        if ($deny = CompanyAccess::denyWrite($request->user(), $company, false, 'briefings.generate_quote')) {
+            return $deny;
+        }
+        if ($deny = CompanyAccess::denyCreate($request->user(), $company, 'offers', 'offers.create')) {
             return $deny;
         }
 

@@ -61,19 +61,15 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
         SubscriptionReminder::markLoginPending($request);
 
-        if ($user && !session('active_company_id')) {
+        if ($user->hasRole('admin')) {
+            $request->session()->forget('active_company_id');
+        }
+
+        if ($user && ! session('active_company_id') && ! $user->hasRole('admin')) {
             $activeCompany = $user->activeCompany();
             if ($activeCompany) {
                 $user->setActiveCompanyId($activeCompany->id);
             }
-        }
-
-        if ($user->hasRole('admin')) {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
-        }
-
-        if ($user->hasRole('staff') && ! $user->hasRole('admin')) {
-            return redirect()->intended(route('staff.dashboard', absolute: false));
         }
 
         return redirect()->intended(route('dashboard', absolute: false));

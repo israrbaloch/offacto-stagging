@@ -216,7 +216,11 @@ class User extends Authenticatable
                 return $company;
             }
         }
-        
+
+        if ($this->hasRole('admin')) {
+            return null;
+        }
+
         return $this->primaryCompany();
     }
 
@@ -238,8 +242,13 @@ class User extends Authenticatable
      */
     public function setActiveCompanyId(int $companyId): void
     {
-        // Validate that the company belongs to this user
         if ($this->accessibleCompanies()->where('id', $companyId)->exists()) {
+            session(['active_company_id' => $companyId]);
+
+            return;
+        }
+
+        if ($this->hasRole('admin') && Company::where('id', $companyId)->exists()) {
             session(['active_company_id' => $companyId]);
         }
     }
