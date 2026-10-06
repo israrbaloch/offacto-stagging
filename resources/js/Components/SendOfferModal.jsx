@@ -1,15 +1,25 @@
-import { router, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useForm } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 import Button from './Button';
-import Input from './Input';
+import EmailRecipientsField from './EmailRecipientsField';
+import { TextArea } from './Input';
 import Modal from './Modal';
 import { t } from '../lib/i18n';
 
 const CHANNELS = [
     { id: 'email', labelKey: 'offers.channel_email' },
-    { id: 'whatsapp', labelKey: 'offers.channel_whatsapp' },
     { id: 'postbode', labelKey: 'offers.channel_postbode' },
 ];
+
+function parseDefaultEmails(defaultEmail) {
+    if (!defaultEmail || typeof defaultEmail !== 'string') {
+        return [];
+    }
+    return defaultEmail
+        .split(/[,;\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
 
 export default function SendOfferModal({
     open,
@@ -17,19 +27,33 @@ export default function SendOfferModal({
     offerId,
     defaultEmail = '',
     defaultMessage = '',
-    publicUrl = '',
-    postbodeConfigured = false,
     legalDocumentIds = [],
     onBeforeSend,
 }) {
     const [channelError, setChannelError] = useState('');
     const form = useForm({
-        email: defaultEmail,
+        emails: parseDefaultEmails(defaultEmail),
         message: defaultMessage,
         channels: ['email'],
         legal_document_ids: legalDocumentIds,
         registered: false,
     });
+
+    const wasOpen = useRef(false);
+    useEffect(() => {
+        if (open && !wasOpen.current) {
+            setChannelError('');
+            form.setData({
+                emails: parseDefaultEmails(defaultEmail),
+                message: defaultMessage,
+                channels: ['email'],
+                legal_document_ids: legalDocumentIds,
+                registered: false,
+            });
+            form.clearErrors();
+        }
+        wasOpen.current = open;
+    }, [open, defaultEmail, defaultMessage, legalDocumentIds]);
 
     const toggleChannel = (id) => {
         setChannelError('');
@@ -48,31 +72,26 @@ export default function SendOfferModal({
         }
     };
 
+    const emailError =
+        form.errors.emails ||
+        form.errors['emails.0'] ||
+        (typeof form.errors.email === 'string' ? form.errors.email : null);
+
     const submit = () => {
         if (!offerId) return;
         if (form.data.channels.length === 0) {
             setChannelError(t('offers.channel_required'));
             return;
         }
-        if (form.data.channels.includes('email') && !form.data.email?.trim()) {
-            form.setError('email', t('offers.send_need_email'));
-            return;
-        }
-        if (form.data.channels.includes('postbode') && !postbodeConfigured) {
-            setChannelError(t('integrations.postbode_missing'));
+        if (form.data.channels.includes('email') && form.data.emails.length === 0) {
+            form.setError('emails', t('offers.send_emails_required'));
             return;
         }
 
         const runSend = () => {
             form.post(`/offers/${offerId}/send`, {
                 preserveScroll: true,
-                onSuccess: () => {
-                    if (form.data.channels.includes('whatsapp') && publicUrl) {
-                        const text = encodeURIComponent(t('offers.whatsapp_prefill', { url: publicUrl }));
-                        window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
-                    }
-                    onClose();
-                },
+                onSuccess: () => onClose(),
             });
         };
 
@@ -83,60 +102,88 @@ export default function SendOfferModal({
         }
     };
 
+    const showEmail = form.data.channels.includes('email');
+    const showPostbode = form.data.channels.includes('postbode');
+
     return (
-        <Modal open={open} title={t('offers.send_modal_title')} onClose={onClose}>
-            <p className="text-sm text-slate-600">{t('offers.send_modal_hint')}</p>
+        <Modal
+            open={open}
+            size="lg"
+            title={t('offers.send_modal_title')}
+            onClose={onClose}
+            footer={
+                <>
+                    <Button variant="secondary" onClick={onClose}>
+                        {t('common.cancel')}
+                    </Button>
+                    <Button disabled={form.processing} onClick={submit}>
+                        {t('offers.send_confirm')}
+                    </Button>
+                </>
+            }
+        >
+            <p className="text-sm leading-relaxed text-slate-600">{t('offers.send_modal_hint')}</p>
 
-            <fieldset className="mt-4 space-y-2">
-                <legend className="text-sm font-medium text-slate-800">{t('offers.channels_label')}</legend>
-                {CHANNELS.map((channel) => {
-                    const disabled = channel.id === 'postbode' && !postbodeConfigured;
-                    return (
-                        <label
-                            key={channel.id}
-                            className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 ${disabled ? 'cursor-not-allowed opacity-50' : 'border-slate-200 hover:bg-slate-50'}`}
-                        >
-                            <input
-                                type="checkbox"
-                                className="mt-0.5"
-                                checked={form.data.channels.includes(channel.id)}
-                                disabled={disabled}
-                                onChange={() => toggleChannel(channel.id)}
+            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                    <h3 className="text-sm font-semibold text-slate-900">{t('offers.channels_label')}</h3>
+                    <ul className="mt-3 space-y-2">
+                        {CHANNELS.map((channel) => (
+                            <li key={channel.id}>
+                                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 hover:border-slate-300">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-0.5"
+                                        checked={form.data.channels.includes(channel.id)}
+                                        onChange={() => toggleChannel(channel.id)}
+                                    />
+                                    <span className="text-sm font-medium text-slate-800">{t(channel.labelKey)}</span>
+                                </label>
+                            </li>
+                        ))}
+                    </ul>
+                    {channelError && <p className="mt-2 text-xs text-rose-600">{channelError}</p>}
+
+                    {showPostbode && (
+                        <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
+                            <label className="flex items-start gap-2 text-sm text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={form.data.registered}
+                                    onChange={(e) => form.setData('registered', e.target.checked)}
+                                    className="mt-1"
+                                />
+                                <span>{t('integrations.postbode_registered_shipment')}</span>
+                            </label>
+                        </div>
+                    )}
+                </section>
+
+                {showEmail ? (
+                    <section className="rounded-xl border border-slate-200 bg-white p-4 lg:min-h-[280px]">
+                        <h3 className="text-sm font-semibold text-slate-900">{t('offers.send_email_section')}</h3>
+                        <div className="mt-4 space-y-4">
+                            <EmailRecipientsField
+                                label={t('offers.send_emails_label')}
+                                value={form.data.emails}
+                                onChange={(emails) => form.setData('emails', emails)}
+                                error={emailError}
                             />
-                            <span>
-                                <span className="block text-sm font-medium text-slate-800">{t(channel.labelKey)}</span>
-                                {channel.id === 'postbode' && !postbodeConfigured && (
-                                    <span className="text-xs text-slate-500">{t('offers.channel_postbode_disabled')}</span>
-                                )}
-                            </span>
-                        </label>
-                    );
-                })}
-                {channelError && <p className="text-xs text-rose-600">{channelError}</p>}
-            </fieldset>
-
-            {form.data.channels.includes('email') && (
-                <div className="mt-4 space-y-3">
-                    <Input label={t('common.email')} type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
-                    <Input label={t('offers.send_message_label')} value={form.data.message} onChange={(e) => form.setData('message', e.target.value)} />
-                    <p className="text-xs text-slate-500">{t('offers.email_link_hint')}</p>
-                </div>
-            )}
-
-            {form.data.channels.includes('postbode') && postbodeConfigured && (
-                <label className="mt-4 flex items-start gap-2 text-sm text-slate-700">
-                    <input type="checkbox" checked={form.data.registered} onChange={(e) => form.setData('registered', e.target.checked)} className="mt-1" />
-                    <span>{t('integrations.postbode_registered_shipment')}</span>
-                </label>
-            )}
-
-            <div className="mt-6 flex justify-end gap-2">
-                <Button variant="secondary" onClick={onClose}>
-                    {t('common.cancel')}
-                </Button>
-                <Button disabled={form.processing} onClick={submit}>
-                    {t('offers.send_confirm')}
-                </Button>
+                            <TextArea
+                                label={t('offers.send_message_label')}
+                                rows={8}
+                                value={form.data.message}
+                                onChange={(e) => form.setData('message', e.target.value)}
+                                className="font-mono text-[13px] leading-relaxed"
+                            />
+                            <p className="text-xs leading-relaxed text-slate-500">{t('offers.email_link_hint')}</p>
+                        </div>
+                    </section>
+                ) : (
+                    <section className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/30 p-8 text-center lg:min-h-[280px]">
+                        <p className="max-w-xs text-sm text-slate-500">{t('offers.send_email_section_off')}</p>
+                    </section>
+                )}
             </div>
         </Modal>
     );

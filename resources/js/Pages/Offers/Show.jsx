@@ -10,7 +10,7 @@ import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { customerName, formatDate } from '../../lib/utils';
 
-export default function Show({ offer, postbodeConfigured = false, publicQuoteUrl = '' }) {
+export default function Show({ offer }) {
     const { activeCompany } = usePage().props;
     const { confirm } = useUi();
     const [sendOpen, setSendOpen] = useState(false);
@@ -47,7 +47,7 @@ export default function Show({ offer, postbodeConfigured = false, publicQuoteUrl
                         Create invoice
                     </Button>
                     <Button onClick={() => setSendOpen(true)}>Send</Button>
-                    {isSent && postbodeConfigured && (
+                    {isSent && (
                         <Button variant="secondary" onClick={() => setPostbodeOpen(true)}>
                             {t('integrations.postbode_send_short')}
                         </Button>
@@ -127,8 +127,6 @@ export default function Show({ offer, postbodeConfigured = false, publicQuoteUrl
                 offerId={offer.id}
                 defaultEmail={offer.customer?.email || ''}
                 defaultMessage={offer.email_message || ''}
-                publicUrl={publicQuoteUrl}
-                postbodeConfigured={postbodeConfigured}
             />
             <PostbodeSendModal
                 open={postbodeOpen}

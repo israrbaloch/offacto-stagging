@@ -552,8 +552,6 @@ export default function Create({
                 offerId={offer?.id}
                 defaultEmail={selectedCustomer?.email || ''}
                 defaultMessage={emailMessage}
-                publicUrl={publicQuoteUrl || ''}
-                postbodeConfigured={postbodeConfigured}
                 legalDocumentIds={selectedLegal}
                 onBeforeSend={(runSend) => saveThen(runSend)}
             />

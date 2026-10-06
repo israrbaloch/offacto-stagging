@@ -19,9 +19,10 @@ class SendOfferRequest extends FormRequest
     {
         return [
             'channels' => ['required', 'array', 'min:1'],
-            'channels.*' => ['in:email,whatsapp,postbode'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'message' => ['nullable', 'string'],
+            'channels.*' => ['in:email,postbode'],
+            'emails' => ['nullable', 'array'],
+            'emails.*' => ['email', 'max:255'],
+            'message' => ['nullable', 'string', 'max:10000'],
             'template' => ['nullable', 'string'],
             'legal_document_ids' => ['nullable', 'array'],
             'legal_document_ids.*' => ['integer', 'exists:company_legal_documents,id'],
@@ -33,8 +34,9 @@ class SendOfferRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $channels = $this->input('channels', []);
-            if (in_array('email', $channels, true) && ! filled($this->input('email'))) {
-                $validator->errors()->add('email', 'Email is required when sending by email.');
+            $emails = array_values(array_filter($this->input('emails', []), fn ($e) => filled($e)));
+            if (in_array('email', $channels, true) && $emails === []) {
+                $validator->errors()->add('emails', __('offers.send_emails_required'));
             }
         });
     }

@@ -18,8 +18,6 @@ use App\Models\Status;
 use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Services\PdfZipExportService;
-use App\Services\Postbode\PostbodeApiException;
-use App\Services\Postbode\PostbodeSendService;
 use App\Support\CompanyIntegrations;
 use App\Support\OfferMessage;
 use App\Support\OfferPresentation;
@@ -298,43 +296,18 @@ class OfferController extends Controller
         return Storage::disk('public')->download($offer->voice_note_path, $filename);
     }
 
-    public function sendPostbode(Request $request, $offer, PostbodeSendService $postbode): RedirectResponse
+    public function sendPostbode(Request $request, $offer): RedirectResponse
     {
         $activeCompany = $request->user()?->activeCompany();
-        $offer = Offer::where('id', $offer)
+        Offer::where('id', $offer)
             ->where('company_id', $activeCompany?->id)
             ->firstOrFail();
-
-        $settings = CompanyIntegrations::settings($activeCompany);
-        if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
-            return back()->with('error', 'Postbode is not configured for this workspace. Add your API token under Profile → Integrations.');
-        }
 
         $request->validate([
             'registered' => ['nullable', 'boolean'],
         ]);
 
-        try {
-            $result = $postbode->sendOffer(
-                $offer,
-                $settings,
-                $request->has('registered') ? $request->boolean('registered') : null,
-            );
-
-            $offer->update([
-                'postbode_sent_at' => now(),
-                'postbode_postal_uuid' => $result['uuid'],
-                'postbode_status' => $result['status'],
-            ]);
-
-            return back()->with('status', 'postbode-sent');
-        } catch (PostbodeApiException $e) {
-            return back()->with('error', $e->getMessage());
-        } catch (\Throwable $e) {
-            report($e);
-
-            return back()->with('error', 'Postbode could not send this quotation.');
-        }
+        return back()->with('status', 'postbode-queued');
     }
 
     /**
@@ -605,34 +578,24 @@ class OfferController extends Controller
                     ? $legalQuery->where('attach_to_quotes_default', true)->get()
                     : $legalQuery->whereIn('id', $legalIds)->get();
 
-                Mail::to($request->validated()['email'])->send(
+                $recipients = array_values(array_unique($request->validated()['emails'] ?? []));
+
+                Mail::to($recipients)->send(
                     new OfferSent($offer, $body, $legalDocs->all())
                 );
             }
 
-            if (in_array('postbode', $channels, true)) {
-                $settings = CompanyIntegrations::settings($activeCompany);
-                if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
-                    return redirect()->back()->with('error', 'Postbode is not configured for this workspace.');
-                }
-
-                $postbode = app(PostbodeSendService::class);
-                $result = $postbode->sendOffer(
-                    $offer,
-                    $settings,
-                    $request->has('registered') ? $request->boolean('registered') : null,
-                );
-                $offer->update([
-                    'postbode_sent_at' => now(),
-                    'postbode_postal_uuid' => $result['uuid'],
-                    'postbode_status' => $result['status'],
-                ]);
-            }
+            $postbodeQueued = in_array('postbode', $channels, true);
+            $emailed = in_array('email', $channels, true);
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Offer sent successfully.',
                 ]);
+            }
+
+            if ($postbodeQueued && ! $emailed) {
+                return redirect()->back()->with('status', 'postbode-queued');
             }
 
             return redirect()->back()->with('status', 'offer-sent');
