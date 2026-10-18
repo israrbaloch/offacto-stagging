@@ -1,7 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { CashflowChart, DsoBars, PaymentDonut } from '../Components/DashboardCharts';
 import Icon from '../Components/Icon';
-import PlatformAdminOverview from '../Components/PlatformAdminOverview';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { t } from '../lib/i18n';
 import { formatDate, money } from '../lib/utils';
@@ -33,20 +32,9 @@ export default function Dashboard({
     awaitingBriefings = [],
     recentResponses = [],
     hasCompany = true,
-    isPlatformAdmin = false,
-    platformOverview = null,
 }) {
-    const { activeCompany, auth } = usePage().props;
+    const { activeCompany } = usePage().props;
     const daysLeft = activeCompany?.trial_days_left;
-
-    if (!hasCompany && isPlatformAdmin && platformOverview) {
-        return (
-            <AuthenticatedLayout title={t('dashboard.title')}>
-                <h1 className="mb-6 text-2xl font-semibold text-slate-900">{t('platform.dashboard_title')}</h1>
-                <PlatformAdminOverview {...platformOverview} />
-            </AuthenticatedLayout>
-        );
-    }
 
     if (!hasCompany) {
         return (
@@ -65,14 +53,11 @@ export default function Dashboard({
     return (
         <AuthenticatedLayout title={t('dashboard.title')}>
             <div className="space-y-6">
-                {isPlatformAdmin && platformOverview && (
-                    <PlatformAdminOverview {...platformOverview} compact />
-                )}
                 <section className="flex flex-col gap-4 rounded-3xl bg-indigo-50 px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                     <div>
                         <div className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-400">
                             {activeCompany?.company_name || t('dashboard.company_hub')}
-                            {auth?.user?.is_admin || activeCompany?.subscription_plan
+                            {activeCompany?.subscription_plan
                                 ? ''
                                 : activeCompany?.trial_expired
                                     ? ` · ${t('dashboard.trial_ended')}`

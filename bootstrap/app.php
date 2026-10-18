@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureEmailVerifiedForSession;
 use App\Http\Middleware\EnsureUserIsAuthenticated;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RedirectPlatformAdmin;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleMiddleware;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'auth.check' => EnsureUserIsAuthenticated::class,
             'verified.email' => EnsureEmailVerifiedForSession::class,
+            'redirect.admin' => RedirectPlatformAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

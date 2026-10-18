@@ -23,7 +23,7 @@
     
     <p>Please review and approve or reject this company in the admin panel.</p>
     
-    <a href="{{ route('admin.companies.show', $company) }}" 
+    <a href="{{ route('admin.dashboard') }}" 
        style="display: inline-block; background-color: #4054B2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 10px;">
         Review Company
     </a>

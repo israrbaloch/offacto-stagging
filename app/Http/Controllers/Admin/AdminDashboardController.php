@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AdminDashboardController extends Controller
 {
-    /** Legacy URL — platform overview lives on the main dashboard. */
-    public function index(): RedirectResponse
+    public function index(): Response
     {
-        return redirect()->route('dashboard');
+        return Inertia::render('Admin/Dashboard');
     }
 }

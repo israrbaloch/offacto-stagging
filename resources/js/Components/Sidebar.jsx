@@ -14,13 +14,6 @@ const workspaceNav = [
     { href: '/invoices', label: 'nav.invoices', icon: 'invoice' },
 ];
 
-const platformNav = [
-    { href: '/admin/users', label: 'nav.platform_users', icon: 'user' },
-    { href: '/admin/companies', label: 'nav.all_companies', icon: 'building' },
-    { href: '/admin/services', label: 'nav.service_approvals', icon: 'wrench', badgeKey: 'pendingServices' },
-    { href: '/settings', label: 'nav.platform_settings', icon: 'settings' },
-];
-
 const footerNav = [{ href: '/support', label: 'nav.support', icon: 'help' }];
 
 function isActive(url, item) {
@@ -31,7 +24,7 @@ function isActive(url, item) {
     return matches.some((href) => url === href || url.startsWith(`${href}/`));
 }
 
-function NavLink({ item, url, badge }) {
+function NavLink({ item, url }) {
     const active = isActive(url, item);
 
     return (
@@ -48,22 +41,16 @@ function NavLink({ item, url, badge }) {
             )}
             <Icon name={item.icon} />
             <span className="flex-1">{t(item.label)}</span>
-            {badge > 0 && (
-                <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-semibold text-slate-900">{badge}</span>
-            )}
         </Link>
     );
 }
 
 export default function Sidebar() {
     const { url, props } = usePage();
-    const user = props.auth?.user;
     const appearance = props.appearance;
     const activeCompany = props.activeCompany;
-    const adminQueue = props.adminQueue;
     void props.locale;
 
-    const isAdmin = Boolean(user?.is_admin);
     const viewingCompany = Boolean(activeCompany);
 
     return (
@@ -96,23 +83,6 @@ export default function Sidebar() {
             </div>
 
             <nav className="relative z-10 mt-6 flex-1 space-y-1 overflow-y-auto px-3 pb-6">
-                {isAdmin && (
-                    <>
-                        <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                            {t('nav.platform_control')}
-                        </p>
-                        {platformNav.map((item) => (
-                            <NavLink
-                                key={item.href}
-                                item={item}
-                                url={url}
-                                badge={item.badgeKey === 'pendingServices' ? adminQueue?.pendingServices || 0 : 0}
-                            />
-                        ))}
-                        <div className="my-3 border-t border-indigo-100" />
-                    </>
-                )}
-
                 <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                     {viewingCompany ? t('nav.company_workspace') : t('nav.workspace_select_company')}
                 </p>
@@ -120,9 +90,7 @@ export default function Sidebar() {
                     <NavLink key={item.href} item={item} url={url} />
                 ))}
 
-                {!isAdmin && (
-                    <NavLink item={{ href: '/companies', label: 'nav.companies', icon: 'building' }} url={url} />
-                )}
+                <NavLink item={{ href: '/companies', label: 'nav.companies', icon: 'building' }} url={url} />
 
                 <div className="my-3 border-t border-indigo-100" />
                 {footerNav.map((item) => (

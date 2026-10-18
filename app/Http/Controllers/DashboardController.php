@@ -7,7 +7,6 @@ use App\Models\BriefingResponse;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Offer;
-use App\Support\PlatformAdminOverview;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,7 +21,6 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
-        $isPlatformAdmin = $user->hasRole('admin');
 
         if (! $activeCompany) {
             $payload = [
@@ -34,8 +32,6 @@ class DashboardController extends Controller
                 'awaitingBriefings' => collect(),
                 'recentResponses' => collect(),
                 'hasCompany' => false,
-                'isPlatformAdmin' => $isPlatformAdmin,
-                'platformOverview' => $isPlatformAdmin ? PlatformAdminOverview::data() : null,
             ];
 
             return Inertia::render('Dashboard', $payload);
@@ -94,8 +90,6 @@ class DashboardController extends Controller
             'awaitingBriefings' => $awaitingBriefings,
             'recentResponses' => $recentResponses,
             'hasCompany' => true,
-            'isPlatformAdmin' => $isPlatformAdmin,
-            'platformOverview' => $isPlatformAdmin ? PlatformAdminOverview::data() : null,
         ]);
     }
 

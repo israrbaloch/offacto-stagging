@@ -92,7 +92,11 @@ class RegisterEmailVerificationController extends Controller
             Mail::to($user->email)->send(new WelcomeEmail($user));
         }
 
-        return redirect()->intended(route('dashboard', absolute: false))
+        $home = $user->hasRole('admin')
+            ? route('admin.dashboard', absolute: false)
+            : route('dashboard', absolute: false);
+
+        return redirect()->intended($home)
             ->with('status', 'Your email is verified. Welcome!');
     }
 
