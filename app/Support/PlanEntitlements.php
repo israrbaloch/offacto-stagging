@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Briefing;
 use App\Models\Company;
+use App\Models\CompanyFeatureOverride;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Offer;
@@ -71,15 +72,37 @@ class PlanEntitlements
         if ($company->hasValidSubscription() && filled($company->subscription_plan)) {
             $plan = SubscriptionPlan::findBySlug($company->subscription_plan);
             if ($plan) {
-                return self::normalize($plan->entitlements);
+                return self::applyCompanyOverrides($company, self::normalize($plan->entitlements));
             }
         }
 
         if (! $company->isTrialExpired()) {
-            return PlanEntitlementCatalog::trialEntitlements();
+            $entitlements = PlanEntitlementCatalog::trialEntitlements();
+        } else {
+            $entitlements = PlanEntitlementCatalog::defaultEntitlements();
         }
 
-        return PlanEntitlementCatalog::defaultEntitlements();
+        return self::applyCompanyOverrides($company, $entitlements);
+    }
+
+    /**
+     * @param  array{capabilities: array<string, bool>, limits: array<string, array{monthly: ?int, total: ?int}>}  $entitlements
+     * @return array{capabilities: array<string, bool>, limits: array<string, array{monthly: ?int, total: ?int}>}
+     */
+    protected static function applyCompanyOverrides(Company $company, array $entitlements): array
+    {
+        $overrides = CompanyFeatureOverride::query()
+            ->where('company_id', $company->id)
+            ->active()
+            ->get();
+
+        foreach ($overrides as $override) {
+            if (array_key_exists($override->capability_key, $entitlements['capabilities'])) {
+                $entitlements['capabilities'][$override->capability_key] = (bool) $override->granted;
+            }
+        }
+
+        return $entitlements;
     }
 
     public static function allows(?Company $company, string $capabilityKey): bool

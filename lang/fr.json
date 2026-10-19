@@ -436,6 +436,7 @@
     "settings.feature_included": "Afficher sur upgrade",
     "settings.add_feature": "Ajouter une fonctionnalité",
     "settings.remove_feature": "Supprimer",
+    "settings.price": "Prix",
     "settings.price_cents": "Prix (centimes)",
     "settings.sort_order": "Ordre d’affichage",
     "settings.plan_active": "Formule publiée",

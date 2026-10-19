@@ -1,0 +1,41 @@
+---
+description: Admin platform UI — use shared design system for all new admin screens
+globs: resources/js/Pages/Admin/**/*,resources/js/Components/Admin/**/*
+alwaysApply: false
+---
+
+# Admin UI theme
+
+All new or updated platform admin pages must use `resources/js/Components/Admin/ui.jsx` — do not introduce one-off cards, inputs, or metric tiles.
+
+## Page shell
+
+- Wrap in `AdminLayout` → `AdminPage` → `AdminHeader` (eyebrow, title, description, actions) → `AdminBody`.
+- Max content width is handled by `AdminBody` (`max-w-6xl`); long forms may use `max-w-3xl` inside the body only when a narrow column is intentional.
+
+## Primitives
+
+- Inputs: `inputClass`, `selectClass`, `checkboxClass`.
+- Structure: `AdminCard`, `AdminSection`, `AdminField`, `AdminFormGrid`, `AdminFormActions`, `AdminFilterBar`, `AdminTable`, `AdminEmpty`, `AdminMetric`, `AdminBadge`, `AdminButton` / `AdminLinkButton`, `AdminTextButton`, `AdminDl` / `AdminDlRow`.
+
+## Visual language
+
+- Slate neutrals, rounded-2xl cards, subtle shadow `shadow-[0_1px_2px_rgba(15,23,42,0.04)]`, uppercase section labels at 11px tracking.
+- Primary actions: `AdminButton` primary (slate-900) or accent (indigo) for create CTAs only.
+- Avoid indigo focus rings on form controls; use slate focus tokens from `inputClass`.
+
+## Copy
+
+- Do not expose internal screen IDs (e.g. ADM-030) in user-facing labels.
+- Prices are always major currency units in the UI (e.g. `29.00`), never cents. APIs use `price`; persistence converts via `MoneyAmount`.
+
+## Entitlements
+
+- Plan capability/limit editors use `PlanEntitlementBuilder`, which follows the same admin tokens.
+
+## Platform settings
+
+- Global customization lives under `/admin/settings` with section pages driven by `PlatformSettingsRegistry` and `SettingsForm`.
+- Do not add one-off `/settings/*` staff routes for platform config; extend the registry + service instead.
+- Never expose raw JSON editors to admins. Use `type: structured` + `widget` in the registry and implement UI in `SettingsStructuredField.jsx`.
+- Settings section pages use the main `AdminLayout` only; section switching is via `SettingsSectionNav` (dropdown), not a second sidebar.

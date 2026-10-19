@@ -24,6 +24,7 @@ class Company extends Model
         'phone',
         'vat_number',
         'company_name',
+        'legal_name',
         'street',
         'house',
         'postal_code',
@@ -78,6 +79,41 @@ class Company extends Model
     public function legalDocuments()
     {
         return $this->hasMany(CompanyLegalDocument::class);
+    }
+
+    public function statusEvents()
+    {
+        return $this->hasMany(CompanyStatusEvent::class);
+    }
+
+    public function verification()
+    {
+        return $this->hasOne(CompanyVerification::class);
+    }
+
+    public function featureOverrides()
+    {
+        return $this->hasMany(CompanyFeatureOverride::class);
+    }
+
+    public function dataExports()
+    {
+        return $this->hasMany(CompanyDataExport::class);
+    }
+
+    public function deletionRequests()
+    {
+        return $this->hasMany(CompanyDeletionRequest::class);
+    }
+
+    public function subscriptionPayments()
+    {
+        return $this->hasMany(SubscriptionPayment::class);
+    }
+
+    public function subscriptionAdjustments()
+    {
+        return $this->hasMany(SubscriptionAdjustment::class);
     }
 
     /**
@@ -290,11 +326,18 @@ class Company extends Model
         return $this->statusRelation && $this->statusRelation->name === 'Approved';
     }
 
-    public function startTrial(int $days = 14): void
+    public function isRestricted(): bool
+    {
+        return $this->statusRelation && $this->statusRelation->name === 'Restricted';
+    }
+
+    public function startTrial(?int $days = null): void
     {
         if ($this->trial_starts_at) {
             return;
         }
+
+        $days ??= max(1, \App\Models\SiteSetting::getInteger('trial_duration_days', 14));
 
         $this->forceFill([
             'trial_starts_at' => now(),

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Models\ActivityLog;
+use App\Models\SecurityEvent;
 use App\Models\SiteSetting;
 use App\Support\SubscriptionReminder;
 use Illuminate\Http\Request;
@@ -41,6 +43,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         if (!$user->isActive()) {
+            SecurityEvent::record('login_blocked_inactive', 'failure', user: $user, request: $request);
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -60,6 +63,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
         SubscriptionReminder::markLoginPending($request);
+
+        SecurityEvent::record('login_success', 'success', user: $user, request: $request);
+        ActivityLog::record('auth.login', actor: $user, request: $request);
 
         if ($user->hasRole('admin')) {
             $request->session()->forget('active_company_id');

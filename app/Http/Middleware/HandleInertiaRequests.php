@@ -97,6 +97,24 @@ class HandleInertiaRequests extends Middleware
                 'status' => $request->session()->get('status'),
                 'error' => $request->session()->get('error'),
             ],
+            'adminWorkspace' => $this->adminWorkspace($request, $active),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function adminWorkspace(Request $request, ?\App\Models\Company $active): ?array
+    {
+        $companyId = $request->session()->get('admin_workspace_company_id');
+        if (! $companyId || ! $request->user()?->hasRole('admin')) {
+            return null;
+        }
+
+        return [
+            'company_id' => (int) $companyId,
+            'company_name' => $active?->company_name,
+            'exit_url' => route('admin.workspace.exit'),
         ];
     }
 

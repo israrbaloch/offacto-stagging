@@ -1,6 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminActivityLogController;
+use App\Http\Controllers\Admin\AdminCompanyController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminSecurityLogController;
+use App\Http\Controllers\Admin\AdminBillingController;
+use App\Http\Controllers\Admin\AdminSubscriptionController;
+use App\Http\Controllers\Admin\AdminComplianceController;
+use App\Http\Controllers\Admin\AdminFinancialDocumentController;
+use App\Http\Controllers\Admin\AdminPlatformSettingsController;
+use App\Http\Controllers\Admin\AdminSubscriptionPlanController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\UserCompanyController;
@@ -49,6 +59,8 @@ Route::get('/', function () {
 
     return redirect()->route('dashboard');
 })->middleware('auth');
+
+Route::redirect('/settings', '/admin/settings')->middleware(['auth', 'role:admin']);
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified.email', 'redirect.admin'])
@@ -153,6 +165,88 @@ Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function 
 
 Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/settings', [AdminPlatformSettingsController::class, 'index'])->name('settings.index');
+    Route::get('/settings/{section}', [AdminPlatformSettingsController::class, 'show'])->name('settings.show');
+    Route::patch('/settings/{section}', [AdminPlatformSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/{section}/reset', [AdminPlatformSettingsController::class, 'reset'])->name('settings.reset');
+
+    Route::get('/financial', [AdminFinancialDocumentController::class, 'index'])->name('financial.index');
+    Route::get('/financial/operations/{section}', [AdminFinancialDocumentController::class, 'operation'])->name('financial.operation');
+    Route::post('/financial/audit-export', [AdminFinancialDocumentController::class, 'auditExport'])->name('financial.audit-export');
+    Route::get('/financial/{section}', [AdminFinancialDocumentController::class, 'show'])->name('financial.show');
+    Route::patch('/financial/{section}', [AdminFinancialDocumentController::class, 'update'])->name('financial.update');
+    Route::post('/financial/{section}/reset', [AdminFinancialDocumentController::class, 'reset'])->name('financial.reset');
+
+    Route::get('/compliance', [AdminComplianceController::class, 'index'])->name('compliance.index');
+    Route::get('/compliance/operations/{section}', [AdminComplianceController::class, 'operation'])->name('compliance.operation');
+    Route::post('/compliance/reports/export', [AdminComplianceController::class, 'complianceReportExport'])->name('compliance.reports.export');
+    Route::post('/compliance/legal-notices', [AdminComplianceController::class, 'storeLegalNotice'])->name('compliance.legal-notices.store');
+    Route::post('/compliance/dsar', [AdminComplianceController::class, 'storeDataSubjectRequest'])->name('compliance.dsar.store');
+    Route::patch('/compliance/dsar/{dsar}', [AdminComplianceController::class, 'updateDataSubjectRequest'])->name('compliance.dsar.update');
+    Route::post('/compliance/authority-requests', [AdminComplianceController::class, 'storeAuthorityRequest'])->name('compliance.authority.store');
+    Route::patch('/compliance/authority-requests/{authorityRequest}/advance', [AdminComplianceController::class, 'advanceAuthorityRequest'])->name('compliance.authority.advance');
+    Route::post('/compliance/disclosures', [AdminComplianceController::class, 'storeDisclosure'])->name('compliance.disclosures.store');
+    Route::post('/compliance/evidence', [AdminComplianceController::class, 'storeEvidence'])->name('compliance.evidence.store');
+    Route::post('/compliance/legal-holds', [AdminComplianceController::class, 'storeLegalHold'])->name('compliance.legal-holds.store');
+    Route::post('/compliance/legal-holds/{hold}/release', [AdminComplianceController::class, 'releaseLegalHold'])->name('compliance.legal-holds.release');
+    Route::post('/compliance/deletion-jobs', [AdminComplianceController::class, 'storeDeletionJob'])->name('compliance.deletion-jobs.store');
+    Route::post('/compliance/deletion-jobs/{job}/approve', [AdminComplianceController::class, 'approveDeletionJob'])->name('compliance.deletion-jobs.approve');
+    Route::post('/compliance/breaches', [AdminComplianceController::class, 'storeBreach'])->name('compliance.breaches.store');
+    Route::get('/compliance/{section}', [AdminComplianceController::class, 'show'])->name('compliance.show');
+    Route::patch('/compliance/{section}', [AdminComplianceController::class, 'update'])->name('compliance.update');
+    Route::post('/compliance/{section}/reset', [AdminComplianceController::class, 'reset'])->name('compliance.reset');
+    Route::get('/subscriptions', [AdminSubscriptionController::class, 'dashboard'])->name('subscriptions.dashboard');
+    Route::get('/subscriptions/directory', [AdminSubscriptionController::class, 'directory'])->name('subscriptions.directory');
+    Route::get('/subscriptions/companies/{company}', [AdminSubscriptionController::class, 'show'])->name('subscriptions.show');
+    Route::post('/subscriptions/companies/{company}/adjust', [AdminSubscriptionController::class, 'adjust'])->name('subscriptions.adjust');
+
+    Route::get('/plans', [AdminSubscriptionPlanController::class, 'index'])->name('plans.index');
+    Route::post('/plans', [AdminSubscriptionPlanController::class, 'store'])->name('plans.store');
+    Route::patch('/plans', [AdminSubscriptionPlanController::class, 'update'])->name('plans.update');
+    Route::post('/plans/{plan}/archive', [AdminSubscriptionPlanController::class, 'archive'])->name('plans.archive');
+    Route::delete('/plans/{plan}', [AdminSubscriptionPlanController::class, 'destroy'])->name('plans.destroy');
+
+    Route::get('/billing/settings', [AdminBillingController::class, 'settings'])->name('billing.settings');
+    Route::patch('/billing/settings', [AdminBillingController::class, 'updateSettings'])->name('billing.settings.update');
+    Route::get('/billing/coupons', [AdminBillingController::class, 'coupons'])->name('billing.coupons');
+    Route::post('/billing/coupons', [AdminBillingController::class, 'storeCoupon'])->name('billing.coupons.store');
+    Route::patch('/billing/coupons/{coupon}', [AdminBillingController::class, 'updateCoupon'])->name('billing.coupons.update');
+    Route::get('/billing/payments', [AdminBillingController::class, 'payments'])->name('billing.payments');
+    Route::get('/billing/reports', [AdminBillingController::class, 'reports'])->name('billing.reports');
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
+    Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
+    Route::patch('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+    Route::post('/users/{user}/toggle-active', [AdminUserController::class, 'toggleActive'])->name('users.toggle-active');
+    Route::post('/users/{user}/roles', [AdminUserController::class, 'syncRoles'])->name('users.roles');
+    Route::post('/users/{user}/send-password-reset', [AdminUserController::class, 'sendPasswordReset'])->name('users.send-password-reset');
+    Route::post('/users/{user}/verify-email', [AdminUserController::class, 'verifyEmail'])->name('users.verify-email');
+    Route::post('/users/{user}/unverify-email', [AdminUserController::class, 'unverifyEmail'])->name('users.unverify-email');
+    Route::post('/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::post('/users/{user}/revoke-sessions', [AdminUserController::class, 'revokeSessions'])->name('users.revoke-sessions');
+    Route::post('/users/{user}/toggle-billing-reminders', [AdminUserController::class, 'toggleBillingReminders'])->name('users.toggle-billing-reminders');
+    Route::get('/logs/activity', [AdminActivityLogController::class, 'index'])->name('logs.activity');
+    Route::get('/logs/security', [AdminSecurityLogController::class, 'index'])->name('logs.security');
+
+    Route::get('/companies', [AdminCompanyController::class, 'index'])->name('companies.index');
+    Route::get('/companies/approvals', [AdminCompanyController::class, 'approvals'])->name('companies.approvals');
+    Route::post('/workspace/exit', [AdminCompanyController::class, 'exitWorkspace'])->name('workspace.exit');
+    Route::get('/companies/{company}/edit', [AdminCompanyController::class, 'edit'])->name('companies.edit');
+    Route::get('/companies/{company}', [AdminCompanyController::class, 'show'])->name('companies.show');
+    Route::patch('/companies/{company}', [AdminCompanyController::class, 'update'])->name('companies.update');
+    Route::post('/companies/{company}/approve', [AdminCompanyController::class, 'approve'])->name('companies.approve');
+    Route::post('/companies/{company}/reject', [AdminCompanyController::class, 'reject'])->name('companies.reject');
+    Route::post('/companies/{company}/request-info', [AdminCompanyController::class, 'requestInfo'])->name('companies.request-info');
+    Route::post('/companies/{company}/status', [AdminCompanyController::class, 'applyStatus'])->name('companies.status');
+    Route::post('/companies/{company}/workspace', [AdminCompanyController::class, 'enterWorkspace'])->name('companies.workspace');
+    Route::post('/companies/{company}/exports', [AdminCompanyController::class, 'storeExport'])->name('companies.exports.store');
+    Route::get('/companies/{company}/exports/{export}/download', [AdminCompanyController::class, 'downloadExport'])->name('companies.exports.download');
+    Route::post('/companies/{company}/overrides', [AdminCompanyController::class, 'storeOverride'])->name('companies.overrides.store');
+    Route::delete('/companies/{company}/overrides/{override}', [AdminCompanyController::class, 'destroyOverride'])->name('companies.overrides.destroy');
+    Route::patch('/companies/{company}/verification', [AdminCompanyController::class, 'updateVerification'])->name('companies.verification.update');
+    Route::post('/companies/{company}/deletion-requests', [AdminCompanyController::class, 'storeDeletionRequest'])->name('companies.deletion.store');
+    Route::patch('/companies/{company}/deletion-requests/{deletionRequest}', [AdminCompanyController::class, 'updateDeletionRequest'])->name('companies.deletion.update');
 });
 
 // Staff-only routes

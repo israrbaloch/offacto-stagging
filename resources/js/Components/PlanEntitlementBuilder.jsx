@@ -1,15 +1,13 @@
 import { useMemo } from 'react';
+import { AdminSection, AdminTable, inputClass } from './Admin/ui';
 import { t } from '../lib/i18n';
-
-const fieldClass =
-    'w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100';
 
 function LimitInput({ value, onChange, placeholder }) {
     return (
         <input
             type="number"
             min="0"
-            className={fieldClass}
+            className={inputClass}
             placeholder={placeholder}
             value={value === null || value === undefined ? '' : value}
             onChange={(e) => {
@@ -70,21 +68,17 @@ export default function PlanEntitlementBuilder({ catalog, entitlements, onChange
     }, [groups, limitKeys]);
 
     return (
-        <div className="space-y-8">
-            <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {t('plan_entitlements.section_capabilities')}
-                </p>
-                <p className="mb-4 text-sm text-slate-500">{t('plan_entitlements.section_capabilities_hint')}</p>
-                <div className="space-y-5">
+        <div className="space-y-10">
+            <AdminSection title={t('plan_entitlements.section_capabilities')} description={t('plan_entitlements.section_capabilities_hint')}>
+                <div className="space-y-4">
                     {groups.map((group) => (
-                        <div key={group.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                        <div key={group.id} className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-4 py-3">
-                                <p className="text-sm font-semibold text-slate-800">{t(group.label_key)}</p>
+                                <p className="text-sm font-semibold text-slate-900">{t(group.label_key)}</p>
                                 <div className="flex gap-2 text-xs">
                                     <button
                                         type="button"
-                                        className="font-medium text-indigo-600 hover:text-indigo-700"
+                                        className="font-medium text-slate-700 hover:text-slate-900"
                                         onClick={() => setGroupCapabilities(group, true)}
                                     >
                                         {t('plan_entitlements.select_all')}
@@ -92,7 +86,7 @@ export default function PlanEntitlementBuilder({ catalog, entitlements, onChange
                                     <span className="text-slate-300">|</span>
                                     <button
                                         type="button"
-                                        className="font-medium text-slate-600 hover:text-slate-800"
+                                        className="font-medium text-slate-500 hover:text-slate-800"
                                         onClick={() => setGroupCapabilities(group, false)}
                                     >
                                         {t('plan_entitlements.clear_all')}
@@ -103,11 +97,11 @@ export default function PlanEntitlementBuilder({ catalog, entitlements, onChange
                                 {group.capabilities.map((cap) => (
                                     <label
                                         key={cap.key}
-                                        className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-100 px-3 py-2.5 hover:bg-slate-50/80"
+                                        className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-100 px-3 py-2.5 transition hover:border-slate-200 hover:bg-slate-50/80"
                                     >
                                         <input
                                             type="checkbox"
-                                            className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900/10"
                                             checked={!!caps[cap.key]}
                                             onChange={(e) => setCapability(cap.key, e.target.checked)}
                                         />
@@ -118,46 +112,31 @@ export default function PlanEntitlementBuilder({ catalog, entitlements, onChange
                         </div>
                     ))}
                 </div>
-            </div>
+            </AdminSection>
 
-            <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {t('plan_entitlements.section_limits')}
-                </p>
-                <p className="mb-4 text-sm text-slate-500">{t('plan_entitlements.section_limits_hint')}</p>
-                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                    <table className="min-w-full text-left text-sm">
-                        <thead className="border-b border-slate-100 bg-slate-50/80 text-xs uppercase tracking-wide text-slate-500">
-                            <tr>
-                                <th className="px-4 py-3 font-semibold">{t('plan_entitlements.limit_resource')}</th>
-                                <th className="px-4 py-3 font-semibold">{t('plan_entitlements.limit_monthly')}</th>
-                                <th className="px-4 py-3 font-semibold">{t('plan_entitlements.limit_total')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {limitRows.map((row) => (
-                                <tr key={row.key}>
-                                    <td className="px-4 py-3 font-medium text-slate-800">{t(row.labelKey)}</td>
-                                    <td className="px-4 py-3">
-                                        <LimitInput
-                                            value={limits[row.key]?.monthly}
-                                            onChange={(v) => setLimit(row.key, 'monthly', v)}
-                                            placeholder={t('plan_entitlements.unlimited')}
-                                        />
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <LimitInput
-                                            value={limits[row.key]?.total}
-                                            onChange={(v) => setLimit(row.key, 'total', v)}
-                                            placeholder={t('plan_entitlements.unlimited')}
-                                        />
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <AdminSection title={t('plan_entitlements.section_limits')} description={t('plan_entitlements.section_limits_hint')}>
+                <AdminTable columns={[t('plan_entitlements.limit_resource'), t('plan_entitlements.limit_monthly'), t('plan_entitlements.limit_total')]}>
+                    {limitRows.map((row) => (
+                        <tr key={row.key}>
+                            <td className="px-4 py-3 font-medium text-slate-800">{t(row.labelKey)}</td>
+                            <td className="px-4 py-3">
+                                <LimitInput
+                                    value={limits[row.key]?.monthly}
+                                    onChange={(v) => setLimit(row.key, 'monthly', v)}
+                                    placeholder={t('plan_entitlements.unlimited')}
+                                />
+                            </td>
+                            <td className="px-4 py-3">
+                                <LimitInput
+                                    value={limits[row.key]?.total}
+                                    onChange={(v) => setLimit(row.key, 'total', v)}
+                                    placeholder={t('plan_entitlements.unlimited')}
+                                />
+                            </td>
+                        </tr>
+                    ))}
+                </AdminTable>
+            </AdminSection>
         </div>
     );
 }

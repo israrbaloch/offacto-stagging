@@ -567,6 +567,7 @@
     "settings.feature_included": "Show on upgrade page",
     "settings.add_feature": "Add feature",
     "settings.remove_feature": "Remove",
+    "settings.price": "Price",
     "settings.price_cents": "Price (cents)",
     "settings.sort_order": "Display order",
     "settings.plan_active": "Package published",

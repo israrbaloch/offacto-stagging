@@ -37,6 +37,10 @@ class CompanyAccess
             return 'This company is pending approval. You cannot send quotations until it is approved.';
         }
 
+        if ($company->isRestricted()) {
+            return 'This company is restricted by platform administration. Creating and sending is temporarily blocked.';
+        }
+
         if (! $company->is_active && ! $company->isPendingApproval()) {
             return 'This company is inactive. You cannot create or send new records.';
         }

@@ -6,6 +6,8 @@ use App\Models\SiteSetting;
 use App\Models\SubscriptionPlan;
 use App\Services\PlatformMollieService;
 use App\Support\PlanEntitlementCatalog;
+use App\Services\SubscriptionPlanAdminService;
+use App\Support\MoneyAmount;
 use App\Support\PlanEntitlements;
 use App\Support\PlatformLocales;
 use App\Models\Company;
@@ -120,46 +122,10 @@ class PlatformSettingsController extends Controller
         return back()->with('status', 'payment-settings-saved');
     }
 
-    public function updatePlans(Request $request): RedirectResponse
+    public function updatePlans(Request $request, SubscriptionPlanAdminService $planAdmin): RedirectResponse
     {
-        $locales = PlatformLocales::codes();
-
-        $data = $request->validate([
-            'plans' => ['required', 'array'],
-            'plans.*.id' => ['required', 'integer', 'exists:subscription_plans,id'],
-            'plans.*.price_cents' => ['required', 'integer', 'min:0'],
-            'plans.*.currency' => ['required', Rule::in(['EUR', 'USD', 'GBP'])],
-            'plans.*.is_active' => ['required', 'boolean'],
-            'plans.*.is_highlighted' => ['required', 'boolean'],
-            'plans.*.sort_order' => ['required', 'integer', 'min:0', 'max:255'],
-            'plans.*.name_labels' => ['required', 'array'],
-            'plans.*.description_labels' => ['required', 'array'],
-            'plans.*.feature_items' => ['required', 'array'],
-            'plans.*.feature_items.*.included' => ['required', 'boolean'],
-            'plans.*.feature_items.*.label' => ['required', 'array'],
-            'plans.*.entitlements' => ['required', 'array'],
-            'plans.*.entitlements.capabilities' => ['required', 'array'],
-            'plans.*.entitlements.limits' => ['required', 'array'],
-        ]);
-
-        foreach ($data['plans'] as $row) {
-            SubscriptionPlan::where('id', $row['id'])->update([
-                'price_cents' => $row['price_cents'],
-                'currency' => $row['currency'],
-                'is_active' => $row['is_active'],
-                'is_highlighted' => $row['is_highlighted'],
-                'sort_order' => $row['sort_order'],
-                'name_labels' => collect($row['name_labels'])->only($locales)->all(),
-                'description_labels' => collect($row['description_labels'])->only($locales)->all(),
-                'feature_items' => collect($row['feature_items'])->map(function ($item) use ($locales) {
-                    return [
-                        'included' => (bool) ($item['included'] ?? false),
-                        'label' => collect($item['label'] ?? [])->only($locales)->all(),
-                    ];
-                })->values()->all(),
-                'entitlements' => PlanEntitlements::normalize($row['entitlements'] ?? null),
-            ]);
-        }
+        $data = $planAdmin->validatePlanBatch($request);
+        $planAdmin->persistPlanBatch($data);
 
         return back()->with('status', 'plans-saved');
     }
@@ -170,7 +136,7 @@ class PlatformSettingsController extends Controller
 
         $data = $request->validate([
             'slug' => ['required', 'string', 'max:32', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', 'unique:subscription_plans,slug'],
-            'price_cents' => ['required', 'integer', 'min:0'],
+            'price' => ['required', 'numeric', 'min:0'],
             'currency' => ['required', Rule::in(['EUR', 'USD', 'GBP'])],
             'is_active' => ['required', 'boolean'],
             'is_highlighted' => ['required', 'boolean'],
@@ -182,7 +148,7 @@ class PlatformSettingsController extends Controller
 
         SubscriptionPlan::create([
             'slug' => $data['slug'],
-            'price_cents' => $data['price_cents'],
+            'price_cents' => MoneyAmount::toCents($data['price']),
             'currency' => $data['currency'],
             'is_active' => $data['is_active'],
             'is_highlighted' => $data['is_highlighted'],

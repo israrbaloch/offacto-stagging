@@ -13,7 +13,7 @@ class RedirectPlatformAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->hasRole('admin')) {
+        if ($request->user()?->hasRole('admin') && ! $request->session()->get('admin_workspace_company_id')) {
             return redirect()->route('admin.dashboard');
         }
 

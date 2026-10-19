@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsurePlatformNotInMaintenance;
 use App\Http\Middleware\EnsureEmailVerifiedForSession;
 use App\Http\Middleware\EnsureUserIsAuthenticated;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->web(append: [
             SetLocale::class,
+            EnsurePlatformNotInMaintenance::class,
             HandleInertiaRequests::class,
         ]);
         $middleware->alias([

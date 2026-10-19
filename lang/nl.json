@@ -436,6 +436,7 @@
     "settings.feature_included": "Tonen op upgrade",
     "settings.add_feature": "Feature toevoegen",
     "settings.remove_feature": "Verwijderen",
+    "settings.price": "Prijs",
     "settings.price_cents": "Prijs (centen)",
     "settings.sort_order": "Volgorde",
     "settings.plan_active": "Pakket gepubliceerd",

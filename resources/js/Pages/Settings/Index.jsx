@@ -115,7 +115,7 @@ export default function SettingsIndex({
     const emptyLabels = useMemo(() => Object.fromEntries(locales.map((l) => [l, ''])), [locales]);
     const newPlanForm = useForm({
         slug: '',
-        price_cents: 0,
+        price: 0,
         currency: overview.default_currency || 'EUR',
         is_active: true,
         is_highlighted: false,
@@ -534,13 +534,14 @@ export default function SettingsIndex({
 
                                             <div className="mt-5 grid gap-4 sm:grid-cols-3">
                                                 <label className="block text-sm">
-                                                    <span className="mb-1.5 block font-medium text-slate-700">{t('settings.price_cents')}</span>
+                                                    <span className="mb-1.5 block font-medium text-slate-700">{t('settings.price')}</span>
                                                     <input
                                                         type="number"
                                                         min="0"
+                                                        step="0.01"
                                                         className={fieldClass}
-                                                        value={plan.price_cents}
-                                                        onChange={(e) => updatePlan(planIndex, 'price_cents', Number(e.target.value))}
+                                                        value={plan.price ?? 0}
+                                                        onChange={(e) => updatePlan(planIndex, 'price', Number(e.target.value))}
                                                     />
                                                 </label>
                                                 <label className="block text-sm">
