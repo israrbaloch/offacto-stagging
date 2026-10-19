@@ -1,5 +1,6 @@
 import { router, useForm } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+import CommunicationMergeCodesReference from '../../../Components/Admin/CommunicationMergeCodesReference';
 import SettingsSectionNav from '../../../Components/Admin/SettingsSectionNav';
 import {
     AdminBadge,
@@ -105,16 +106,7 @@ export default function CommunicationsOperation({
                                     </AdminButton>
                                 </form>
                             </AdminCard>
-                            <AdminCard title="Available merge codes">
-                                <AdminTable columns={['Code', 'Description']}>
-                                    {Object.entries(mergeCatalog).map(([code, meta]) => (
-                                        <tr key={code}>
-                                            <td className="px-4 py-3 font-mono text-xs">{code}</td>
-                                            <td className="px-4 py-3 text-sm text-slate-600">{meta.description}</td>
-                                        </tr>
-                                    ))}
-                                </AdminTable>
-                            </AdminCard>
+                            <CommunicationMergeCodesReference mergeCatalog={mergeCatalog} compact title="Personalization codes for tests" />
                         </>
                     )}
 

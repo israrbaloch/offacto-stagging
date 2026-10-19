@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import AdminColorPicker from './AdminColorPicker';
 import SettingsStructuredField from './SettingsStructuredField';
 import SettingsUploadField from './SettingsUploadField';
+import { labelForSelectOption, normalizeSelectOptions } from '../../lib/adminSettingOptions';
 import {
     AdminButton,
     AdminCard,
@@ -32,6 +33,8 @@ function serializeInitial(values, fields) {
 
 export default function SettingsForm({
     sectionId,
+    sectionTitle = '',
+    sectionDescription = '',
     fields = [],
     values = {},
     locales = ['en', 'fr', 'nl'],
@@ -65,11 +68,14 @@ export default function SettingsForm({
 
     const simpleFields = fields.filter((f) => f.type !== 'structured');
     const structuredFields = fields.filter((f) => f.type === 'structured');
+    const configTitle = sectionTitle || 'Settings';
+    const configDescription =
+        sectionDescription || 'These options apply across the whole platform. Save when you are finished reviewing.';
 
     return (
         <form onSubmit={submit} className="space-y-6">
             {(simpleFields.length > 0 || structuredFields.length > 0) && (
-                <AdminCard title="Configuration" description="Changes apply across the whole platform. Save when you are done.">
+                <AdminCard title={configTitle} description={configDescription}>
                     {simpleFields.length > 0 && (
                         <AdminFormGrid cols={2} className={structuredFields.length ? 'mb-8' : ''}>
                             {simpleFields.map((field) => {
@@ -118,12 +124,16 @@ export default function SettingsForm({
                                     );
                                 }
                                 if (field.type === 'select') {
+                                    const selectOptions = normalizeSelectOptions(field.options || []).map((opt) => ({
+                                        ...opt,
+                                        label: labelForSelectOption(key, opt.value) !== opt.value ? labelForSelectOption(key, opt.value) : opt.label,
+                                    }));
                                     return (
                                         <AdminField key={key} label={field.label} hint={field.hint}>
                                             <select className={selectClass} value={form.data[key] ?? ''} onChange={(e) => form.setData(key, e.target.value)}>
-                                                {(field.options || []).map((opt) => (
-                                                    <option key={opt} value={opt}>
-                                                        {opt}
+                                                {selectOptions.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
                                                     </option>
                                                 ))}
                                             </select>
@@ -191,7 +201,7 @@ export default function SettingsForm({
                 </AdminCard>
             )}
 
-            <AdminCard title="Restore defaults" description="Put this section back to factory settings. Other sections stay as they are.">
+            <AdminCard title="Restore defaults" description="Reset only this page to its original values. Other admin areas stay unchanged.">
                 <label className="flex items-start gap-3 text-sm">
                     <input type="checkbox" className={checkboxClass} checked={confirmReset} onChange={(e) => setConfirmReset(e.target.checked)} />
                     <span>I understand this will overwrite settings in this section.</span>

@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'webhooks/mollie',
+            'webhooks/inbound-email',
         ]);
         $middleware->web(append: [
             SetLocale::class,

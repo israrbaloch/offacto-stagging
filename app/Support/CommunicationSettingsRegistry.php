@@ -59,6 +59,39 @@ final class CommunicationSettingsRegistry
     public static function definitions(): array
     {
         return [
+            'outgoing-email' => [
+                'group' => 'Delivery',
+                'title' => 'Outgoing email (SMTP & providers)',
+                'description' => 'Configure how Offacto sends invoices, reminders, verification codes, and admin notifications.',
+                'fields' => [
+                    ['key' => 'int_mail_driver', 'type' => 'select', 'label' => 'Sending method', 'default' => 'smtp', 'options' => ['smtp', 'postmark', 'resend', 'ses', 'log']],
+                    ['key' => 'int_mail_from_address', 'type' => 'email', 'label' => 'From email address', 'default' => '', 'hint' => 'Must be allowed by your mail provider (SPF/DKIM).'],
+                    ['key' => 'int_mail_from_name', 'type' => 'string', 'label' => 'From name', 'default' => 'Offacto', 'max' => 120],
+                    ['key' => 'int_mail_reply_to', 'type' => 'email', 'label' => 'Reply-to address (optional)', 'default' => '', 'optional' => true],
+                    ['key' => 'int_smtp_host', 'type' => 'string', 'label' => 'SMTP server', 'default' => '', 'hint' => 'For SMTP only, e.g. smtp.office365.com'],
+                    ['key' => 'int_smtp_port', 'type' => 'integer', 'label' => 'SMTP port', 'default' => 587, 'min' => 1, 'max' => 65535],
+                    ['key' => 'int_smtp_encryption', 'type' => 'select', 'label' => 'SMTP encryption', 'default' => 'tls', 'options' => ['tls', 'ssl', 'none']],
+                    ['key' => 'int_smtp_username', 'type' => 'string', 'label' => 'SMTP username', 'default' => ''],
+                    ['key' => 'int_smtp_password', 'type' => 'password', 'label' => 'SMTP password', 'default' => '', 'optional' => true],
+                    ['key' => 'int_postmark_token', 'type' => 'password', 'label' => 'Postmark server token', 'default' => '', 'optional' => true],
+                    ['key' => 'int_resend_api_key', 'type' => 'password', 'label' => 'Resend API key', 'default' => '', 'optional' => true],
+                    ['key' => 'comm_outbound_use_env_fallback', 'type' => 'boolean', 'label' => 'Use server .env values when a field above is left empty', 'default' => true],
+                ],
+            ],
+            'incoming-email' => [
+                'group' => 'Delivery',
+                'title' => 'Incoming email',
+                'description' => 'Receive customer replies and new support messages into the ticket queue.',
+                'fields' => [
+                    ['key' => 'comm_inbound_enabled', 'type' => 'boolean', 'label' => 'Enable incoming email processing', 'default' => false],
+                    ['key' => 'comm_inbound_address', 'type' => 'email', 'label' => 'Support inbox address', 'default' => '', 'hint' => 'The address customers email (e.g. support@yourdomain.com).'],
+                    ['key' => 'comm_inbound_provider', 'type' => 'select', 'label' => 'Email provider', 'default' => 'postmark', 'options' => ['postmark', 'mailgun', 'sendgrid', 'generic']],
+                    ['key' => 'comm_inbound_mode', 'type' => 'select', 'label' => 'How mail reaches Offacto', 'default' => 'webhook', 'options' => ['webhook', 'forward_only']],
+                    ['key' => 'comm_inbound_webhook_secret', 'type' => 'password', 'label' => 'Webhook secret', 'default' => '', 'optional' => true, 'hint' => 'Send this in the X-Inbound-Secret header from your provider.'],
+                    ['key' => 'comm_inbound_create_tickets', 'type' => 'boolean', 'label' => 'Create a ticket when no open ticket matches the sender', 'default' => true],
+                    ['key' => 'comm_inbound_forward_emails', 'type' => 'structured', 'widget' => 'email_recipient_list', 'label' => 'Also forward copies to (optional)', 'default' => []],
+                ],
+            ],
             'template-library' => [
                 'group' => 'Templates',
                 'title' => 'Email template library',
@@ -78,11 +111,11 @@ final class CommunicationSettingsRegistry
             ],
             'email-variables' => [
                 'group' => 'Templates',
-                'title' => 'Email variables manager',
-                'description' => 'Document supported merge codes and optional custom placeholders.',
+                'title' => 'Personalization codes',
+                'description' => 'Built-in codes for emails plus any custom codes your team defines.',
                 'fields' => [
-                    ['key' => 'comm_custom_merge_codes', 'type' => 'structured', 'widget' => 'custom_merge_codes', 'label' => 'Custom codes', 'default' => []],
-                    ['key' => 'comm_merge_code_help', 'type' => 'textarea', 'label' => 'Internal documentation', 'default' => 'Use #CODE# syntax. Invoice and offer sends replace codes at dispatch time.'],
+                    ['key' => 'comm_custom_merge_codes', 'type' => 'structured', 'widget' => 'custom_merge_codes', 'label' => 'Your custom codes', 'default' => []],
+                    ['key' => 'comm_merge_code_help', 'type' => 'textarea', 'label' => 'Notes for your team (optional)', 'default' => 'Codes like #CLIENTNAME# are filled in automatically when an email is sent.'],
                 ],
             ],
             'notification-rules' => [

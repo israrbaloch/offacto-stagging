@@ -63,7 +63,7 @@ final class IntegrationSettingsRegistry
             'credentials-secrets' => [
                 'group' => 'Security',
                 'title' => 'Credentials & secrets',
-                'description' => 'Platform credentials live in site settings; company Mollie/Postbode keys are encrypted on company_settings.',
+                'description' => 'Who may view platform integration settings and how often to remind your team to rotate keys.',
                 'fields' => [
                     ['key' => 'int_credentials_admin_only', 'type' => 'boolean', 'label' => 'Only platform admins may view integration settings', 'default' => true],
                     ['key' => 'int_credentials_rotate_reminder_days', 'type' => 'integer', 'label' => 'Remind to rotate platform keys after (days)', 'default' => 180, 'min' => 30],
@@ -78,7 +78,7 @@ final class IntegrationSettingsRegistry
                     ['key' => 'payment_mollie_mode', 'type' => 'select', 'label' => 'Platform Mollie mode', 'default' => 'test', 'options' => ['test', 'live']],
                     ['key' => 'int_block_live_company_in_test', 'type' => 'boolean', 'label' => 'Block live company integrations when platform is in test', 'default' => true],
                     ['key' => 'int_show_test_banner', 'type' => 'boolean', 'label' => 'Show test-mode banner in admin', 'default' => true],
-                    ['key' => 'int_prevent_peppol_live_in_local', 'type' => 'boolean', 'label' => 'Block Peppol send when APP_ENV is local', 'default' => true],
+                    ['key' => 'int_prevent_peppol_live_in_local', 'type' => 'boolean', 'label' => 'Block live Peppol sends from a developer machine', 'default' => true],
                 ],
             ],
             'mollie-administration' => [
@@ -90,14 +90,14 @@ final class IntegrationSettingsRegistry
                     ['key' => 'payment_mollie_mode', 'type' => 'select', 'label' => 'Mode', 'default' => 'test', 'options' => ['test', 'live']],
                     ['key' => 'payment_mollie_test_key', 'type' => 'password', 'label' => 'Test API key', 'default' => '', 'optional' => true],
                     ['key' => 'payment_mollie_live_key', 'type' => 'password', 'label' => 'Live API key', 'default' => '', 'optional' => true],
-                    ['key' => 'int_mollie_webhook_override', 'type' => 'string', 'label' => 'Webhook URL override (optional)', 'default' => '', 'hint' => 'Falls back to MOLLIE_WEBHOOK_URL env when empty.'],
+                    ['key' => 'int_mollie_webhook_override', 'type' => 'string', 'label' => 'Custom webhook address (optional)', 'default' => '', 'hint' => 'Leave empty to use the address configured during server setup.'],
                     ['key' => 'int_mollie_auto_reconcile', 'type' => 'boolean', 'label' => 'Log webhook reconciliation events to activity log', 'default' => true],
                 ],
             ],
             'peppol-administration' => [
                 'group' => 'Providers',
                 'title' => 'Peppol administration',
-                'description' => 'Platform access point defaults (env vars used when site settings empty).',
+                'description' => 'Default Peppol access point for the platform when nothing is set here yet.',
                 'fields' => [
                     ['key' => 'int_peppol_endpoint', 'type' => 'string', 'label' => 'Access point URL', 'default' => ''],
                     ['key' => 'int_peppol_token', 'type' => 'password', 'label' => 'Access point token', 'default' => '', 'optional' => true],
@@ -110,22 +110,18 @@ final class IntegrationSettingsRegistry
                 'title' => 'Postbode administration',
                 'description' => 'Platform defaults; each company configures mailbox, envelope, and tokens.',
                 'fields' => [
-                    ['key' => 'int_postbode_v2_base', 'type' => 'string', 'label' => 'API v2 base URL', 'default' => 'https://postbode.app/api/v2'],
-                    ['key' => 'int_postbode_default_country', 'type' => 'string', 'label' => 'Default country (new companies)', 'default' => 'BE', 'max' => 2],
+                    ['key' => 'int_postbode_v2_base', 'type' => 'string', 'label' => 'Postbode service address', 'default' => 'https://postbode.app/api/v2'],
+                    ['key' => 'int_postbode_default_country', 'type' => 'select', 'label' => 'Default country for new companies', 'default' => 'BE', 'options' => ['BE', 'NL', 'FR', 'DE', 'LU']],
                     ['key' => 'int_postbode_default_registered', 'type' => 'boolean', 'label' => 'Default registered mail opt-in', 'default' => false],
                     ['key' => 'int_postbode_default_api_version', 'type' => 'select', 'label' => 'Default API version', 'default' => 'v2', 'options' => ['v1', 'v2']],
                 ],
             ],
             'email-provider' => [
                 'group' => 'Providers',
-                'title' => 'Email provider settings',
-                'description' => 'Platform mail identity; production should use a transactional provider.',
+                'title' => 'Email delivery',
+                'description' => 'SMTP and provider credentials are managed under Communications → Outgoing email.',
                 'fields' => [
-                    ['key' => 'int_mail_driver', 'type' => 'select', 'label' => 'Driver', 'default' => 'smtp', 'options' => ['smtp', 'postmark', 'resend', 'ses', 'log']],
-                    ['key' => 'int_mail_from_address', 'type' => 'string', 'label' => 'Default from address', 'default' => ''],
-                    ['key' => 'int_mail_from_name', 'type' => 'string', 'label' => 'Default from name', 'default' => 'Offacto'],
-                    ['key' => 'int_mail_reply_to', 'type' => 'string', 'label' => 'Default reply-to', 'default' => ''],
-                    ['key' => 'int_smtp_password', 'type' => 'password', 'label' => 'SMTP / provider API secret', 'default' => '', 'optional' => true],
+                    ['key' => 'int_email_delivery_notice', 'type' => 'structured', 'widget' => 'email_delivery_notice', 'label' => 'Outgoing email', 'default' => []],
                 ],
             ],
             'whatsapp-policies' => [

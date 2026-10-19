@@ -106,11 +106,11 @@ final class SecuritySettingsRegistry
             'encryption-keys' => [
                 'group' => 'Cryptography',
                 'title' => 'Encryption & key management',
-                'description' => 'Laravel APP_KEY and encrypted columns; document rotation procedures.',
+                'description' => 'How often to review encryption keys and where secrets are stored.',
                 'fields' => [
-                    ['key' => 'sec_app_key_rotation_months', 'type' => 'integer', 'label' => 'Review APP_KEY rotation every (months)', 'default' => 12, 'min' => 6],
-                    ['key' => 'sec_encrypt_company_secrets', 'type' => 'boolean', 'label' => 'Company integration secrets use encrypted casts', 'default' => true],
-                    ['key' => 'sec_encryption_notes', 'type' => 'textarea', 'label' => 'Internal key custody notes', 'default' => 'APP_KEY is managed at deploy time. Company Mollie/Postbode keys use Laravel encrypted casts.'],
+                    ['key' => 'sec_app_key_rotation_months', 'type' => 'integer', 'label' => 'Review platform encryption key every (months)', 'default' => 12, 'min' => 6],
+                    ['key' => 'sec_encrypt_company_secrets', 'type' => 'boolean', 'label' => 'Store company payment and postal tokens encrypted', 'default' => true],
+                    ['key' => 'sec_encryption_notes', 'type' => 'textarea', 'label' => 'Internal notes for your team', 'default' => 'Platform encryption is managed during deployment. Company integration tokens are stored encrypted in the database.'],
                 ],
             ],
             'privileged-actions' => [
@@ -133,7 +133,7 @@ final class SecuritySettingsRegistry
                 'title' => 'Separation of duties',
                 'description' => 'Independent approver for sensitive financial and security operations.',
                 'fields' => [
-                    ['key' => 'sec_sod_rules', 'type' => 'structured', 'widget' => 'sod_rules', 'label' => 'SoD rules', 'default' => [
+                    ['key' => 'sec_sod_rules', 'type' => 'structured', 'widget' => 'sod_rules', 'label' => 'Approval rules', 'default' => [
                         ['action' => 'subscription_adjustment', 'require_second_admin' => true],
                         ['action' => 'disclosure_approval', 'require_second_admin' => true],
                         ['action' => 'deletion_job_approve', 'require_second_admin' => true],

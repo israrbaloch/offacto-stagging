@@ -15,6 +15,7 @@ use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
 use App\Models\User;
 use App\Services\PlatformSettingsService;
+use App\Services\SupportTicketNotifier;
 use App\Support\AdminSupportInsights;
 use App\Support\SupportPolicy;
 use App\Support\SupportReference;
@@ -111,6 +112,8 @@ class AdminSupportController extends Controller
 
         ActivityLog::record('admin.support.ticket.created', subject: $ticket, metadata: ['reference' => $ticket->reference]);
 
+        app(SupportTicketNotifier::class)->notify('new_ticket', $ticket);
+
         return redirect()->route('admin.support.tickets.show', $ticket);
     }
 
@@ -125,10 +128,17 @@ class AdminSupportController extends Controller
         if (isset($data['status']) && in_array($data['status'], ['resolved', 'closed'], true)) {
             $ticket->resolved_at = now();
         }
+        $previousAssignee = $ticket->assigned_to_user_id;
         $ticket->fill(array_filter($data, fn ($v) => $v !== null));
+        $assignedChanged = array_key_exists('assigned_to_user_id', $data)
+            && $data['assigned_to_user_id'] != $previousAssignee;
         $ticket->save();
 
         ActivityLog::record('admin.support.ticket.updated', subject: $ticket);
+
+        if ($assignedChanged) {
+            app(SupportTicketNotifier::class)->notify('assigned', $ticket);
+        }
 
         return back();
     }
@@ -149,6 +159,12 @@ class AdminSupportController extends Controller
 
         if (! $ticket->first_response_at && ! $request->boolean('is_internal')) {
             $ticket->update(['first_response_at' => now()]);
+        }
+
+        if (! $request->boolean('is_internal')) {
+            app(SupportTicketNotifier::class)->notify('staff_reply', $ticket, [
+                'snippet' => \Illuminate\Support\Str::limit($data['body'], 240),
+            ]);
         }
 
         return back();

@@ -13,6 +13,8 @@ export default function ProductShow({ section, fields = [], values = {}, nav = [
                 <AdminBody className="max-w-4xl">
                     <SettingsForm
                         sectionId={section.id}
+                        sectionTitle={section.title}
+                        sectionDescription={section.description}
                         fields={fields}
                         values={values}
                         locales={locales}

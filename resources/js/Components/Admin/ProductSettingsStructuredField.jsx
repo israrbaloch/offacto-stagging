@@ -1,3 +1,4 @@
+import { WORKSPACE_EXTRA_DEFAULTS } from '../../lib/adminSettingOptions';
 import SettingsStructuredField from './SettingsStructuredField';
 import { AdminButton, AdminField, AdminSection, AdminTextButton, inputClass } from './ui';
 
@@ -20,7 +21,7 @@ export default function ProductSettingsStructuredField(props) {
                         </AdminField>
                         <label className="flex items-end gap-2 pb-2 text-sm">
                             <input type="checkbox" checked={!!row.enabled} onChange={(e) => patch(i, 'enabled', e.target.checked)} />
-                            Enabled
+                            Show to new users
                         </label>
                         <AdminTextButton type="button" className="self-end pb-2" onClick={() => onChange(rows.filter((_, j) => j !== i))}>
                             Remove
@@ -36,25 +37,26 @@ export default function ProductSettingsStructuredField(props) {
 
     if (widget === 'workspace_defaults') {
         const obj = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-        const entries = Object.entries(obj);
-        const setKey = (oldKey, newKey, val) => {
-            const next = { ...obj };
-            delete next[oldKey];
-            if (newKey) next[newKey] = val;
-            onChange(next);
-        };
+        const setField = (key, val) => onChange({ ...obj, [key]: val });
         return (
-            <AdminSection title={field.label}>
-                <p className="mb-3 text-xs text-slate-500">Applied when provisioning new workspaces only.</p>
-                {entries.map(([k, v]) => (
-                    <div key={k} className="mb-2 grid gap-2 sm:grid-cols-2">
-                        <input className={inputClass} value={k} onChange={(e) => setKey(k, e.target.value, v)} placeholder="Key" />
-                        <input className={inputClass} value={String(v)} onChange={(e) => setKey(k, k, e.target.value)} placeholder="Value" />
-                    </div>
-                ))}
-                <AdminButton type="button" variant="secondary" onClick={() => onChange({ ...obj, [`key_${entries.length + 1}`]: '' })}>
-                    Add default
-                </AdminButton>
+            <AdminSection title={field.label} description="Optional extras applied when a new company workspace is created.">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {WORKSPACE_EXTRA_DEFAULTS.map((def) => (
+                        <AdminField key={def.key} label={def.label}>
+                            <input
+                                type={def.type === 'number' ? 'number' : 'text'}
+                                className={inputClass}
+                                min={def.min}
+                                max={def.max}
+                                placeholder={def.placeholder}
+                                value={obj[def.key] ?? ''}
+                                onChange={(e) =>
+                                    setField(def.key, def.type === 'number' ? Number(e.target.value) : e.target.value)
+                                }
+                            />
+                        </AdminField>
+                    ))}
+                </div>
             </AdminSection>
         );
     }

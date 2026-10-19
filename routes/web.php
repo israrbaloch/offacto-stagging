@@ -29,6 +29,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OfferController;
 use App\Http\Controllers\MolliePaymentReturnController;
 use App\Http\Controllers\MollieWebhookController;
+use App\Http\Controllers\InboundEmailWebhookController;
 use App\Http\Controllers\PublicBriefingController;
 use App\Http\Controllers\PublicOfferController;
 use App\Http\Controllers\SearchController;
@@ -49,6 +50,7 @@ Route::get('/q/{token}/preview', [PublicOfferController::class, 'preview'])->nam
 Route::get('/q/{token}/download', [PublicOfferController::class, 'download'])->name('offers.public.download');
 
 Route::post('/webhooks/mollie', MollieWebhookController::class)->name('webhooks.mollie');
+Route::post('/webhooks/inbound-email', InboundEmailWebhookController::class)->name('webhooks.inbound-email');
 Route::get('/payment/mollie/return', MolliePaymentReturnController::class)->name('payments.mollie.return');
 
 Route::post('/locale', function (\Illuminate\Http\Request $request) {
@@ -229,6 +231,7 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::get('/communications', [AdminCommunicationController::class, 'index'])->name('communications.index');
     Route::get('/communications/operations/{section}', [AdminCommunicationController::class, 'operation'])->name('communications.operation');
     Route::post('/communications/test-send', [AdminCommunicationController::class, 'sendTestEmail'])->name('communications.test-send');
+    Route::post('/communications/outbound-test', [AdminCommunicationController::class, 'testOutboundConnection'])->name('communications.outbound-test');
     Route::post('/communications/queue/retry', [AdminCommunicationController::class, 'retryFailedJob'])->name('communications.queue.retry');
     Route::get('/communications/{section}', [AdminCommunicationController::class, 'show'])->name('communications.show');
     Route::patch('/communications/{section}', [AdminCommunicationController::class, 'update'])->name('communications.update');

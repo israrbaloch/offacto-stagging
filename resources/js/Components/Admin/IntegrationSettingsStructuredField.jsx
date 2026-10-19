@@ -1,8 +1,27 @@
+import { Link } from '@inertiajs/react';
 import SettingsStructuredField from './SettingsStructuredField';
 import { AdminField, AdminSection, inputClass } from './ui';
 
 export default function IntegrationSettingsStructuredField(props) {
     const { widget, field, value, onChange } = props;
+
+    if (widget === 'email_delivery_notice') {
+        return (
+            <AdminSection title="Configure outgoing email">
+                <p className="text-sm leading-relaxed text-slate-600">
+                    SMTP servers, API keys, and sender addresses are configured under{' '}
+                    <Link href="/admin/communications/outgoing-email" className="font-medium text-slate-900 underline">
+                        Communications → Outgoing email
+                    </Link>
+                    . Incoming support mail is under{' '}
+                    <Link href="/admin/communications/incoming-email" className="font-medium text-slate-900 underline">
+                        Communications → Incoming email
+                    </Link>
+                    .
+                </p>
+            </AdminSection>
+        );
+    }
 
     if (widget === 'peppol_formats') {
         const formats = value && typeof value === 'object' ? value : {};
@@ -26,9 +45,12 @@ export default function IntegrationSettingsStructuredField(props) {
         const templates = value && typeof value === 'object' ? value : {};
         const keys = ['invoice', 'quotation'];
         return (
-            <AdminSection title={field.label} description="User-initiated share only — placeholders: {{number}}, {{company}}, {{link}}">
+            <AdminSection
+                title={field.label}
+                description="Messages when someone shares a link via WhatsApp. You can use {{number}}, {{company}}, and {{link}} as placeholders."
+            >
                 {keys.map((key) => (
-                    <AdminField key={key} label={key}>
+                    <AdminField key={key} label={key === 'invoice' ? 'Invoice share message' : 'Quotation share message'}>
                         <textarea
                             className={`${inputClass} min-h-[72px]`}
                             value={templates[key] || ''}

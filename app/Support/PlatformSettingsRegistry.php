@@ -39,7 +39,7 @@ final class PlatformSettingsRegistry
                 'fields' => [
                     ['key' => 'site_name', 'type' => 'string', 'label' => 'Platform name', 'default' => 'Offacto', 'max' => 120],
                     ['key' => 'platform_tagline', 'type' => 'string', 'label' => 'Tagline', 'default' => '', 'max' => 255],
-                    ['key' => 'admin_email', 'type' => 'email', 'label' => 'Admin contact email', 'default' => ''],
+                    ['key' => 'admin_email', 'type' => 'email', 'label' => 'Primary admin contact email', 'default' => '', 'hint' => 'Used for registrations and approvals if no support notification list is set.'],
                     ['key' => 'platform_logo', 'type' => 'upload', 'label' => 'Platform logo', 'default' => '', 'accept' => 'image'],
                     ['key' => 'platform_favicon', 'type' => 'upload', 'label' => 'Favicon', 'default' => '', 'accept' => 'favicon'],
                     ['key' => 'platform_default_timezone', 'type' => 'select', 'label' => 'Default timezone', 'default' => 'Europe/Amsterdam', 'options' => ['Europe/Amsterdam', 'Europe/Brussels', 'Europe/Paris', 'UTC']],
@@ -78,7 +78,7 @@ final class PlatformSettingsRegistry
             'languages' => [
                 'group' => 'Localization',
                 'title' => 'Languages & translations',
-                'description' => 'Enabled locales and string overrides (merged at runtime).',
+                'description' => 'Which languages customers can use and optional wording tweaks.',
                 'fields' => [
                     ['key' => 'platform_enabled_locales', 'type' => 'structured', 'widget' => 'enabled_locales', 'label' => 'Enabled languages', 'default' => PlatformLocales::codes()],
                     ['key' => 'translation_overrides', 'type' => 'structured', 'widget' => 'translation_overrides', 'label' => 'Custom wording', 'default' => []],
@@ -125,7 +125,7 @@ final class PlatformSettingsRegistry
             'email-templates' => [
                 'group' => 'Communication',
                 'title' => 'Email templates',
-                'description' => 'Transactional email subjects and bodies. Use merge fields like {{company_name}}.',
+                'description' => 'Subject lines and optional custom bodies for system emails.',
                 'fields' => [
                     ['key' => 'email_templates', 'type' => 'structured', 'widget' => 'email_templates', 'label' => 'Template definitions', 'default' => [
                         'verification' => ['subject' => 'Verify your email', 'body' => ''],

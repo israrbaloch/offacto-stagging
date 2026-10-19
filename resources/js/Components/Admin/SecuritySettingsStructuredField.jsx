@@ -1,5 +1,6 @@
+import { PRIVILEGED_SOD_ACTIONS } from '../../lib/adminSettingOptions';
 import SettingsStructuredField from './SettingsStructuredField';
-import { AdminButton, AdminField, AdminSection, AdminTextButton, inputClass } from './ui';
+import { AdminButton, AdminField, AdminSection, AdminTextButton, inputClass, selectClass } from './ui';
 
 export default function SecuritySettingsStructuredField(props) {
     const { widget, field, value, onChange } = props;
@@ -7,17 +8,17 @@ export default function SecuritySettingsStructuredField(props) {
     if (widget === 'rate_limits') {
         const map = value && typeof value === 'object' ? value : {};
         const labels = {
-            login: 'Login',
-            register: 'Registration',
-            password_reset: 'Password recovery',
-            public_quote: 'Public quotation pages',
-            briefing_form: 'Briefing forms',
+            login: 'Sign-in attempts per minute',
+            register: 'New registrations per hour',
+            password_reset: 'Password reset requests per hour',
+            public_quote: 'Public quotation page views per minute',
+            briefing_form: 'Briefing form submissions per hour',
         };
         return (
-            <AdminSection title={field.label}>
+            <AdminSection title={field.label} description="Limits abusive traffic. Your hosting layer may apply additional protection.">
                 {Object.entries(labels).map(([key, label]) => (
                     <AdminField key={key} label={label}>
-                        <input type="number" className={inputClass} value={map[key] ?? 10} onChange={(e) => onChange({ ...map, [key]: Number(e.target.value) })} />
+                        <input type="number" min={1} className={inputClass} value={map[key] ?? 10} onChange={(e) => onChange({ ...map, [key]: Number(e.target.value) })} />
                     </AdminField>
                 ))}
             </AdminSection>
@@ -27,9 +28,9 @@ export default function SecuritySettingsStructuredField(props) {
     if (widget === 'upload_mimes') {
         const flags = value && typeof value === 'object' ? value : {};
         const items = [
-            { id: 'images', label: 'Images (jpeg, png, webp)' },
+            { id: 'images', label: 'Images (JPEG, PNG, WebP)' },
             { id: 'pdf', label: 'PDF documents' },
-            { id: 'office', label: 'Office documents' },
+            { id: 'office', label: 'Word and Excel documents' },
             { id: 'audio', label: 'Audio (voice notes)' },
         ];
         return (
@@ -58,7 +59,7 @@ export default function SecuritySettingsStructuredField(props) {
                 {items.map(({ id, label }) => (
                     <label key={id} className="mb-2 flex items-center gap-2 text-sm">
                         <input type="checkbox" checked={!!map[id]} onChange={(e) => onChange({ ...map, [id]: e.target.checked })} />
-                        {label}
+                        Require extra confirmation for: {label}
                     </label>
                 ))}
             </AdminSection>
@@ -73,20 +74,30 @@ export default function SecuritySettingsStructuredField(props) {
             onChange(next);
         };
         return (
-            <AdminSection title={field.label}>
+            <AdminSection title={field.label} description="Sensitive actions can require approval from a second platform admin.">
                 {rows.map((row, i) => (
-                    <div key={i} className="mb-2 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/70 p-3">
+                    <div key={i} className="mb-2 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200/70 p-3">
                         <AdminField label="Action">
-                            <input className={inputClass} value={row.action || ''} onChange={(e) => patch(i, 'action', e.target.value)} />
+                            <select className={selectClass} value={row.action || ''} onChange={(e) => patch(i, 'action', e.target.value)}>
+                                <option value="">Choose…</option>
+                                {PRIVILEGED_SOD_ACTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
                         </AdminField>
-                        <label className="flex items-center gap-2 text-sm">
+                        <label className="flex items-center gap-2 pb-2 text-sm">
                             <input type="checkbox" checked={!!row.require_second_admin} onChange={(e) => patch(i, 'require_second_admin', e.target.checked)} />
                             Requires second admin
                         </label>
+                        <AdminTextButton type="button" className="pb-2" onClick={() => onChange(rows.filter((_, j) => j !== i))}>
+                            Remove
+                        </AdminTextButton>
                     </div>
                 ))}
                 <AdminButton type="button" variant="secondary" onClick={() => onChange([...rows, { action: '', require_second_admin: true }])}>
-                    Add rule
+                    Add approval rule
                 </AdminButton>
             </AdminSection>
         );

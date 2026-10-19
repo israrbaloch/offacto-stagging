@@ -18,6 +18,15 @@ use App\Models\User;
 use App\Services\PlatformSettingsService;
 use App\Support\AdminGovernanceInsights;
 use App\Support\AdminInfrastructureInsights;
+use App\Support\AdminSettingsRoutes;
+use App\Support\CommunicationSettingsRegistry;
+use App\Support\ComplianceSettingsRegistry;
+use App\Support\FinancialDocumentSettingsRegistry;
+use App\Support\InfrastructureSettingsRegistry;
+use App\Support\IntegrationSettingsRegistry;
+use App\Support\ProductSettingsRegistry;
+use App\Support\SecuritySettingsRegistry;
+use App\Support\SupportSettingsRegistry;
 use App\Support\GovernancePolicy;
 use App\Support\GovernanceReference;
 use App\Support\GovernanceSettingsRegistry;
@@ -162,17 +171,33 @@ class AdminGovernanceController extends Controller
     }
 
     /**
-     * @return list<array{registry: string, section: string, label: string}>
+     * @return list<array{registry: string, section: string, label: string, href: ?string, area: string}>
      */
     private function snapshotSectionOptions(): array
     {
+        $registries = [
+            PlatformSettingsRegistry::class,
+            FinancialDocumentSettingsRegistry::class,
+            ComplianceSettingsRegistry::class,
+            IntegrationSettingsRegistry::class,
+            CommunicationSettingsRegistry::class,
+            SupportSettingsRegistry::class,
+            SecuritySettingsRegistry::class,
+            InfrastructureSettingsRegistry::class,
+            ProductSettingsRegistry::class,
+            GovernanceSettingsRegistry::class,
+        ];
+
         $options = [];
-        foreach ([PlatformSettingsRegistry::class, GovernanceSettingsRegistry::class] as $registry) {
+        foreach ($registries as $registry) {
+            $area = AdminSettingsRoutes::registryLabel($registry);
             foreach ($registry::definitions() as $id => $def) {
                 $options[] = [
                     'registry' => $registry,
                     'section' => $id,
-                    'label' => $def['title'].' ('.class_basename($registry).')',
+                    'label' => $def['title'].' — '.$area,
+                    'href' => AdminSettingsRoutes::sectionHref($registry, $id),
+                    'area' => $area,
                 ];
             }
         }

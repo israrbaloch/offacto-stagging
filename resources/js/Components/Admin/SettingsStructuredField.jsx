@@ -1,3 +1,4 @@
+import { TRANSLATION_PHRASE_OPTIONS } from '../../lib/adminSettingOptions';
 import AdminColorPicker from './AdminColorPicker';
 import {
     AdminButton,
@@ -105,24 +106,40 @@ export default function SettingsStructuredField({ widget, field, value, onChange
             const setLocaleRows = (nextRows) => {
                 onChange({ ...overrides, [locale]: Object.fromEntries(nextRows.filter(([k]) => k.trim())) });
             };
+            const usedKeys = new Set(rows.map(([k]) => k));
             return (
                 <AdminSection
                     title="Custom wording (optional)"
-                    description="Override a few platform phrases in English. Leave blank to use built-in translations. More languages can be added later."
+                    description="Replace a few button or page titles in English. Leave empty to keep the built-in wording."
                 >
                     <div className="space-y-2">
                         {rows.map(([k, v], i) => (
                             <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                                <input className={inputClass} placeholder="Label key (e.g. common.save)" value={k} onChange={(e) => {
-                                    const copy = [...rows];
-                                    copy[i] = [e.target.value, v];
-                                    setLocaleRows(copy);
-                                }} />
-                                <input className={inputClass} placeholder="Your text" value={v} onChange={(e) => {
-                                    const copy = [...rows];
-                                    copy[i] = [k, e.target.value];
-                                    setLocaleRows(copy);
-                                }} />
+                                <AdminField label="Phrase">
+                                    <select
+                                        className={selectClass}
+                                        value={k}
+                                        onChange={(e) => {
+                                            const copy = [...rows];
+                                            copy[i] = [e.target.value, v];
+                                            setLocaleRows(copy);
+                                        }}
+                                    >
+                                        <option value="">Choose phrase…</option>
+                                        {TRANSLATION_PHRASE_OPTIONS.map((opt) => (
+                                            <option key={opt.value} value={opt.value} disabled={usedKeys.has(opt.value) && opt.value !== k}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </AdminField>
+                                <AdminField label="Your text">
+                                    <input className={inputClass} placeholder="Your text" value={v} onChange={(e) => {
+                                        const copy = [...rows];
+                                        copy[i] = [k, e.target.value];
+                                        setLocaleRows(copy);
+                                    }} />
+                                </AdminField>
                                 <AdminTextButton type="button" onClick={() => setLocaleRows(rows.filter((_, j) => j !== i))}>
                                     Remove
                                 </AdminTextButton>
@@ -148,7 +165,7 @@ export default function SettingsStructuredField({ widget, field, value, onChange
                                     n[i] = { ...n[i], name: e.target.value };
                                     update(n);
                                 }} />
-                                <input className={inputClass} placeholder="Code" value={row.code || ''} onChange={(e) => {
+                                <input className={inputClass} placeholder="Short code (e.g. STD)" value={row.code || ''} onChange={(e) => {
                                     const n = [...rows];
                                     n[i] = { ...n[i], code: e.target.value };
                                     update(n);
@@ -201,8 +218,13 @@ export default function SettingsStructuredField({ widget, field, value, onChange
             return (
                 <AdminSection title="PDF page layout">
                     <div className="grid gap-4 sm:grid-cols-2">
-                        {['margin_top', 'margin_bottom', 'margin_left', 'margin_right'].map((k) => (
-                            <AdminField key={k} label={k.replace('margin_', 'Margin ')}>
+                        {[
+                            ['margin_top', 'Top margin (mm)'],
+                            ['margin_bottom', 'Bottom margin (mm)'],
+                            ['margin_left', 'Left margin (mm)'],
+                            ['margin_right', 'Right margin (mm)'],
+                        ].map(([k, label]) => (
+                            <AdminField key={k} label={label}>
                                 <input type="number" className={inputClass} value={v[k]} onChange={(e) => set({ [k]: Number(e.target.value) })} />
                             </AdminField>
                         ))}

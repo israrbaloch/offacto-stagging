@@ -62,9 +62,12 @@ class PlatformSettingsService
             $values['int_peppol_token_set'] = filled(SiteSetting::get('int_peppol_token'));
         }
 
-        if ($sectionId === 'email-provider') {
-            $values['int_smtp_password'] = '';
-            $values['int_smtp_password_set'] = filled(SiteSetting::get('int_smtp_password'));
+        foreach ($def['fields'] as $field) {
+            if (($field['type'] ?? '') === 'password') {
+                $key = $field['key'];
+                $values[$key] = '';
+                $values[$key.'_set'] = filled(SiteSetting::get($key));
+            }
         }
 
         return $values;

@@ -26,6 +26,8 @@ export default function IntegrationsShow({ section, fields = [], values = {}, na
                     )}
                     <SettingsForm
                         sectionId={section.id}
+                        sectionTitle={section.title}
+                        sectionDescription={section.description}
                         fields={fields}
                         values={values}
                         locales={locales}

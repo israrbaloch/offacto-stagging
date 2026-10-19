@@ -11,13 +11,32 @@ import {
     AdminTable,
     AdminTextButton,
     badgeToneFor,
+    checkboxClass,
     inputClass,
     selectClass,
 } from '../../../Components/Admin/ui';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { INTEGRATION_API_SCOPES, slugifyLabel } from '../../../lib/adminSettingOptions';
 import { formatDate } from '../../../lib/utils';
 
 const textareaClass = `${inputClass} min-h-[80px]`;
+
+function ScopeCheckboxes({ scopes, onChange }) {
+    const toggle = (scope) => {
+        const next = scopes.includes(scope) ? scopes.filter((s) => s !== scope) : [...scopes, scope];
+        onChange(next.length ? next : ['read']);
+    };
+    return (
+        <div className="flex flex-wrap gap-3">
+            {INTEGRATION_API_SCOPES.map((opt) => (
+                <label key={opt.value} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" className={checkboxClass} checked={scopes.includes(opt.value)} onChange={() => toggle(opt.value)} />
+                    {opt.label}
+                </label>
+            ))}
+        </div>
+    );
+}
 
 export default function IntegrationsOperation({
     section,
@@ -116,11 +135,10 @@ export default function IntegrationsOperation({
                                     <AdminField label="Label">
                                         <input className={inputClass} value={apiKeyForm.data.name} onChange={(e) => apiKeyForm.setData('name', e.target.value)} />
                                     </AdminField>
-                                    <AdminField label="Scopes (comma-separated)">
-                                        <input
-                                            className={inputClass}
-                                            value={(apiKeyForm.data.scopes || []).join(', ')}
-                                            onChange={(e) => apiKeyForm.setData('scopes', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
+                                    <AdminField label="Permissions" className="sm:col-span-2">
+                                        <ScopeCheckboxes
+                                            scopes={apiKeyForm.data.scopes || ['read']}
+                                            onChange={(scopes) => apiKeyForm.setData('scopes', scopes)}
                                         />
                                     </AdminField>
                                     <AdminButton type="submit">Create key</AdminButton>
@@ -188,14 +206,17 @@ export default function IntegrationsOperation({
                                     className="grid gap-3 sm:grid-cols-2"
                                     onSubmit={(e) => {
                                         e.preventDefault();
-                                        providerForm.post('/admin/integrations/providers');
+                                        const slug = providerForm.data.slug || slugifyLabel(providerForm.data.name);
+                                        providerForm.transform((data) => ({ ...data, slug })).post('/admin/integrations/providers');
                                     }}
                                 >
-                                    <AdminField label="Slug">
-                                        <input className={inputClass} value={providerForm.data.slug} onChange={(e) => providerForm.setData('slug', e.target.value)} />
-                                    </AdminField>
-                                    <AdminField label="Name">
-                                        <input className={inputClass} value={providerForm.data.name} onChange={(e) => providerForm.setData('name', e.target.value)} />
+                                    <AdminField label="Provider name" className="sm:col-span-2">
+                                        <input
+                                            className={inputClass}
+                                            value={providerForm.data.name}
+                                            onChange={(e) => providerForm.setData('name', e.target.value)}
+                                            placeholder="e.g. Mollie"
+                                        />
                                     </AdminField>
                                     <AdminField label="Purpose" className="sm:col-span-2">
                                         <textarea className={textareaClass} value={providerForm.data.purpose} onChange={(e) => providerForm.setData('purpose', e.target.value)} />
@@ -210,8 +231,8 @@ export default function IntegrationsOperation({
                                             <option value="disabled">Disabled</option>
                                         </select>
                                     </AdminField>
-                                    <AdminField label="Compliance doc URL">
-                                        <input className={inputClass} value={providerForm.data.compliance_doc_url} onChange={(e) => providerForm.setData('compliance_doc_url', e.target.value)} />
+                                    <AdminField label="Privacy or DPA document link">
+                                        <input className={inputClass} value={providerForm.data.compliance_doc_url} onChange={(e) => providerForm.setData('compliance_doc_url', e.target.value)} placeholder="https://…" />
                                     </AdminField>
                                     <AdminButton type="submit">Save provider</AdminButton>
                                 </form>

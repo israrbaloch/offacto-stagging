@@ -9,6 +9,7 @@ use App\Models\CommunicationDeliveryLog;
 use App\Models\SiteSetting;
 use App\Services\PlatformSettingsService;
 use App\Support\AdminCommunicationInsights;
+use App\Support\PlatformMailConfigurator;
 use App\Support\CommunicationMergeCodes;
 use App\Support\CommunicationSettingsRegistry;
 use App\Support\PlatformLocales;
@@ -52,6 +53,12 @@ class AdminCommunicationController extends Controller
         $extra = [];
         if ($section === 'email-variables') {
             $extra['mergeCatalog'] = CommunicationMergeCodes::catalog();
+        }
+        if ($section === 'incoming-email') {
+            $extra['inboundWebhookUrl'] = url('/webhooks/inbound-email');
+        }
+        if ($section === 'outgoing-email') {
+            $extra['outboundConfigured'] = PlatformMailConfigurator::isOutboundConfigured();
         }
 
         return Inertia::render('Admin/Communications/Show', [
@@ -145,6 +152,8 @@ class AdminCommunicationController extends Controller
         $subject = CommunicationMergeCodes::sampleMerge($tpl['subject'] ?? 'Test', 'invoice');
         $body = CommunicationMergeCodes::sampleMerge($tpl['body'] ?? '', 'invoice');
 
+        PlatformMailConfigurator::apply();
+
         $recipient = $request->user()->email;
         $htmlBody = $body !== '' ? nl2br(e($body)) : '';
         Mail::to($recipient)->send(new CommunicationTestMail($subject, $htmlBody, $data['template_key']));
@@ -164,6 +173,25 @@ class AdminCommunicationController extends Controller
         ActivityLog::record('admin.communications.test_sent', metadata: ['template' => $data['template_key']]);
 
         return back()->with('status', 'communication-test-sent');
+    }
+
+    public function testOutboundConnection(Request $request): RedirectResponse
+    {
+        $request->validate(['confirm_test' => ['accepted']]);
+
+        PlatformMailConfigurator::apply();
+
+        $recipient = $request->user()->email;
+        Mail::raw(
+            'This is a test message from Offacto outgoing email settings. If you received this, SMTP/provider configuration is working.',
+            function ($message) use ($recipient) {
+                $message->to($recipient)->subject('Offacto outgoing email test');
+            }
+        );
+
+        ActivityLog::record('admin.communications.outbound_test', metadata: ['recipient' => $recipient]);
+
+        return back()->with('status', 'communication-outbound-test-sent');
     }
 
     public function retryFailedJob(Request $request): RedirectResponse

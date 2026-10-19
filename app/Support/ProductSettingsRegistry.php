@@ -94,10 +94,10 @@ final class ProductSettingsRegistry
                 'description' => 'Applied when creating new workspaces only — never bulk-overwrites existing company records.',
                 'fields' => [
                     ['key' => 'prod_defaults_new_only_ack', 'type' => 'boolean', 'label' => 'Enforce new-workspace-only application', 'default' => true],
-                    ['key' => 'prod_default_locale', 'type' => 'text', 'label' => 'Default locale', 'default' => 'nl'],
-                    ['key' => 'prod_default_currency', 'type' => 'text', 'label' => 'Default currency', 'default' => 'EUR'],
+                    ['key' => 'prod_default_locale', 'type' => 'select', 'label' => 'Default language', 'default' => 'nl', 'options' => ['en', 'fr', 'nl']],
+                    ['key' => 'prod_default_currency', 'type' => 'select', 'label' => 'Default currency', 'default' => 'EUR', 'options' => ['EUR', 'USD', 'GBP']],
                     ['key' => 'prod_default_payment_terms_days', 'type' => 'integer', 'label' => 'Default payment terms (days)', 'default' => 14, 'min' => 0],
-                    ['key' => 'prod_default_workspace_defaults', 'type' => 'structured', 'widget' => 'workspace_defaults', 'label' => 'Additional defaults (JSON-safe keys)', 'default' => [
+                    ['key' => 'prod_default_workspace_defaults', 'type' => 'structured', 'widget' => 'workspace_defaults', 'label' => 'Extra defaults for new workspaces', 'default' => [
                         'invoice_numbering_prefix' => 'INV',
                         'offer_validity_days' => 30,
                     ]],

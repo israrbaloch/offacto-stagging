@@ -16,7 +16,14 @@ export default function PlatformSettingsShow({ section, fields = [], values = {}
                 />
                 <SettingsSectionNav nav={nav} activeId={section.id} />
                 <AdminBody className="max-w-4xl">
-                    <SettingsForm sectionId={section.id} fields={fields} values={values} locales={locales} />
+                    <SettingsForm
+                        sectionId={section.id}
+                        sectionTitle={section.title}
+                        sectionDescription={section.description}
+                        fields={fields}
+                        values={values}
+                        locales={locales}
+                    />
                 </AdminBody>
             </AdminPage>
         </AdminLayout>

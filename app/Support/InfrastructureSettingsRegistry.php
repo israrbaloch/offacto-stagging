@@ -92,23 +92,21 @@ final class InfrastructureSettingsRegistry
             ],
             'disaster-recovery-targets' => [
                 'group' => 'Resilience',
-                'title' => 'DR targets (RTO/RPO)',
-                'description' => 'Objectives for recovery planning and test cadence.',
+                'title' => 'Recovery time targets',
+                'description' => 'How quickly you aim to restore service and how often you test backups.',
                 'fields' => [
-                    ['key' => 'infra_rpo_hours', 'type' => 'integer', 'label' => 'Recovery point objective (hours)', 'default' => 24, 'min' => 1],
-                    ['key' => 'infra_rto_hours', 'type' => 'integer', 'label' => 'Recovery time objective (hours)', 'default' => 4, 'min' => 1],
-                    ['key' => 'infra_restore_test_days', 'type' => 'integer', 'label' => 'Restore test every (days)', 'default' => 90, 'min' => 30],
+                    ['key' => 'infra_rpo_hours', 'type' => 'integer', 'label' => 'Maximum acceptable data loss (hours)', 'default' => 24, 'min' => 1, 'hint' => 'How far back you may need to restore if the worst happens.'],
+                    ['key' => 'infra_rto_hours', 'type' => 'integer', 'label' => 'Target time to restore service (hours)', 'default' => 4, 'min' => 1],
+                    ['key' => 'infra_restore_test_days', 'type' => 'integer', 'label' => 'Run a restore test at least every (days)', 'default' => 90, 'min' => 30],
                 ],
             ],
             'maintenance-controls' => [
                 'group' => 'Operations',
                 'title' => 'Maintenance controls',
-                'description' => 'Links platform maintenance mode (also under Settings → Maintenance).',
+                'description' => 'Operational guidance during planned work. Customer maintenance pages are managed under Platform settings.',
                 'fields' => [
-                    ['key' => 'maintenance_enabled', 'type' => 'boolean', 'label' => 'Maintenance mode active', 'default' => false],
-                    ['key' => 'maintenance_message', 'type' => 'textarea', 'label' => 'Public message', 'default' => 'We are performing scheduled maintenance. Please try again shortly.'],
-                    ['key' => 'maintenance_allow_admins', 'type' => 'boolean', 'label' => 'Allow platform admins during maintenance', 'default' => true],
-                    ['key' => 'infra_pause_queues_on_maintenance', 'type' => 'boolean', 'label' => 'Recommend pausing queue workers during maintenance', 'default' => true],
+                    ['key' => 'infra_maintenance_notice', 'type' => 'structured', 'widget' => 'maintenance_notice', 'label' => 'Maintenance mode', 'default' => []],
+                    ['key' => 'infra_pause_queues_on_maintenance', 'type' => 'boolean', 'label' => 'Recommend pausing background jobs during maintenance', 'default' => true],
                 ],
             ],
         ];

@@ -70,6 +70,18 @@ final class SupportSettingsRegistry
     public static function definitions(): array
     {
         return [
+            'staff-notifications' => [
+                'group' => 'Notifications',
+                'title' => 'Staff email notifications',
+                'description' => 'Who receives email when tickets are created or updated. Uses outgoing email settings under Communications.',
+                'fields' => [
+                    ['key' => 'sup_notification_recipients', 'type' => 'structured', 'widget' => 'email_recipient_list', 'label' => 'Notification recipients', 'default' => []],
+                    ['key' => 'sup_notify_new_ticket', 'type' => 'boolean', 'label' => 'Email when a new ticket is opened', 'default' => true],
+                    ['key' => 'sup_notify_customer_reply', 'type' => 'boolean', 'label' => 'Email when a customer reply arrives (including inbound email)', 'default' => true],
+                    ['key' => 'sup_notify_staff_reply', 'type' => 'boolean', 'label' => 'Email when another agent posts a public reply', 'default' => false],
+                    ['key' => 'sup_notify_assignment', 'type' => 'boolean', 'label' => 'Email when a ticket is assigned or reassigned', 'default' => true],
+                ],
+            ],
             'sla-policies' => [
                 'group' => 'SLA',
                 'title' => 'SLA & escalation policies',

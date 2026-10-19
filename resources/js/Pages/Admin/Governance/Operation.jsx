@@ -1,4 +1,5 @@
-import { router, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import SettingsSectionNav from '../../../Components/Admin/SettingsSectionNav';
 import {
     AdminBadge,
@@ -16,6 +17,7 @@ import {
     selectClass,
 } from '../../../Components/Admin/ui';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { RUNBOOK_CATEGORIES, slugifyLabel } from '../../../lib/adminSettingOptions';
 import { formatDate } from '../../../lib/utils';
 
 const textareaClass = `${inputClass} min-h-[80px]`;
@@ -46,9 +48,9 @@ export default function GovernanceOperation({
     const exportForm = useForm({ export_type: 'activity_log' });
     const snapshotForm = useForm({ label: '', registry: registrySections[0]?.registry || '', section_id: registrySections[0]?.section || '' });
     const scheduleForm = useForm({ title: '', registry: registrySections[0]?.registry || '', section_id: registrySections[0]?.section || '', payload: {}, effective_at: '', reason: '', approved: false });
-    const simulateForm = useForm({ registry: registrySections[0]?.registry || '', section_id: registrySections[0]?.section || '', payload: {} });
     const runbookForm = useForm({ slug: '', title: '', category: 'outage', body: '' });
     const keyForm = useForm({ name: '', scopes: ['reports:read'], confirm: false });
+    const [simulationHref, setSimulationHref] = useState(registrySections[0]?.href || null);
 
     return (
         <AdminLayout title={section?.title}>
@@ -235,7 +237,7 @@ export default function GovernanceOperation({
                                 {snapshots.map((row) => (
                                     <tr key={row.id}>
                                         <td className="px-4 py-3 text-sm">{row.label}</td>
-                                        <td className="px-4 py-3 text-sm">{row.section_id}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-600">{row.section_label || row.section_id}</td>
                                         <td className="px-4 py-3 text-sm">{row.created_by?.name}</td>
                                         <td className="px-4 py-3 text-sm">{formatDate(row.created_at)}</td>
                                         <td className="px-4 py-3">
@@ -277,7 +279,9 @@ export default function GovernanceOperation({
                     {operation === 'scheduled-changes' && (
                         <>
                             <AdminCard title="Schedule change">
-                                <p className="mb-3 text-xs text-slate-500">Payload is stored for manual or worker apply at effective time. Use simulation first.</p>
+                                <p className="mb-3 text-sm text-slate-600">
+                                    Plan a future settings change. Make the change in the relevant admin area first, then record when it should take effect.
+                                </p>
                                 <form
                                     className="space-y-3"
                                     onSubmit={(e) => {
@@ -319,57 +323,43 @@ export default function GovernanceOperation({
                     {operation === 'action-simulation' && (
                         <>
                             {simulation && (
-                                <AdminCard title="Last simulation">
+                                <AdminCard title="Last review">
                                     <p className="text-sm font-medium">{simulation.impact}</p>
                                     <ul className="mt-2 list-disc pl-5 text-sm text-slate-600">
                                         {(simulation.changes || []).map((c, i) => (
                                             <li key={i}>
-                                                {c.key}: {String(c.from)} → {String(c.to)}
+                                                {c.label || c.key}: {String(c.from)} → {String(c.to)}
                                             </li>
                                         ))}
                                     </ul>
                                 </AdminCard>
                             )}
-                            <AdminCard title="Simulate settings change">
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        simulateForm.post('/admin/governance/simulate');
-                                    }}
-                                >
-                                    <AdminField label="Section">
-                                        <select
-                                            className={selectClass}
-                                            onChange={(e) => {
-                                                const [registry, section_id] = e.target.value.split('::');
-                                                simulateForm.setData({ registry, section_id, payload: {} });
-                                            }}
-                                        >
-                                            {registrySections.map((opt) => (
-                                                <option key={`${opt.registry}-${opt.section}`} value={`${opt.registry}::${opt.section}`}>
-                                                    {opt.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </AdminField>
-                                    <p className="mt-2 text-xs text-slate-500">Use Settings UI to draft payload keys; simulation compares submitted JSON payload to live values.</p>
-                                    <AdminField label="Payload (JSON)">
-                                        <textarea
-                                            className={textareaClass}
-                                            defaultValue="{}"
-                                            onBlur={(e) => {
-                                                try {
-                                                    simulateForm.setData('payload', JSON.parse(e.target.value || '{}'));
-                                                } catch {
-                                                    /* ignore parse errors until submit */
-                                                }
-                                            }}
-                                        />
-                                    </AdminField>
-                                    <AdminButton type="submit" className="mt-3">
-                                        Run simulation
-                                    </AdminButton>
-                                </form>
+                            <AdminCard title="Review a settings area before you change it">
+                                <p className="text-sm text-slate-600">
+                                    Open the area below, adjust options using the normal forms, and save a snapshot under{' '}
+                                    <strong>Config versioning</strong> before applying large changes in production.
+                                </p>
+                                <AdminField label="Settings area" className="mt-4">
+                                    <select
+                                        className={selectClass}
+                                        defaultValue={registrySections[0] ? `${registrySections[0].registry}::${registrySections[0].section}` : ''}
+                                        onChange={(e) => {
+                                            const opt = registrySections.find((o) => `${o.registry}::${o.section}` === e.target.value);
+                                            setSimulationHref(opt?.href || null);
+                                        }}
+                                    >
+                                        {registrySections.map((opt) => (
+                                            <option key={`${opt.registry}-${opt.section}`} value={`${opt.registry}::${opt.section}`}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </AdminField>
+                                {simulationHref && (
+                                    <Link href={simulationHref} className="mt-3 inline-block text-sm font-medium text-slate-900 underline">
+                                        Open selected area →
+                                    </Link>
+                                )}
                             </AdminCard>
                         </>
                     )}
@@ -381,25 +371,31 @@ export default function GovernanceOperation({
                                     className="space-y-3"
                                     onSubmit={(e) => {
                                         e.preventDefault();
-                                        runbookForm.post('/admin/governance/runbooks');
+                                        const slug = runbookForm.data.slug || slugifyLabel(runbookForm.data.title);
+                                        runbookForm.transform((data) => ({ ...data, slug })).post('/admin/governance/runbooks');
                                     }}
                                 >
-                                    <AdminField label="Slug">
-                                        <input className={inputClass} value={runbookForm.data.slug} onChange={(e) => runbookForm.setData('slug', e.target.value)} />
-                                    </AdminField>
                                     <AdminField label="Title">
                                         <input className={inputClass} value={runbookForm.data.title} onChange={(e) => runbookForm.setData('title', e.target.value)} />
                                     </AdminField>
-                                    <AdminField label="Body">
+                                    <AdminField label="Category">
+                                        <select className={selectClass} value={runbookForm.data.category} onChange={(e) => runbookForm.setData('category', e.target.value)}>
+                                            {RUNBOOK_CATEGORIES.map((opt) => (
+                                                <option key={opt.value} value={opt.value}>
+                                                    {opt.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </AdminField>
+                                    <AdminField label="Steps and contacts">
                                         <textarea className={textareaClass} value={runbookForm.data.body} onChange={(e) => runbookForm.setData('body', e.target.value)} />
                                     </AdminField>
                                     <AdminButton type="submit">Save</AdminButton>
                                 </form>
                             </AdminCard>
-                            <AdminTable columns={['Slug', 'Title', 'Category', 'Version']}>
+                            <AdminTable columns={['Title', 'Category', 'Version']}>
                                 {runbooks.map((row) => (
                                     <tr key={row.id}>
-                                        <td className="px-4 py-3 font-mono text-xs">{row.slug}</td>
                                         <td className="px-4 py-3 text-sm">{row.title}</td>
                                         <td className="px-4 py-3 text-sm">{row.category}</td>
                                         <td className="px-4 py-3 text-sm">{row.version}</td>
