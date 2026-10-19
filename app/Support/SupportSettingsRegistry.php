@@ -70,16 +70,25 @@ final class SupportSettingsRegistry
     public static function definitions(): array
     {
         return [
+            'customer-portal' => [
+                'group' => 'Portal',
+                'title' => 'Customer support portal',
+                'description' => 'Let company users open and reply to tickets from the workspace Support area.',
+                'fields' => [
+                    ['key' => 'sup_customer_portal_enabled', 'type' => 'boolean', 'label' => 'Allow users to create and reply to tickets', 'default' => true],
+                ],
+            ],
             'staff-notifications' => [
                 'group' => 'Notifications',
-                'title' => 'Staff email notifications',
-                'description' => 'Who receives email when tickets are created or updated. Uses outgoing email settings under Communications.',
+                'title' => 'Staff notifications',
+                'description' => 'Platform admins get in-app alerts and email. Additional addresses below receive email only.',
                 'fields' => [
-                    ['key' => 'sup_notification_recipients', 'type' => 'structured', 'widget' => 'email_recipient_list', 'label' => 'Notification recipients', 'default' => []],
-                    ['key' => 'sup_notify_new_ticket', 'type' => 'boolean', 'label' => 'Email when a new ticket is opened', 'default' => true],
-                    ['key' => 'sup_notify_customer_reply', 'type' => 'boolean', 'label' => 'Email when a customer reply arrives (including inbound email)', 'default' => true],
-                    ['key' => 'sup_notify_staff_reply', 'type' => 'boolean', 'label' => 'Email when another agent posts a public reply', 'default' => false],
-                    ['key' => 'sup_notify_assignment', 'type' => 'boolean', 'label' => 'Email when a ticket is assigned or reassigned', 'default' => true],
+                    ['key' => 'sup_notify_admin_in_app', 'type' => 'boolean', 'label' => 'Show in-app alerts to platform admins', 'default' => true],
+                    ['key' => 'sup_notification_recipients', 'type' => 'structured', 'widget' => 'email_recipient_list', 'label' => 'Extra email recipients (email only)', 'default' => []],
+                    ['key' => 'sup_notify_new_ticket', 'type' => 'boolean', 'label' => 'Notify when a new ticket is opened', 'default' => true],
+                    ['key' => 'sup_notify_customer_reply', 'type' => 'boolean', 'label' => 'Notify when a customer reply arrives', 'default' => true],
+                    ['key' => 'sup_notify_staff_reply', 'type' => 'boolean', 'label' => 'Notify when an agent posts a public reply', 'default' => false],
+                    ['key' => 'sup_notify_assignment', 'type' => 'boolean', 'label' => 'Notify when a ticket is assigned', 'default' => true],
                 ],
             ],
             'sla-policies' => [

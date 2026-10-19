@@ -11,6 +11,7 @@ use App\Models\SupportEscalation;
 use App\Models\SupportKnowledgeArticle;
 use App\Models\SupportMacro;
 use App\Models\SupportRecoveryRequest;
+use App\Models\AdminNotification;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
 use App\Models\User;
@@ -59,6 +60,12 @@ class AdminSupportController extends Controller
     public function ticketShow(SupportTicket $ticket): InertiaResponse
     {
         $ticket->load(['company:id,company_name,email', 'assignedTo:id,name', 'messages.user:id,name']);
+
+        AdminNotification::query()
+            ->where('user_id', auth()->id())
+            ->whereNull('read_at')
+            ->where('href', '/admin/support/tickets/'.$ticket->id)
+            ->update(['read_at' => now()]);
 
         return Inertia::render('Admin/Support/Tickets/Show', [
             'ticket' => [

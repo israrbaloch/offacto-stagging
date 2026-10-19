@@ -3,13 +3,14 @@
 namespace App\Support;
 
 use App\Models\SiteSetting;
+use App\Models\User;
 
 final class SupportNotificationSettings
 {
     /**
      * @return list<string>
      */
-    public static function staffRecipientEmails(): array
+    public static function configuredRecipientEmails(): array
     {
         $raw = SiteSetting::get('sup_notification_recipients', null);
         $emails = [];
@@ -20,20 +21,65 @@ final class SupportNotificationSettings
             $emails = $raw;
         }
 
-        $emails = array_values(array_unique(array_filter(array_map(
-            fn ($e) => is_string($e) ? strtolower(trim($e)) : '',
-            $emails
-        ), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))));
+        return self::normalizeEmails($emails);
+    }
 
-        if ($emails !== []) {
-            return $emails;
+    /**
+     * Platform admins always receive email for support events.
+     *
+     * @return list<string>
+     */
+    public static function platformAdminEmails(): array
+    {
+        return self::normalizeEmails(
+            User::query()
+                ->where('is_active', true)
+                ->whereHas('roles', fn ($q) => $q->where('name', 'admin'))
+                ->pluck('email')
+                ->all()
+        );
+    }
+
+    /**
+     * Extra addresses from the notification list that are not platform admin accounts (email only, no in-app).
+     *
+     * @return list<string>
+     */
+    public static function emailOnlyRecipients(): array
+    {
+        $configured = self::configuredRecipientEmails();
+        $adminEmails = array_flip(self::platformAdminEmails());
+
+        $extra = array_values(array_filter($configured, fn ($email) => ! isset($adminEmails[$email])));
+
+        if ($extra !== []) {
+            return $extra;
         }
 
         $fallback = SiteSetting::get('admin_email');
+        $normalized = self::normalizeEmails([$fallback]);
+        if ($normalized === []) {
+            return [];
+        }
 
-        return filled($fallback) && filter_var($fallback, FILTER_VALIDATE_EMAIL)
-            ? [strtolower(trim($fallback))]
-            : [];
+        $email = $normalized[0];
+
+        return isset($adminEmails[$email]) ? [] : [$email];
+    }
+
+    /**
+     * All email recipients for a support event (admins + email-only list).
+     *
+     * @return list<string>
+     */
+    public static function allEmailRecipients(): array
+    {
+        return array_values(array_unique([...self::platformAdminEmails(), ...self::emailOnlyRecipients()]));
+    }
+
+    public static function notifyAdminInApp(): bool
+    {
+        return SiteSetting::getBoolean('sup_notify_admin_in_app', true);
     }
 
     public static function notifyOnNewTicket(): bool
@@ -54,5 +100,17 @@ final class SupportNotificationSettings
     public static function notifyOnAssignment(): bool
     {
         return SiteSetting::getBoolean('sup_notify_assignment', true);
+    }
+
+    /**
+     * @param  list<mixed>  $emails
+     * @return list<string>
+     */
+    private static function normalizeEmails(array $emails): array
+    {
+        return array_values(array_unique(array_filter(array_map(
+            fn ($e) => is_string($e) ? strtolower(trim($e)) : '',
+            $emails
+        ), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))));
     }
 }

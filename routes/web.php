@@ -33,6 +33,7 @@ use App\Http\Controllers\InboundEmailWebhookController;
 use App\Http\Controllers\PublicBriefingController;
 use App\Http\Controllers\PublicOfferController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\NumberingSeriesController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UpgradeController;
@@ -91,7 +92,10 @@ Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function 
     Route::patch('/profile/legal-documents/{document}', [ProfileController::class, 'updateLegalDocument'])->name('profile.legal.update');
     Route::delete('/profile/legal-documents/{document}', [ProfileController::class, 'destroyLegalDocument'])->name('profile.legal.destroy');
 
-    Route::get('/support', fn () => Inertia::render('Support'))->name('support');
+    Route::get('/support', [SupportTicketController::class, 'index'])->name('support');
+    Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
+    Route::post('/support/tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
+    Route::post('/support/tickets/{ticket}/messages', [SupportTicketController::class, 'storeMessage'])->name('support.tickets.messages.store');
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
     Route::post('/upgrade', [UpgradeController::class, 'store'])->name('upgrade.store');
     Route::get('/upgrade/callback', [UpgradeController::class, 'callback'])->name('upgrade.callback');

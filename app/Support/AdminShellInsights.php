@@ -6,7 +6,9 @@ use App\Models\ActivityLog;
 use App\Models\Company;
 use App\Models\SiteSetting;
 use App\Models\SupportAccessRequest;
+use App\Models\SupportTicket;
 use App\Models\User;
+use App\Services\AdminNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -15,9 +17,27 @@ final class AdminShellInsights
     /**
      * @return list<array{id: string, tone: string, title: string, body: string, href: string|null, at: string|null}>
      */
-    public static function notifications(): array
+    public static function notifications(?User $forUser = null): array
     {
         $items = [];
+
+        if ($forUser) {
+            $items = array_merge($items, app(AdminNotificationService::class)->unreadFeedForUser($forUser->id));
+        }
+
+        if (Schema::hasTable('support_tickets')) {
+            $open = SupportTicket::query()->whereIn('status', ['open', 'pending'])->count();
+            if ($open > 0) {
+                $items[] = [
+                    'id' => 'support-open-tickets',
+                    'tone' => 'info',
+                    'title' => 'Open support tickets',
+                    'body' => "{$open} ticket(s) need attention.",
+                    'href' => '/admin/support/tickets',
+                    'at' => now()->toIso8601String(),
+                ];
+            }
+        }
 
         if (Schema::hasTable('companies')) {
             $pending = Company::query()->pending()->count();

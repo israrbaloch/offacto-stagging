@@ -16,7 +16,7 @@ export default function SupportSettingsStructuredField(props) {
         return (
             <EmailRecipientListField
                 title={field.label}
-                description="All listed addresses receive support notifications. If empty, the primary admin contact email from Platform settings is used."
+                description="Email only — no in-app alerts. Platform admins always receive in-app and email separately."
                 value={value}
                 onChange={onChange}
             />

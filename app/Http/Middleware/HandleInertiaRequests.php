@@ -101,7 +101,7 @@ class HandleInertiaRequests extends Middleware
             'adminWorkspace' => $this->adminWorkspace($request, $active),
             'adminShell' => $user && $user->hasRole('admin')
                 ? [
-                    'notifications' => AdminShellInsights::notifications(),
+                    'notifications' => AdminShellInsights::notifications($user),
                     'environmentBanner' => AdminShellInsights::environmentBanner(),
                 ]
                 : null,
