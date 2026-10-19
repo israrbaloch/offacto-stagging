@@ -705,10 +705,14 @@ class InvoiceController extends Controller
 
                 $recipients = array_values(array_unique($request->validated()['emails'] ?? []));
                 Mail::to($recipients)->send($mailable);
+                foreach ($recipients as $recipientEmail) {
+                    \App\Support\CommunicationDeliveryLogger::emailSent('invoice_sent', $recipientEmail, $activeCompany->id);
+                }
 
                 if ($request->validated()['cc_company'] ?? false) {
                     if ($activeCompany->email) {
                         Mail::to($activeCompany->email)->send($mailable);
+                        \App\Support\CommunicationDeliveryLogger::emailSent('invoice_sent', $activeCompany->email, $activeCompany->id, null, 'invoice_cc_company');
                     }
                 }
             }

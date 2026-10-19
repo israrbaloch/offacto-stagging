@@ -49,11 +49,21 @@ class PlatformSettingsService
             };
         }
 
-        if ($sectionId === 'payment-gateway') {
+        if (in_array($sectionId, ['payment-gateway', 'mollie-administration'], true)) {
             $values['payment_mollie_test_key'] = '';
             $values['payment_mollie_live_key'] = '';
             $values['payment_mollie_test_key_set'] = filled(SiteSetting::get('payment_mollie_test_key'));
             $values['payment_mollie_live_key_set'] = filled(SiteSetting::get('payment_mollie_live_key'));
+        }
+
+        if ($sectionId === 'peppol-administration') {
+            $values['int_peppol_token'] = '';
+            $values['int_peppol_token_set'] = filled(SiteSetting::get('int_peppol_token'));
+        }
+
+        if ($sectionId === 'email-provider') {
+            $values['int_smtp_password'] = '';
+            $values['int_smtp_password_set'] = filled(SiteSetting::get('int_smtp_password'));
         }
 
         return $values;

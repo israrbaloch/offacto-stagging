@@ -592,6 +592,9 @@ class OfferController extends Controller
                 Mail::to($recipients)->send(
                     new OfferSent($offer, $body, $legalDocs->all())
                 );
+                foreach ($recipients as $recipientEmail) {
+                    \App\Support\CommunicationDeliveryLogger::emailSent('offer_sent', $recipientEmail, $activeCompany->id);
+                }
             }
 
             $postbodeQueued = in_array('postbode', $channels, true);

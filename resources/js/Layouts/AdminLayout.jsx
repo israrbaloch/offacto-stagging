@@ -25,6 +25,8 @@ const navGroups = [
             { href: '/admin/settings', label: 'Settings', icon: 'settings' },
             { href: '/admin/financial', label: 'Financial docs', icon: 'invoice' },
             { href: '/admin/compliance', label: 'Compliance', icon: 'clipboard' },
+            { href: '/admin/integrations', label: 'Integrations', icon: 'settings' },
+            { href: '/admin/communications', label: 'Email & comms', icon: 'help' },
         ],
     },
     {
@@ -40,9 +42,31 @@ const navGroups = [
         ],
     },
     {
+        label: 'Support',
+        items: [
+            { href: '/admin/support', label: 'Support hub', icon: 'help', exact: true },
+            { href: '/admin/support/tickets', label: 'Tickets', icon: 'clipboard' },
+        ],
+    },
+    {
+        label: 'Security',
+        items: [
+            { href: '/admin/security', label: 'Security hub', icon: 'settings', exact: true },
+            { href: '/admin/security/operations/fraud-queue', label: 'Fraud queue', icon: 'clipboard' },
+        ],
+    },
+    {
+        label: 'Infrastructure',
+        items: [
+            { href: '/admin/infrastructure', label: 'Infrastructure hub', icon: 'grid', exact: true },
+            { href: '/admin/infrastructure/operations/database-health', label: 'Database health', icon: 'settings' },
+            { href: '/admin/infrastructure/operations/failed-jobs', label: 'Failed jobs', icon: 'clipboard' },
+        ],
+    },
+    {
         label: 'Audit',
         items: [
-            { href: '/admin/logs/security', label: 'Security', icon: 'settings' },
+            { href: '/admin/logs/security', label: 'Security log (legacy)', icon: 'settings' },
             { href: '/admin/logs/activity', label: 'Activity', icon: 'help' },
         ],
     },

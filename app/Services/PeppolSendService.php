@@ -3,14 +3,15 @@
 namespace App\Services;
 
 use App\Models\Invoice;
+use App\Support\IntegrationPolicy;
 use Illuminate\Support\Facades\Http;
 
 class PeppolSendService
 {
     public function send(Invoice $invoice): void
     {
-        $endpoint = config('services.peppol.endpoint');
-        $token = config('services.peppol.token');
+        $endpoint = IntegrationPolicy::peppolEndpoint();
+        $token = IntegrationPolicy::peppolToken();
 
         if (! $endpoint || ! $token) {
             throw new \RuntimeException('Peppol test credentials are not configured.');
