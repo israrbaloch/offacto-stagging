@@ -36,6 +36,16 @@ body {
     --company-secondary: #0f172a;
 }
 
+/* Admin sidebar: scroll when needed, no visible scrollbar */
+.admin-sidebar-nav {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar {
+    display: none;
+}
+
 html.dark {
     color-scheme: dark;
 }

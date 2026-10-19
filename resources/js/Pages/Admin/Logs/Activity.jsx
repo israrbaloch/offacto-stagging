@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
+import { AdminAuditDetailDrawer, AdminEmptyState } from '../../../Components/Admin/shared';
 import {
     AdminBadge,
     AdminBody,
@@ -7,6 +8,7 @@ import {
     AdminHeader,
     AdminPage,
     AdminTable,
+    AdminTextButton,
     badgeToneFor,
     inputClass,
 } from '../../../Components/Admin/ui';
@@ -16,6 +18,7 @@ import { formatDate } from '../../../lib/utils';
 
 export default function AdminActivityLog({ logs, filters = {} }) {
     const [q, setQ] = useState(filters.q || '');
+    const [auditEntry, setAuditEntry] = useState(null);
 
     const search = (event) => {
         event.preventDefault();
@@ -35,7 +38,7 @@ export default function AdminActivityLog({ logs, filters = {} }) {
                         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Action, user, or IP" className={inputClass} />
                         <AdminButton type="submit">Search</AdminButton>
                     </form>
-                    <AdminTable columns={['When', 'Actor', 'Action', 'Outcome', 'IP']}>
+                    <AdminTable columns={['When', 'Actor', 'Action', 'Outcome', 'IP', '']}>
                         {(logs?.data || []).map((row) => (
                             <tr key={row.id} className="hover:bg-slate-50/80">
                                 <td className="px-4 py-3 tabular-nums text-slate-600">{formatDate(row.created_at)}</td>
@@ -54,15 +57,23 @@ export default function AdminActivityLog({ logs, filters = {} }) {
                                     <AdminBadge tone={badgeToneFor(row.outcome)}>{row.outcome}</AdminBadge>
                                 </td>
                                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.ip_address || '—'}</td>
+                                <td className="px-4 py-3">
+                                    <AdminTextButton type="button" onClick={() => setAuditEntry({ ...row, created_at: formatDate(row.created_at) })}>
+                                        Detail
+                                    </AdminTextButton>
+                                </td>
                             </tr>
                         ))}
                     </AdminTable>
                     {(logs?.data || []).length === 0 && (
-                        <p className="mt-4 text-center text-sm text-slate-400">No activity matches your search.</p>
+                        <div className="mt-4">
+                            <AdminEmptyState message="No activity matches your search." />
+                        </div>
                     )}
                     <Pagination links={logs?.links || []} />
                 </AdminBody>
             </AdminPage>
+            <AdminAuditDetailDrawer open={!!auditEntry} onClose={() => setAuditEntry(null)} entry={auditEntry} />
         </AdminLayout>
     );
 }

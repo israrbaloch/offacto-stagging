@@ -40,5 +40,23 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, \Illuminate\Http\Request $request) {
+            if ($e->getStatusCode() !== 403) {
+                return null;
+            }
+            $user = $request->user();
+            if (! $user?->hasRole('admin')) {
+                return null;
+            }
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage() ?: 'Access denied.'], 403);
+            }
+            if ($request->header('X-Inertia')) {
+                return \Inertia\Inertia::render('Admin/AccessDenied', [
+                    'message' => $e->getMessage() ?: 'You do not have permission to access this resource or perform this action.',
+                ])->toResponse($request)->setStatusCode(403);
+            }
+
+            return null;
+        });
     })->create();

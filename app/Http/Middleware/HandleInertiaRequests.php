@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Http\Middleware\SetLocale;
+use App\Support\AdminShellInsights;
 use App\Support\PublicStorage;
 use App\Support\SubscriptionReminder;
 use Illuminate\Http\Request;
@@ -98,6 +99,12 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
             'adminWorkspace' => $this->adminWorkspace($request, $active),
+            'adminShell' => $user && $user->hasRole('admin')
+                ? [
+                    'notifications' => AdminShellInsights::notifications(),
+                    'environmentBanner' => AdminShellInsights::environmentBanner(),
+                ]
+                : null,
         ];
     }
 

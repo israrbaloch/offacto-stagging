@@ -1,9 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
+import { useEffect, useRef } from 'react';
 import { t } from '../lib/i18n';
 import CompanySwitcher from './CompanySwitcher';
 import FloatingFavicons from './FloatingFavicons';
 import Icon from './Icon';
 import Logo from './Logo';
+import SidebarNavLink, { resolveSidebarActiveHref } from './SidebarNavLink';
 
 const workspaceNav = [
     { href: '/dashboard', label: 'nav.dashboard', icon: 'grid', exact: true },
@@ -14,49 +16,46 @@ const workspaceNav = [
     { href: '/invoices', label: 'nav.invoices', icon: 'invoice' },
 ];
 
+const companyNav = [{ href: '/companies', label: 'nav.companies', icon: 'building' }];
+
 const footerNav = [{ href: '/support', label: 'nav.support', icon: 'help' }];
 
-function isActive(url, item) {
-    if (item.exact) {
-        return url === item.href;
-    }
-    const matches = [item.href, ...(item.aliases || [])];
-    return matches.some((href) => url === href || url.startsWith(`${href}/`));
-}
-
-function NavLink({ item, url }) {
-    const active = isActive(url, item);
-
-    return (
-        <Link
-            href={item.href}
-            className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                active
-                    ? 'bg-indigo-100 font-medium text-indigo-700'
-                    : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
-            }`}
-        >
-            {active && (
-                <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-[var(--company-primary)]" />
-            )}
-            <Icon name={item.icon} />
-            <span className="flex-1">{t(item.label)}</span>
-        </Link>
-    );
-}
+const allNavItems = [...workspaceNav, ...companyNav, ...footerNav];
 
 export default function Sidebar() {
     const { url, props } = usePage();
     const appearance = props.appearance;
     const activeCompany = props.activeCompany;
-    void props.locale;
+    const sidebarNavRef = useRef(null);
+    const activeHref = resolveSidebarActiveHref(url, allNavItems);
 
     const viewingCompany = Boolean(activeCompany);
 
+    useEffect(() => {
+        const container = sidebarNavRef.current;
+        const link = container?.querySelector('[data-nav-active="true"]');
+        if (!container || !link) {
+            return;
+        }
+
+        const frame = requestAnimationFrame(() => {
+            const linkRect = link.getBoundingClientRect();
+            const navRect = container.getBoundingClientRect();
+            const padding = 8;
+            const fullyVisible = linkRect.top >= navRect.top + padding && linkRect.bottom <= navRect.bottom - padding;
+
+            if (!fullyVisible) {
+                link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        });
+
+        return () => cancelAnimationFrame(frame);
+    }, [activeHref, url]);
+
     return (
-        <aside className="auth-aside-bg relative hidden h-full w-[250px] shrink-0 flex-col overflow-hidden rounded-l-3xl lg:flex">
+        <aside className="auth-aside-bg relative hidden h-full w-[240px] shrink-0 flex-col overflow-hidden border-r border-white/40 lg:flex">
             <FloatingFavicons count={6} minSize={24} maxSize={80} />
-            <div className="relative z-10 px-5 pt-6">
+            <div className="relative z-10 px-4 pt-5">
                 <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1">
                     {activeCompany?.invoice_logo_url ? (
                         <img
@@ -65,10 +64,10 @@ export default function Sidebar() {
                             className="h-10 max-w-[170px] object-contain"
                         />
                     ) : (
-                        <Logo variant={appearance === 'dark' ? 'white' : 'dark'} className="h-8 w-auto" />
+                        <Logo variant={appearance === 'dark' ? 'white' : 'dark'} className="h-7 w-auto" />
                     )}
                 </Link>
-                <div className="mt-5">
+                <div className="mt-4">
                     <CompanySwitcher />
                 </div>
                 {viewingCompany && (
@@ -82,20 +81,28 @@ export default function Sidebar() {
                 )}
             </div>
 
-            <nav className="relative z-10 mt-6 flex-1 space-y-1 overflow-y-auto px-3 pb-6">
-                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                    {viewingCompany ? t('nav.company_workspace') : t('nav.workspace_select_company')}
-                </p>
-                {workspaceNav.map((item) => (
-                    <NavLink key={item.href} item={item} url={url} />
-                ))}
-
-                <NavLink item={{ href: '/companies', label: 'nav.companies', icon: 'building' }} url={url} />
-
-                <div className="my-3 border-t border-indigo-100" />
-                {footerNav.map((item) => (
-                    <NavLink key={item.href} item={item} url={url} />
-                ))}
+            <nav ref={sidebarNavRef} className="admin-sidebar-nav relative z-10 mt-2 min-h-0 flex-1 space-y-5 overflow-y-auto px-3 pb-6">
+                <div>
+                    <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400/90">
+                        {viewingCompany ? t('nav.company_workspace') : t('nav.workspace_select_company')}
+                    </p>
+                    <div className="space-y-0.5">
+                        {workspaceNav.map((item) => (
+                            <SidebarNavLink key={item.href} item={item} activeHref={activeHref} label={t(item.label)} />
+                        ))}
+                        {companyNav.map((item) => (
+                            <SidebarNavLink key={item.href} item={item} activeHref={activeHref} label={t(item.label)} />
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400/90">{t('nav.support')}</p>
+                    <div className="space-y-0.5">
+                        {footerNav.map((item) => (
+                            <SidebarNavLink key={item.href} item={item} activeHref={activeHref} label={t(item.label)} />
+                        ))}
+                    </div>
+                </div>
             </nav>
         </aside>
     );

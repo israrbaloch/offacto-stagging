@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\SiteSetting;
+use App\Support\GovernanceConfigLogger;
 use App\Support\PlatformSettingsRegistry;
 use App\Support\PublicStorage;
 use Illuminate\Http\Request;
@@ -119,15 +120,25 @@ class PlatformSettingsService
 
             $type = $this->storageType($field['type']);
             $value = $data[$key];
+            $oldRaw = SiteSetting::get($key);
+            $sensitive = $fieldType === 'password';
 
             if ($type === 'json' && is_array($value)) {
-                SiteSetting::set($key, json_encode($value), 'json');
+                $encoded = json_encode($value);
+                GovernanceConfigLogger::logChange($key, $oldRaw, $encoded, $sectionId, auth()->id(), null, $sensitive);
+                SiteSetting::set($key, $encoded, 'json');
             } elseif ($type === 'boolean') {
-                SiteSetting::set($key, $value ? '1' : '0', 'boolean');
+                $stored = $value ? '1' : '0';
+                GovernanceConfigLogger::logChange($key, $oldRaw, $stored, $sectionId, auth()->id(), null, $sensitive);
+                SiteSetting::set($key, $stored, 'boolean');
             } elseif ($type === 'integer') {
-                SiteSetting::set($key, (string) (int) $value, 'integer');
+                $stored = (string) (int) $value;
+                GovernanceConfigLogger::logChange($key, $oldRaw, $stored, $sectionId, auth()->id(), null, $sensitive);
+                SiteSetting::set($key, $stored, 'integer');
             } else {
-                SiteSetting::set($key, (string) $value);
+                $stored = (string) $value;
+                GovernanceConfigLogger::logChange($key, $oldRaw, $stored, $sectionId, auth()->id(), null, $sensitive);
+                SiteSetting::set($key, $stored);
             }
         }
 

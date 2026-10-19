@@ -1,8 +1,5 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
-import Icon from '../../Components/Icon';
+import { Link } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
-import { t } from '../../lib/i18n';
 import { formatDate, money } from '../../lib/utils';
 
 const emptySummary = {
@@ -14,26 +11,6 @@ const emptySummary = {
     pendingApprovals: 0,
     alerts: 0,
 };
-
-function initials(name = '') {
-    return (
-        name
-            .split(' ')
-            .filter(Boolean)
-            .slice(0, 2)
-            .map((part) => part[0].toUpperCase())
-            .join('') || 'A'
-    );
-}
-
-function SearchIcon() {
-    return (
-        <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M20 20l-3-3" strokeLinecap="round" />
-        </svg>
-    );
-}
 
 function Metric({ label, value, hint, hintClass = 'text-slate-500', accent = false }) {
     return (
@@ -185,12 +162,6 @@ export default function Dashboard({
     unconverted = [],
     recentUsers = [],
 }) {
-    const { auth } = usePage().props;
-    const user = auth?.user;
-    const [query, setQuery] = useState('');
-    const [menuOpen, setMenuOpen] = useState(false);
-    const needle = query.trim().toLowerCase();
-
     const companies = summary.companies || {};
     const users = summary.users || {};
     const subscriptions = summary.subscriptions || {};
@@ -198,103 +169,11 @@ export default function Dashboard({
     const failed = summary.failedPayments || {};
     const pending = summary.pendingApprovals ?? 0;
 
-    const visiblePayments = useMemo(() => {
-        if (!needle) return failedPayments;
-        return failedPayments.filter((payment) =>
-            [payment.company, payment.plan, payment.status].join(' ').toLowerCase().includes(needle),
-        );
-    }, [failedPayments, needle]);
-
-    const visibleUsers = useMemo(() => {
-        if (!needle) return recentUsers;
-        return recentUsers.filter((person) => [person.name, person.email].join(' ').toLowerCase().includes(needle));
-    }, [recentUsers, needle]);
-
-    const visibleUnconverted = useMemo(() => {
-        if (!needle) return unconverted;
-        return unconverted.filter((company) => String(company.name || '').toLowerCase().includes(needle));
-    }, [unconverted, needle]);
-
-    const visiblePending = useMemo(() => {
-        if (!needle) return pendingCompanies;
-        return pendingCompanies.filter((company) =>
-            [company.name, company.owner].join(' ').toLowerCase().includes(needle),
-        );
-    }, [pendingCompanies, needle]);
-
     const activePlan = plans[0]?.label;
 
     return (
         <AdminLayout title="Dashboard">
             <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50/90">
-                <header className="flex shrink-0 items-center gap-3 border-b border-slate-200/70 bg-white/80 px-4 py-4 backdrop-blur-sm lg:px-8">
-                    <form
-                        className="relative min-w-0 flex-1 max-w-xl"
-                        onSubmit={(event) => event.preventDefault()}
-                    >
-                        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                            <SearchIcon />
-                        </span>
-                        <input
-                            type="search"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                            placeholder="Search companies, accounts, or plan payments"
-                            className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-                        />
-                    </form>
-                    <div className="ml-auto flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => document.getElementById('admin-alerts')?.scrollIntoView({ behavior: 'smooth' })}
-                            className="relative rounded-full p-2 text-slate-500 hover:bg-slate-50"
-                            aria-label="Operational alerts"
-                        >
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5" />
-                                <path strokeLinecap="round" d="M9 17a3 3 0 0 0 6 0" />
-                            </svg>
-                            {(summary.alerts ?? 0) > 0 && (
-                                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500" />
-                            )}
-                        </button>
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onClick={() => setMenuOpen((open) => !open)}
-                                className="flex items-center gap-3 rounded-full py-1 pl-2 pr-1 hover:bg-slate-50"
-                            >
-                                <span className="hidden text-right sm:block">
-                                    <span className="block text-sm font-semibold text-slate-900">{user?.name}</span>
-                                    <span className="block text-xs text-slate-400">Platform admin</span>
-                                </span>
-                                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
-                                    {initials(user?.name)}
-                                </span>
-                            </button>
-                            {menuOpen && (
-                                <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                                    <div className="border-b border-slate-100 px-4 py-3">
-                                        <div className="truncate text-sm font-semibold text-slate-900">{user?.name}</div>
-                                        <div className="truncate text-xs text-slate-400">{user?.email}</div>
-                                    </div>
-                                    <div className="p-1.5">
-                                        <Link
-                                            href="/logout"
-                                            method="post"
-                                            as="button"
-                                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50"
-                                        >
-                                            <Icon name="logout" className="h-4 w-4" />
-                                            {t('topbar.logout')}
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </header>
-
                 <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-4 py-5 lg:px-6 lg:py-6">
                     <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                         <div>
@@ -446,8 +325,8 @@ export default function Dashboard({
                                 </span>
                             }
                         >
-                            {visiblePayments.length === 0 ? (
-                                <p className="text-sm text-slate-400">{needle ? 'No payments match that search.' : 'No failed subscription payments.'}</p>
+                            {failedPayments.length === 0 ? (
+                                <p className="text-sm text-slate-400">No failed subscription payments.</p>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full min-w-[520px] text-left text-sm">
@@ -460,7 +339,7 @@ export default function Dashboard({
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {visiblePayments.map((payment) => (
+                                            {failedPayments.map((payment) => (
                                                 <tr key={payment.id} className="border-t border-slate-100">
                                                     <td className="py-3 pr-3">
                                                         <div className="font-medium text-slate-900">{payment.company || 'Unknown company'}</div>
@@ -477,9 +356,9 @@ export default function Dashboard({
                                             ))}
                                         </tbody>
                                     </table>
-                                    {(failed.count ?? 0) > visiblePayments.length && !needle && (
+                                    {(failed.count ?? 0) > failedPayments.length && (
                                         <p className="mt-3 text-xs text-slate-400">
-                                            Showing {visiblePayments.length} of {failed.count}
+                                            Showing {failedPayments.length} of {failed.count}
                                         </p>
                                     )}
                                 </div>
@@ -488,11 +367,11 @@ export default function Dashboard({
 
                         <Card title="Customers to follow up" description="Companies waiting for approval, trials that ended without a plan, and the newest accounts.">
                             <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Waiting for approval</h3>
-                            {visiblePending.length === 0 ? (
-                                <p className="text-sm text-slate-400">{needle ? 'No companies match that search.' : 'No companies are waiting.'}</p>
+                            {pendingCompanies.length === 0 ? (
+                                <p className="text-sm text-slate-400">No companies are waiting.</p>
                             ) : (
                                 <ul className="divide-y divide-slate-100">
-                                    {visiblePending.map((company) => (
+                                    {pendingCompanies.map((company) => (
                                         <li key={company.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                                             <div className="min-w-0">
                                                 <div className="truncate font-medium text-slate-900">{company.name}</div>
@@ -505,11 +384,11 @@ export default function Dashboard({
                             )}
 
                             <h3 className="mb-2 mt-5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Trial ended, no plan</h3>
-                            {visibleUnconverted.length === 0 ? (
-                                <p className="text-sm text-slate-400">{needle ? 'No companies match that search.' : 'Every finished trial has a plan, or none have ended.'}</p>
+                            {unconverted.length === 0 ? (
+                                <p className="text-sm text-slate-400">Every finished trial has a plan, or none have ended.</p>
                             ) : (
                                 <ul className="divide-y divide-slate-100">
-                                    {visibleUnconverted.map((company) => (
+                                    {unconverted.map((company) => (
                                         <li key={company.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                                             <span className="truncate font-medium text-slate-900">{company.name}</span>
                                             <span className="shrink-0 text-xs text-slate-400">Ended {formatDate(company.ended_at)}</span>
@@ -519,11 +398,11 @@ export default function Dashboard({
                             )}
 
                             <h3 className="mb-2 mt-5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Newest accounts</h3>
-                            {visibleUsers.length === 0 ? (
-                                <p className="text-sm text-slate-400">{needle ? 'No accounts match that search.' : 'No customer accounts yet.'}</p>
+                            {recentUsers.length === 0 ? (
+                                <p className="text-sm text-slate-400">No customer accounts yet.</p>
                             ) : (
                                 <ul className="divide-y divide-slate-100">
-                                    {visibleUsers.map((person) => (
+                                    {recentUsers.map((person) => (
                                         <li key={person.id} className="flex items-center gap-3 py-3">
                                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700">
                                                 {initials(person.name)}

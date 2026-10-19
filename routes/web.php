@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\AdminActivityLogController;
 use App\Http\Controllers\Admin\AdminCompanyController;
+use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\AdminGlobalSearchController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSecurityLogController;
 use App\Http\Controllers\Admin\AdminBillingController;
@@ -9,6 +11,8 @@ use App\Http\Controllers\Admin\AdminSubscriptionController;
 use App\Http\Controllers\Admin\AdminComplianceController;
 use App\Http\Controllers\Admin\AdminCommunicationController;
 use App\Http\Controllers\Admin\AdminInfrastructureController;
+use App\Http\Controllers\Admin\AdminGovernanceController;
+use App\Http\Controllers\Admin\AdminProductController;
 use App\Http\Controllers\Admin\AdminSecurityController;
 use App\Http\Controllers\Admin\AdminSupportController;
 use App\Http\Controllers\Admin\AdminIntegrationController;
@@ -168,8 +172,14 @@ Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function 
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.payment');
 });
 
+Route::middleware('guest')->group(function () {
+    Route::get('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login');
+});
+
 Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/search', AdminGlobalSearchController::class)->name('search');
+    Route::get('/mfa', [AdminAuthController::class, 'mfaChallenge'])->name('mfa');
 
     Route::get('/settings', [AdminPlatformSettingsController::class, 'index'])->name('settings.index');
     Route::get('/settings/{section}', [AdminPlatformSettingsController::class, 'show'])->name('settings.show');
@@ -253,6 +263,46 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::get('/infrastructure/{section}', [AdminInfrastructureController::class, 'show'])->name('infrastructure.show');
     Route::patch('/infrastructure/{section}', [AdminInfrastructureController::class, 'update'])->name('infrastructure.update');
     Route::post('/infrastructure/{section}/reset', [AdminInfrastructureController::class, 'reset'])->name('infrastructure.reset');
+
+    Route::get('/governance', [AdminGovernanceController::class, 'index'])->name('governance.index');
+    Route::get('/governance/operations/{section}', [AdminGovernanceController::class, 'operation'])->name('governance.operation');
+    Route::post('/governance/bulk/preview', [AdminGovernanceController::class, 'previewBulk'])->name('governance.bulk.preview');
+    Route::post('/governance/bulk/{bulk}/execute', [AdminGovernanceController::class, 'executeBulk'])->name('governance.bulk.execute');
+    Route::post('/governance/imports', [AdminGovernanceController::class, 'storeImport'])->name('governance.imports.store');
+    Route::post('/governance/exports', [AdminGovernanceController::class, 'storeExport'])->name('governance.exports.store');
+    Route::post('/governance/exports/{export}/downloaded', [AdminGovernanceController::class, 'markExportDownloaded'])->name('governance.exports.downloaded');
+    Route::post('/governance/snapshots', [AdminGovernanceController::class, 'storeSnapshot'])->name('governance.snapshots.store');
+    Route::post('/governance/snapshots/{snapshot}/restore', [AdminGovernanceController::class, 'restoreSnapshot'])->name('governance.snapshots.restore');
+    Route::post('/governance/scheduled-changes', [AdminGovernanceController::class, 'storeScheduledChange'])->name('governance.scheduled.store');
+    Route::post('/governance/simulate', [AdminGovernanceController::class, 'simulateChange'])->name('governance.simulate');
+    Route::post('/governance/runbooks', [AdminGovernanceController::class, 'storeRunbook'])->name('governance.runbooks.store');
+    Route::post('/governance/automation-keys', [AdminGovernanceController::class, 'issueAutomationKey'])->name('governance.automation-keys.store');
+    Route::post('/governance/automation-keys/{key}/revoke', [AdminGovernanceController::class, 'revokeAutomationKey'])->name('governance.automation-keys.revoke');
+    Route::get('/governance/{section}', [AdminGovernanceController::class, 'show'])->name('governance.show');
+    Route::patch('/governance/{section}', [AdminGovernanceController::class, 'update'])->name('governance.update');
+    Route::post('/governance/{section}/reset', [AdminGovernanceController::class, 'reset'])->name('governance.reset');
+
+    Route::get('/product', [AdminProductController::class, 'index'])->name('product.index');
+    Route::get('/product/operations/{section}', [AdminProductController::class, 'operation'])->name('product.operation');
+    Route::post('/product/public-pages', [AdminProductController::class, 'storePublicPage'])->name('product.public-pages.store');
+    Route::patch('/product/public-pages/{page}', [AdminProductController::class, 'updatePublicPage'])->name('product.public-pages.update');
+    Route::post('/product/announcements', [AdminProductController::class, 'storeAnnouncement'])->name('product.announcements.store');
+    Route::patch('/product/announcements/{announcement}/publish', [AdminProductController::class, 'toggleAnnouncement'])->name('product.announcements.publish');
+    Route::post('/product/testimonials', [AdminProductController::class, 'storeTestimonial'])->name('product.testimonials.store');
+    Route::patch('/product/testimonials/{testimonial}', [AdminProductController::class, 'updateTestimonial'])->name('product.testimonials.update');
+    Route::post('/product/help-articles', [AdminProductController::class, 'storeHelpArticle'])->name('product.help-articles.store');
+    Route::post('/product/release-notes', [AdminProductController::class, 'storeReleaseNote'])->name('product.release-notes.store');
+    Route::post('/product/feature-rollouts', [AdminProductController::class, 'storeFeatureRollout'])->name('product.feature-rollouts.store');
+    Route::patch('/product/feature-rollouts/{rollout}', [AdminProductController::class, 'updateFeatureRollout'])->name('product.feature-rollouts.update');
+    Route::post('/product/ab-experiments', [AdminProductController::class, 'storeAbExperiment'])->name('product.ab-experiments.store');
+    Route::patch('/product/ab-experiments/{experiment}', [AdminProductController::class, 'updateAbExperiment'])->name('product.ab-experiments.update');
+    Route::post('/product/feedback', [AdminProductController::class, 'storeFeedback'])->name('product.feedback.store');
+    Route::patch('/product/feedback/{feedback}', [AdminProductController::class, 'updateFeedback'])->name('product.feedback.update');
+    Route::post('/product/roadmap', [AdminProductController::class, 'storeRoadmapItem'])->name('product.roadmap.store');
+    Route::patch('/product/roadmap/{roadmap}', [AdminProductController::class, 'updateRoadmapItem'])->name('product.roadmap.update');
+    Route::get('/product/{section}', [AdminProductController::class, 'show'])->name('product.show');
+    Route::patch('/product/{section}', [AdminProductController::class, 'update'])->name('product.update');
+    Route::post('/product/{section}/reset', [AdminProductController::class, 'reset'])->name('product.reset');
 
     Route::get('/security', [AdminSecurityController::class, 'index'])->name('security.index');
     Route::get('/security/operations/{section}', [AdminSecurityController::class, 'operation'])->name('security.operation');

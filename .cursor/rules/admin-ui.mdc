@@ -33,6 +33,15 @@ All new or updated platform admin pages must use `resources/js/Components/Admin/
 
 - Plan capability/limit editors use `PlanEntitlementBuilder`, which follows the same admin tokens.
 
+## Shared shell (SH-001 … SH-020)
+
+- Reusable admin patterns live in `resources/js/Components/Admin/shared/` (import from the barrel `shared/index.js`).
+- `AdminLayout` includes `AdminTopBar` (global search SH-004, notifications SH-005, mobile nav SH-015). Do not add a second header bar on individual pages.
+- Prefer `AdminConfirmDialog`, `AdminApprovalDialog`, `AdminExportDialog`, and `AdminImportMappingWizard` over ad-hoc modals.
+- Use `AdminStateView` (empty/loading/error), `AdminFormValidation`, `AdminPermissionGate`, `AdminJobStatusPanel`, and `AdminActivityTimeline` / `AdminAuditDetailDrawer` on operational pages.
+- Toasts: `FlashToaster` + `useUi().toast` (SH-020). Simple confirms: `useUi().confirm` or `AdminConfirmDialog` for consequence lists (SH-008).
+- Admin sign-in: `/admin/login` (SH-001). Access denied: Inertia `Admin/AccessDenied` (SH-003).
+
 ## Platform settings
 
 - Global customization lives under `/admin/settings` with section pages driven by `PlatformSettingsRegistry` and `SettingsForm`.
