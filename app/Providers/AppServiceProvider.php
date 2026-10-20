@@ -25,6 +25,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->environment('production')) {
+            $hot = public_path('hot');
+            if (is_file($hot) && is_writable($hot)) {
+                @unlink($hot);
+            }
+        }
+
         Gate::policy(SupportTicket::class, SupportTicketPolicy::class);
 
         PlatformMailConfigurator::apply();
