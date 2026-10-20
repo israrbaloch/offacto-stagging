@@ -62,6 +62,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->forget(['admin_mfa_verified', 'admin_mfa_pending_secret', 'admin_mfa_must_reenroll']);
         SubscriptionReminder::markLoginPending($request);
 
         SecurityEvent::record('login_success', 'success', user: $user, request: $request);

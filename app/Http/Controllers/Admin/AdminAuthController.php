@@ -15,11 +15,4 @@ class AdminAuthController extends Controller
             'allowRegistration' => SiteSetting::getBoolean('allow_user_registration', true),
         ]);
     }
-
-    public function mfaChallenge(): Response
-    {
-        return Inertia::render('Admin/Auth/MfaVerify', [
-            'hint' => 'Enter the verification code from your authenticator app or security key challenge.',
-        ]);
-    }
 }

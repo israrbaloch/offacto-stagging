@@ -15,7 +15,6 @@ use App\Support\CommunicationSettingsRegistry;
 use App\Support\PlatformLocales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -194,15 +193,15 @@ class AdminCommunicationController extends Controller
         return back()->with('status', 'communication-outbound-test-sent');
     }
 
-    public function retryFailedJob(Request $request): RedirectResponse
+    public function retryFailedJob(Request $request, \App\Services\FailedJobRetryService $retry): RedirectResponse
     {
         $data = $request->validate([
             'uuid' => ['required', 'uuid'],
             'confirm' => ['accepted'],
         ]);
 
-        Artisan::call('queue:retry', ['id' => $data['uuid']]);
-        ActivityLog::record('admin.communications.queue_retry', metadata: ['uuid' => $data['uuid']]);
+        \App\Support\AdminAccess::assert($request->user(), \App\Support\AdminAccess::GOVERNANCE);
+        $retry->retry($data['uuid'], 'communications');
 
         return back()->with('status', 'communication-queue-retried');
     }

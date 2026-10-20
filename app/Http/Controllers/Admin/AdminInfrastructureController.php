@@ -15,7 +15,6 @@ use App\Support\InfrastructureSettingsRegistry;
 use App\Support\PlatformLocales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -187,7 +186,7 @@ class AdminInfrastructureController extends Controller
         return back()->with('status', 'infra-maintenance-scheduled');
     }
 
-    public function retryFailedJob(Request $request): RedirectResponse
+    public function retryFailedJob(Request $request, \App\Services\FailedJobRetryService $retry): RedirectResponse
     {
         $data = $request->validate([
             'uuid' => ['required', 'uuid'],
@@ -195,8 +194,8 @@ class AdminInfrastructureController extends Controller
             'duplicate_ack' => ['accepted'],
         ]);
 
-        Artisan::call('queue:retry', ['id' => $data['uuid']]);
-        ActivityLog::record('admin.infrastructure.job.retry', metadata: ['uuid' => $data['uuid']]);
+        \App\Support\AdminAccess::assert($request->user(), \App\Support\AdminAccess::GOVERNANCE);
+        $retry->retry($data['uuid'], 'infrastructure');
 
         return back()->with('status', 'infra-job-retried');
     }

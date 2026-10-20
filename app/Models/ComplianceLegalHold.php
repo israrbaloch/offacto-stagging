@@ -9,6 +9,7 @@ class ComplianceLegalHold extends Model
 {
     protected $fillable = [
         'reference',
+        'company_id',
         'title',
         'scope_description',
         'status',
@@ -25,6 +26,11 @@ class ComplianceLegalHold extends Model
             'released_at' => 'datetime',
             'metadata' => 'array',
         ];
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function authorizedBy(): BelongsTo

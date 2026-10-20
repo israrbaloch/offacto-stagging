@@ -15,62 +15,62 @@ const navGroups = [
     {
         label: 'Directory',
         items: [
-            { href: '/admin/companies', label: 'Companies', icon: 'building' },
-            { href: '/admin/companies/approvals', label: 'Approvals', icon: 'clipboard' },
-            { href: '/admin/users', label: 'Users', icon: 'customers' },
+            { href: '/admin/companies', label: 'Companies', icon: 'building', permission: ['admin.support', 'admin.compliance'] },
+            { href: '/admin/companies/approvals', label: 'Approvals', icon: 'clipboard', permission: ['admin.support', 'admin.compliance'] },
+            { href: '/admin/users', label: 'Users', icon: 'customers', permission: 'admin.security' },
         ],
     },
     {
         label: 'Platform',
         items: [
-            { href: '/admin/settings', label: 'Settings', icon: 'settings' },
-            { href: '/admin/financial', label: 'Financial docs', icon: 'invoice' },
-            { href: '/admin/compliance', label: 'Compliance', icon: 'clipboard' },
-            { href: '/admin/integrations', label: 'Integrations', icon: 'settings' },
-            { href: '/admin/communications', label: 'Email & comms', icon: 'help' },
-            { href: '/admin/product', label: 'Product & content', icon: 'document' },
-            { href: '/admin/governance', label: 'Governance', icon: 'clipboard' },
+            { href: '/admin/settings', label: 'Settings', icon: 'settings', permission: 'admin.settings' },
+            { href: '/admin/financial', label: 'Financial docs', icon: 'invoice', permission: 'admin.billing' },
+            { href: '/admin/compliance', label: 'Compliance', icon: 'clipboard', permission: 'admin.compliance' },
+            { href: '/admin/integrations', label: 'Integrations', icon: 'settings', permission: 'admin.settings' },
+            { href: '/admin/communications', label: 'Email & comms', icon: 'help', permission: 'admin.settings' },
+            { href: '/admin/product', label: 'Product & content', icon: 'document', permission: 'admin.settings' },
+            { href: '/admin/governance', label: 'Governance', icon: 'clipboard', permission: 'admin.governance' },
         ],
     },
     {
         label: 'Billing',
         items: [
-            { href: '/admin/subscriptions', label: 'Subscriptions', icon: 'invoice' },
-            { href: '/admin/subscriptions/directory', label: 'Directory', icon: 'document' },
-            { href: '/admin/plans', label: 'Plans', icon: 'grid' },
-            { href: '/admin/billing/settings', label: 'Billing rules', icon: 'settings' },
-            { href: '/admin/billing/coupons', label: 'Coupons', icon: 'help' },
-            { href: '/admin/billing/payments', label: 'Payments', icon: 'clipboard' },
-            { href: '/admin/billing/reports', label: 'Reports', icon: 'building' },
+            { href: '/admin/subscriptions', label: 'Subscriptions', icon: 'invoice', permission: 'admin.billing' },
+            { href: '/admin/subscriptions/directory', label: 'Directory', icon: 'document', permission: 'admin.billing' },
+            { href: '/admin/plans', label: 'Plans', icon: 'grid', permission: 'admin.billing' },
+            { href: '/admin/billing/settings', label: 'Billing rules', icon: 'settings', permission: 'admin.billing' },
+            { href: '/admin/billing/coupons', label: 'Coupons', icon: 'help', permission: 'admin.billing' },
+            { href: '/admin/billing/payments', label: 'Payments', icon: 'clipboard', permission: 'admin.billing' },
+            { href: '/admin/billing/reports', label: 'Reports', icon: 'building', permission: 'admin.billing' },
         ],
     },
     {
         label: 'Support',
         items: [
-            { href: '/admin/support', label: 'Support hub', icon: 'help' },
-            { href: '/admin/support/tickets', label: 'Tickets', icon: 'clipboard' },
+            { href: '/admin/support', label: 'Support hub', icon: 'help', permission: 'admin.support' },
+            { href: '/admin/support/tickets', label: 'Tickets', icon: 'clipboard', permission: 'admin.support' },
         ],
     },
     {
         label: 'Security',
         items: [
-            { href: '/admin/security', label: 'Security hub', icon: 'settings' },
-            { href: '/admin/security/operations/fraud-queue', label: 'Fraud queue', icon: 'clipboard' },
+            { href: '/admin/security', label: 'Security hub', icon: 'settings', permission: 'admin.security' },
+            { href: '/admin/security/operations/fraud-queue', label: 'Fraud queue', icon: 'clipboard', permission: 'admin.security' },
         ],
     },
     {
         label: 'Infrastructure',
         items: [
-            { href: '/admin/infrastructure', label: 'Infrastructure hub', icon: 'grid' },
-            { href: '/admin/infrastructure/operations/database-health', label: 'Database health', icon: 'settings' },
-            { href: '/admin/infrastructure/operations/failed-jobs', label: 'Failed jobs', icon: 'clipboard' },
+            { href: '/admin/infrastructure', label: 'Infrastructure hub', icon: 'grid', permission: 'admin.governance' },
+            { href: '/admin/infrastructure/operations/database-health', label: 'Database health', icon: 'settings', permission: 'admin.governance' },
+            { href: '/admin/infrastructure/operations/failed-jobs', label: 'Failed jobs', icon: 'clipboard', permission: 'admin.governance' },
         ],
     },
     {
         label: 'Audit',
         items: [
-            { href: '/admin/logs/security', label: 'Security log (legacy)', icon: 'settings' },
-            { href: '/admin/logs/activity', label: 'Activity', icon: 'help' },
+            { href: '/admin/logs/security', label: 'Security log (legacy)', icon: 'settings', permission: 'admin.security' },
+            { href: '/admin/logs/activity', label: 'Activity', icon: 'help', permission: 'admin.security' },
         ],
     },
 ];
@@ -80,8 +80,24 @@ const allNavItems = navGroups.flatMap((group) => group.items);
 export default function AdminLayout({ title = 'Admin', children }) {
     const { url, props } = usePage();
     const appearance = props.appearance;
+    const granted = props.auth?.user?.permissions || [];
+    const isPlatformAdmin = props.auth?.user?.is_admin;
+    const visibleGroups = navGroups
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => {
+                if (!item.permission) return true;
+                if (isPlatformAdmin && granted.length === 0) {
+                    return true;
+                }
+                const needed = Array.isArray(item.permission) ? item.permission : [item.permission];
+                return needed.some((name) => granted.includes(name));
+            }),
+        }))
+        .filter((group) => group.items.length > 0);
+    const visibleItems = visibleGroups.flatMap((group) => group.items);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
-    const activeHref = resolveSidebarActiveHref(url, allNavItems);
+    const activeHref = resolveSidebarActiveHref(url, visibleItems.length ? visibleItems : allNavItems);
     const sidebarNavRef = useRef(null);
 
     useEffect(() => {
@@ -130,7 +146,7 @@ export default function AdminLayout({ title = 'Admin', children }) {
                         <p className="mt-3 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">Platform</p>
                     </div>
                     <nav ref={sidebarNavRef} className="admin-sidebar-nav relative z-10 mt-2 min-h-0 flex-1 space-y-5 overflow-y-auto px-3 pb-6">
-                        {navGroups.map((group) => (
+                        {visibleGroups.map((group) => (
                             <div key={group.label}>
                                 <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400/90">{group.label}</p>
                                 <div className="space-y-0.5">

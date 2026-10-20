@@ -13,7 +13,7 @@ final class GovernancePolicy
 
     public static function isProductionEnvironment(): bool
     {
-        return self::environmentLabel() === 'production';
+        return app()->environment('production');
     }
 
     public static function blockDestructiveInProduction(): bool
@@ -34,7 +34,7 @@ final class GovernancePolicy
     public static function assertOperationalMutationAllowed(): void
     {
         if (self::isProductionEnvironment() && self::blockDestructiveInProduction()) {
-            abort(403, 'Destructive governance operations are blocked while environment is marked production.');
+            abort(403, 'Destructive operations are blocked in the production environment.');
         }
     }
 }

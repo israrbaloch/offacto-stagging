@@ -145,6 +145,8 @@ class AdminUserController extends Controller
 
     public function toggleActive(Request $request, User $user): RedirectResponse
     {
+        \App\Support\AdminAccess::assert(Auth::user(), \App\Support\AdminAccess::SECURITY);
+
         $data = $request->validate([
             'reason' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -160,6 +162,10 @@ class AdminUserController extends Controller
         }
 
         $user->update(['is_active' => ! $user->is_active]);
+
+        if (! $user->is_active) {
+            $this->forgetUserSessions($user);
+        }
 
         ActivityLog::record(
             $user->is_active ? 'admin.user.reactivated' : 'admin.user.suspended',
@@ -203,6 +209,8 @@ class AdminUserController extends Controller
 
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
+        \App\Support\AdminAccess::assert(Auth::user(), \App\Support\AdminAccess::SECURITY);
+
         $data = $request->validate([
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
@@ -216,7 +224,9 @@ class AdminUserController extends Controller
 
     public function revokeSessions(User $user): RedirectResponse
     {
-        $deleted = DB::table('sessions')->where('user_id', $user->id)->delete();
+        \App\Support\AdminAccess::assert(Auth::user(), \App\Support\AdminAccess::SECURITY);
+
+        $deleted = $this->forgetUserSessions($user);
 
         ActivityLog::record('admin.user.sessions_revoked', subject: $user, metadata: [
             'count' => $deleted,
@@ -343,6 +353,15 @@ class AdminUserController extends Controller
                 ];
             })
             ->all();
+    }
+
+    protected function forgetUserSessions(User $user): int
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('sessions')) {
+            return 0;
+        }
+
+        return DB::table('sessions')->where('user_id', $user->id)->delete();
     }
 
     /**

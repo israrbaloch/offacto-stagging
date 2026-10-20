@@ -95,7 +95,13 @@ class AdminIntegrationController extends Controller
         $meta = collect(IntegrationSettingsRegistry::operationSections())->firstWhere('id', $section);
 
         $payload = match ($section) {
-            'webhooks' => ['webhooks' => IntegrationWebhook::query()->orderByDesc('created_at')->get()],
+            'webhooks' => [
+                'webhooks' => IntegrationWebhook::query()
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(fn (IntegrationWebhook $webhook) => $webhook->toAdminArray())
+                    ->values(),
+            ],
             'api-keys' => [
                 'apiKeys' => IntegrationApiKey::query()->orderByDesc('created_at')->limit(50)->get(['id', 'name', 'key_prefix', 'scopes', 'last_used_at', 'revoked_at', 'created_at']),
                 'newKeyPlain' => $request->session()->pull('integration_api_key_plain'),

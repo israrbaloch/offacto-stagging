@@ -101,7 +101,10 @@ class AdminComplianceController extends Controller
             'legal-notices' => ['notices' => AdminComplianceInsights::legalNotices()],
             'consent-records' => ['consents' => AdminComplianceInsights::consentRecords()],
             'data-subject-requests' => ['requests' => AdminComplianceInsights::dataSubjectRequests()],
-            'legal-holds' => ['holds' => ComplianceLegalHold::query()->orderByDesc('placed_at')->limit(50)->get()],
+            'legal-holds' => [
+                'holds' => ComplianceLegalHold::query()->with('company:id,company_name')->orderByDesc('placed_at')->limit(50)->get(),
+                'companies' => \App\Models\Company::query()->orderBy('company_name')->limit(200)->get(['id', 'company_name']),
+            ],
             'deletion-jobs' => ['jobs' => ComplianceDeletionJob::query()->orderByDesc('created_at')->limit(50)->get()],
             'privacy-access' => ['privacy' => AdminComplianceInsights::privacyAccessSignals()],
             'breach-management' => ['breaches' => ComplianceBreachIncident::query()->orderByDesc('discovered_at')->limit(50)->get()],
@@ -354,10 +357,12 @@ class AdminComplianceController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'scope_description' => ['required', 'string'],
+            'company_id' => ['nullable', 'exists:companies,id'],
         ]);
 
         $hold = ComplianceLegalHold::create([
             'reference' => ComplianceReference::make('HOLD'),
+            'company_id' => $data['company_id'] ?? null,
             'title' => $data['title'],
             'scope_description' => $data['scope_description'],
             'status' => 'active',
@@ -400,9 +405,11 @@ class AdminComplianceController extends Controller
         return back()->with('status', 'compliance-deletion-created');
     }
 
-    public function approveDeletionJob(Request $request, ComplianceDeletionJob $job): RedirectResponse
+    public function approveDeletionJob(Request $request, ComplianceDeletionJob $job, \App\Services\CompanyDeletionGuard $guard): RedirectResponse
     {
         $request->validate(['confirm' => ['accepted']]);
+        $companyId = is_array($job->metadata) ? ($job->metadata['company_id'] ?? null) : null;
+        $guard->assertJobCanProceed($companyId !== null ? (int) $companyId : null);
         $job->update([
             'status' => 'approved',
             'approved_by_user_id' => $request->user()->id,

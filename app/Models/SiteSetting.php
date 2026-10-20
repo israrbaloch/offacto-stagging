@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use App\Support\SiteSettingSecrets;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
@@ -53,7 +54,12 @@ class SiteSetting extends Model
             return $default;
         }
 
-        return static::castValue($setting->value, $setting->type);
+        $value = $setting->value;
+        if (SiteSettingSecrets::isSensitive($key) || SiteSettingSecrets::isEncrypted(is_string($value) ? $value : null)) {
+            $value = SiteSettingSecrets::decrypt(is_string($value) ? $value : null);
+        }
+
+        return static::castValue($value, $setting->type);
     }
 
     /**
@@ -66,9 +72,14 @@ class SiteSetting extends Model
      */
     public static function set(string $key, $value, string $type = 'string'): static
     {
+        $stored = (string) $value;
+        if (SiteSettingSecrets::isSensitive($key) && $stored !== '') {
+            $stored = SiteSettingSecrets::encrypt($stored);
+        }
+
         $setting = static::updateOrCreate(
             ['key' => $key],
-            ['value' => (string) $value, 'type' => $type]
+            ['value' => $stored, 'type' => $type]
         );
 
         Cache::forget(static::CACHE_KEY);

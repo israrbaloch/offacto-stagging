@@ -48,6 +48,11 @@ class SupportTicket extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function customerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'customer_user_id');
+    }
+
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to_user_id');

@@ -13,8 +13,12 @@ use App\Models\CompanyVerification;
 use App\Models\Language;
 use App\Models\Status;
 use App\Models\SubscriptionPlan;
+use App\Models\SupportAccessRequest;
 use App\Services\CompanyAdminWorkflow;
 use App\Services\CompanyDataExportService;
+use App\Services\CompanyDeletionGuard;
+use App\Support\AdminAccess;
+use App\Support\SupportPolicy;
 use App\Support\AdminCompanyShow;
 use App\Support\PlanEntitlementCatalog;
 use Illuminate\Http\RedirectResponse;
@@ -317,6 +321,33 @@ class AdminCompanyController extends Controller
 
     public function enterWorkspace(Company $company): RedirectResponse
     {
+        AdminAccess::assert(Auth::user(), AdminAccess::SUPPORT);
+
+        if (SupportPolicy::accessApprovalRequired()) {
+            $actor = Auth::user();
+            $approved = SupportAccessRequest::query()
+                ->where('company_id', $company->id)
+                ->where('requested_by_user_id', $actor?->id)
+                ->where('status', 'approved')
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                })
+                ->exists();
+
+            if (! $approved) {
+                ActivityLog::record(
+                    'admin.company.workspace_denied',
+                    subject: $company,
+                    outcome: 'denied',
+                    companyId: $company->id,
+                );
+
+                return back()->withErrors([
+                    'workspace' => 'An approved, unexpired access request is required before entering this workspace.',
+                ]);
+            }
+        }
+
         $company->ensureDefaults();
         Auth::user()?->setActiveCompanyId($company->id);
         session(['admin_workspace_company_id' => $company->id]);
@@ -434,28 +465,43 @@ class AdminCompanyController extends Controller
         return back()->with('status', 'company-deletion-requested');
     }
 
-    public function updateDeletionRequest(Request $request, Company $company, CompanyDeletionRequest $deletionRequest): RedirectResponse
+    public function updateDeletionRequest(Request $request, Company $company, CompanyDeletionRequest $deletionRequest, CompanyDeletionGuard $guard): RedirectResponse
     {
         abort_if($deletionRequest->company_id !== $company->id, 404);
+        AdminAccess::assert(Auth::user(), AdminAccess::COMPLIANCE);
 
         $data = $request->validate([
             'status' => ['required', Rule::in(['pending', 'legal_hold', 'scheduled', 'completed', 'cancelled'])],
             'legal_hold' => ['sometimes', 'boolean'],
         ]);
 
+        if ($data['status'] === 'completed') {
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($company, $deletionRequest, $data, $guard) {
+                $locked = Company::query()->whereKey($company->id)->lockForUpdate()->firstOrFail();
+                $requestRow = CompanyDeletionRequest::query()->whereKey($deletionRequest->id)->lockForUpdate()->firstOrFail();
+                $requestRow->fill([
+                    'status' => $data['status'],
+                    'legal_hold' => (bool) ($data['legal_hold'] ?? $requestRow->legal_hold),
+                ]);
+                $guard->assertCanComplete($locked, $requestRow);
+                $requestRow->anonymized_at = now();
+                $requestRow->save();
+                $locked->update([
+                    'is_active' => false,
+                    'company_name' => 'Archived company #'.$locked->id,
+                    'email' => 'archived+'.$locked->id.'@removed.local',
+                ]);
+
+                ActivityLog::record('admin.company.deletion_updated', subject: $locked, companyId: $locked->id, metadata: $data);
+
+                return back()->with('status', 'company-deletion-updated');
+            });
+        }
+
         $deletionRequest->update([
             'status' => $data['status'],
             'legal_hold' => (bool) ($data['legal_hold'] ?? $deletionRequest->legal_hold),
         ]);
-
-        if ($data['status'] === 'completed' && ! $deletionRequest->legal_hold) {
-            $deletionRequest->update(['anonymized_at' => now()]);
-            $company->update([
-                'is_active' => false,
-                'company_name' => 'Archived company #'.$company->id,
-                'email' => 'archived+'.$company->id.'@removed.local',
-            ]);
-        }
 
         ActivityLog::record('admin.company.deletion_updated', subject: $company, companyId: $company->id, metadata: $data);
 

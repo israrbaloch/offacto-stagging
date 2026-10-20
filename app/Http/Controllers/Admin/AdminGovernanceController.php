@@ -234,6 +234,7 @@ class AdminGovernanceController extends Controller
         }
         $request->validate($rules);
 
+        \App\Support\AdminAccess::assert($request->user(), \App\Support\AdminAccess::GOVERNANCE);
         GovernancePolicy::assertOperationalMutationAllowed();
 
         if ($bulk->status !== 'draft') {
@@ -371,6 +372,7 @@ class AdminGovernanceController extends Controller
             'scope_ack' => ['accepted'],
         ]);
 
+        \App\Support\AdminAccess::assert($request->user(), \App\Support\AdminAccess::GOVERNANCE);
         GovernancePolicy::assertOperationalMutationAllowed();
 
         $payload = $snapshot->payload ?? [];

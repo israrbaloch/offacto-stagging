@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import { formatDate, money } from '../../lib/utils';
 
@@ -147,6 +147,17 @@ function paymentTone(status = '') {
     if (key === 'failed' || key === 'expired') return 'bg-rose-50 text-rose-700';
     if (key === 'canceled') return 'bg-amber-50 text-amber-700';
     return 'bg-slate-100 text-slate-600';
+}
+
+function initials(name = '') {
+    return (
+        name
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0].toUpperCase())
+            .join('') || '?'
+    );
 }
 
 export default function Dashboard({

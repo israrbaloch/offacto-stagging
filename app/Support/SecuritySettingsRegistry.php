@@ -71,7 +71,7 @@ final class SecuritySettingsRegistry
                     ['key' => 'sec_password_min_length', 'type' => 'integer', 'label' => 'Minimum password length', 'default' => 12, 'min' => 8],
                     ['key' => 'sec_password_require_mixed', 'type' => 'boolean', 'label' => 'Require letters and numbers', 'default' => true],
                     ['key' => 'sec_session_lifetime_minutes', 'type' => 'integer', 'label' => 'Session lifetime (minutes)', 'default' => 120, 'min' => 15],
-                    ['key' => 'sec_mfa_required_admin', 'type' => 'boolean', 'label' => 'Require MFA for platform admins (when available)', 'default' => false],
+                    ['key' => 'sec_mfa_required_admin', 'type' => 'boolean', 'label' => 'Require MFA for platform admins', 'default' => false, 'hint' => 'Leave off until at least one admin has enrolled an authenticator. Admins who are not enrolled will be sent to setup instead of being locked out.'],
                     ['key' => 'sec_privileged_actions_logged', 'type' => 'boolean', 'label' => 'Log all privileged admin actions', 'default' => true],
                 ],
             ],

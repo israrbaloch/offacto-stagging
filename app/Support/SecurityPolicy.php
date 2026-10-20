@@ -7,6 +7,11 @@ use App\Models\SiteSetting;
 
 final class SecurityPolicy
 {
+    public static function adminMfaRequired(): bool
+    {
+        return SiteSetting::getBoolean('sec_mfa_required_admin', false);
+    }
+
     public static function passwordMinLength(): int
     {
         return max(8, SiteSetting::getInteger('sec_password_min_length', 12));

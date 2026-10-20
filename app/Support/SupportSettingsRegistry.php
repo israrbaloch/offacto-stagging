@@ -108,7 +108,7 @@ final class SupportSettingsRegistry
                         ['type' => 'legal', 'team' => 'legal'],
                         ['type' => 'fraud', 'team' => 'security'],
                     ]],
-                    ['key' => 'sup_require_access_approval', 'type' => 'boolean', 'label' => 'Require access approval before workspace context review', 'default' => true],
+                    ['key' => 'sup_require_access_approval', 'type' => 'boolean', 'label' => 'Require access approval before entering a company workspace', 'default' => false, 'hint' => 'When enabled, the signed-in admin must have an approved, unexpired access request for that company.'],
                 ],
             ],
         ];

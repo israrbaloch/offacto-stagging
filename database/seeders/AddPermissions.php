@@ -15,7 +15,7 @@ class AddPermissions extends Seeder
     public function run(): void
     {
         // Create permissions
-        $permissions = [
+        $permissions = array_merge([
             'manage-users',
             'manage-companies',
             'view-reports',
@@ -24,7 +24,7 @@ class AddPermissions extends Seeder
             'manage-services',
             'manage-customers',
             'manage-settings',
-        ];
+        ], \App\Support\AdminAccess::all());
 
         foreach ($permissions as $permissionName) {
             Permission::firstOrCreate(['name' => $permissionName]);

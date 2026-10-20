@@ -3,12 +3,12 @@ import { usePage } from '@inertiajs/react';
 /** SH-016 — hide or disable actions based on admin role / permission keys. */
 export default function AdminPermissionGate({ requireAdmin = true, permissions = [], fallback = null, children, mode = 'hide' }) {
     const { auth } = usePage().props;
-    const roles = auth?.user?.roles || [];
+    const granted = auth?.user?.permissions || [];
     const isAdmin = auth?.user?.is_admin;
 
     let allowed = true;
-    if (requireAdmin && !isAdmin) allowed = false;
-    if (permissions.length && !permissions.every((p) => roles.includes(p))) {
+    if (requireAdmin && !isAdmin && granted.length === 0) allowed = false;
+    if (permissions.length && !permissions.every((p) => granted.includes(p))) {
         allowed = false;
     }
 

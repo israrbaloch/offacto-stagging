@@ -22,7 +22,7 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         if ($user) {
-            $user->loadMissing('roles');
+            $user->loadMissing('roles.permissions');
         }
 
         $active = $user?->activeCompany();
@@ -42,6 +42,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'roles' => $user->roles->pluck('name')->values(),
+                    'permissions' => $user->getPermissions()->values(),
                     'is_admin' => $user->hasRole('admin'),
                     'is_staff' => $user->hasRole('staff'),
                 ] : null,

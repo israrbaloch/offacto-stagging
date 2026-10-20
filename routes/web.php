@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\AdminActivityLogController;
 use App\Http\Controllers\Admin\AdminCompanyController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\AdminMfaController;
+use App\Support\AdminAccess;
 use App\Http\Controllers\Admin\AdminGlobalSearchController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSecurityLogController;
@@ -51,7 +53,9 @@ Route::get('/q/{token}/preview', [PublicOfferController::class, 'preview'])->nam
 Route::get('/q/{token}/download', [PublicOfferController::class, 'download'])->name('offers.public.download');
 
 Route::post('/webhooks/mollie', MollieWebhookController::class)->name('webhooks.mollie');
-Route::post('/webhooks/inbound-email', InboundEmailWebhookController::class)->name('webhooks.inbound-email');
+Route::post('/webhooks/inbound-email', InboundEmailWebhookController::class)
+    ->middleware('throttle:60,1')
+    ->name('webhooks.inbound-email');
 Route::get('/payment/mollie/return', MolliePaymentReturnController::class)->name('payments.mollie.return');
 
 Route::post('/locale', function (\Illuminate\Http\Request $request) {
@@ -72,7 +76,7 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 })->middleware('auth');
 
-Route::redirect('/settings', '/admin/settings')->middleware(['auth', 'role:admin']);
+Route::redirect('/settings', '/admin/settings')->middleware(['auth', 'admin.area']);
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified.email', 'redirect.admin'])
@@ -182,23 +186,36 @@ Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login');
 });
 
-Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified.email', 'admin.area'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/mfa', [AdminMfaController::class, 'challenge'])->name('mfa');
+    Route::post('/mfa/verify', [AdminMfaController::class, 'verify'])->middleware('throttle:5,1')->name('mfa.verify');
+    Route::post('/mfa/recover', [AdminMfaController::class, 'recover'])->middleware('throttle:5,1')->name('mfa.recover');
+    Route::get('/mfa/enroll', [AdminMfaController::class, 'enroll'])->name('mfa.enroll');
+    Route::post('/mfa/enroll/start', [AdminMfaController::class, 'startEnroll'])->middleware('throttle:5,1')->name('mfa.enroll.start');
+    Route::post('/mfa/enroll/confirm', [AdminMfaController::class, 'confirmEnroll'])->middleware('throttle:5,1')->name('mfa.enroll.confirm');
+    Route::post('/mfa/disable', [AdminMfaController::class, 'disable'])->middleware('throttle:5,1')->name('mfa.disable');
+
+    Route::middleware('admin.mfa')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/search', AdminGlobalSearchController::class)->name('search');
-    Route::get('/mfa', [AdminAuthController::class, 'mfaChallenge'])->name('mfa');
 
+    Route::middleware('permission:'.AdminAccess::SETTINGS)->group(function () {
     Route::get('/settings', [AdminPlatformSettingsController::class, 'index'])->name('settings.index');
     Route::get('/settings/{section}', [AdminPlatformSettingsController::class, 'show'])->name('settings.show');
     Route::patch('/settings/{section}', [AdminPlatformSettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/{section}/reset', [AdminPlatformSettingsController::class, 'reset'])->name('settings.reset');
+    });
 
+    Route::middleware('permission:'.AdminAccess::BILLING)->group(function () {
     Route::get('/financial', [AdminFinancialDocumentController::class, 'index'])->name('financial.index');
     Route::get('/financial/operations/{section}', [AdminFinancialDocumentController::class, 'operation'])->name('financial.operation');
     Route::post('/financial/audit-export', [AdminFinancialDocumentController::class, 'auditExport'])->name('financial.audit-export');
     Route::get('/financial/{section}', [AdminFinancialDocumentController::class, 'show'])->name('financial.show');
     Route::patch('/financial/{section}', [AdminFinancialDocumentController::class, 'update'])->name('financial.update');
     Route::post('/financial/{section}/reset', [AdminFinancialDocumentController::class, 'reset'])->name('financial.reset');
+    });
 
+    Route::middleware('permission:'.AdminAccess::COMPLIANCE)->group(function () {
     Route::get('/compliance', [AdminComplianceController::class, 'index'])->name('compliance.index');
     Route::get('/compliance/operations/{section}', [AdminComplianceController::class, 'operation'])->name('compliance.operation');
     Route::post('/compliance/reports/export', [AdminComplianceController::class, 'complianceReportExport'])->name('compliance.reports.export');
@@ -217,7 +234,9 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::get('/compliance/{section}', [AdminComplianceController::class, 'show'])->name('compliance.show');
     Route::patch('/compliance/{section}', [AdminComplianceController::class, 'update'])->name('compliance.update');
     Route::post('/compliance/{section}/reset', [AdminComplianceController::class, 'reset'])->name('compliance.reset');
+    });
 
+    Route::middleware('permission:'.AdminAccess::SETTINGS)->group(function () {
     Route::get('/integrations', [AdminIntegrationController::class, 'index'])->name('integrations.index');
     Route::get('/integrations/operations/{section}', [AdminIntegrationController::class, 'operation'])->name('integrations.operation');
     Route::post('/integrations/health-checks/run', [AdminIntegrationController::class, 'runHealthChecks'])->name('integrations.health.run');
@@ -240,7 +259,9 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::get('/communications/{section}', [AdminCommunicationController::class, 'show'])->name('communications.show');
     Route::patch('/communications/{section}', [AdminCommunicationController::class, 'update'])->name('communications.update');
     Route::post('/communications/{section}/reset', [AdminCommunicationController::class, 'reset'])->name('communications.reset');
+    });
 
+    Route::middleware('permission:'.AdminAccess::SUPPORT)->group(function () {
     Route::get('/support', [AdminSupportController::class, 'index'])->name('support.index');
     Route::get('/support/tickets', [AdminSupportController::class, 'ticketsIndex'])->name('support.tickets.index');
     Route::post('/support/tickets', [AdminSupportController::class, 'storeTicket'])->name('support.tickets.store');
@@ -260,7 +281,9 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::get('/support/{section}', [AdminSupportController::class, 'show'])->name('support.show');
     Route::patch('/support/{section}', [AdminSupportController::class, 'update'])->name('support.update');
     Route::post('/support/{section}/reset', [AdminSupportController::class, 'reset'])->name('support.reset');
+    });
 
+    Route::middleware('permission:'.AdminAccess::GOVERNANCE)->group(function () {
     Route::get('/infrastructure', [AdminInfrastructureController::class, 'index'])->name('infrastructure.index');
     Route::get('/infrastructure/operations/{section}', [AdminInfrastructureController::class, 'operation'])->name('infrastructure.operation');
     Route::post('/infrastructure/backups', [AdminInfrastructureController::class, 'storeBackupRun'])->name('infrastructure.backups.store');
@@ -288,7 +311,9 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::get('/governance/{section}', [AdminGovernanceController::class, 'show'])->name('governance.show');
     Route::patch('/governance/{section}', [AdminGovernanceController::class, 'update'])->name('governance.update');
     Route::post('/governance/{section}/reset', [AdminGovernanceController::class, 'reset'])->name('governance.reset');
+    });
 
+    Route::middleware('permission:'.AdminAccess::SETTINGS)->group(function () {
     Route::get('/product', [AdminProductController::class, 'index'])->name('product.index');
     Route::get('/product/operations/{section}', [AdminProductController::class, 'operation'])->name('product.operation');
     Route::post('/product/public-pages', [AdminProductController::class, 'storePublicPage'])->name('product.public-pages.store');
@@ -310,7 +335,9 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::get('/product/{section}', [AdminProductController::class, 'show'])->name('product.show');
     Route::patch('/product/{section}', [AdminProductController::class, 'update'])->name('product.update');
     Route::post('/product/{section}/reset', [AdminProductController::class, 'reset'])->name('product.reset');
+    });
 
+    Route::middleware('permission:'.AdminAccess::SECURITY)->group(function () {
     Route::get('/security', [AdminSecurityController::class, 'index'])->name('security.index');
     Route::get('/security/operations/{section}', [AdminSecurityController::class, 'operation'])->name('security.operation');
     Route::post('/security/restrictions', [AdminSecurityController::class, 'storeRestriction'])->name('security.restrictions.store');
@@ -324,6 +351,9 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::get('/security/{section}', [AdminSecurityController::class, 'show'])->name('security.show');
     Route::patch('/security/{section}', [AdminSecurityController::class, 'update'])->name('security.update');
     Route::post('/security/{section}/reset', [AdminSecurityController::class, 'reset'])->name('security.reset');
+    });
+
+    Route::middleware('permission:'.AdminAccess::BILLING)->group(function () {
     Route::get('/subscriptions', [AdminSubscriptionController::class, 'dashboard'])->name('subscriptions.dashboard');
     Route::get('/subscriptions/directory', [AdminSubscriptionController::class, 'directory'])->name('subscriptions.directory');
     Route::get('/subscriptions/companies/{company}', [AdminSubscriptionController::class, 'show'])->name('subscriptions.show');
@@ -342,6 +372,9 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::patch('/billing/coupons/{coupon}', [AdminBillingController::class, 'updateCoupon'])->name('billing.coupons.update');
     Route::get('/billing/payments', [AdminBillingController::class, 'payments'])->name('billing.payments');
     Route::get('/billing/reports', [AdminBillingController::class, 'reports'])->name('billing.reports');
+    });
+
+    Route::middleware('permission:'.AdminAccess::SECURITY)->group(function () {
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
@@ -356,7 +389,9 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::post('/users/{user}/toggle-billing-reminders', [AdminUserController::class, 'toggleBillingReminders'])->name('users.toggle-billing-reminders');
     Route::get('/logs/activity', [AdminActivityLogController::class, 'index'])->name('logs.activity');
     Route::get('/logs/security', [AdminSecurityLogController::class, 'index'])->name('logs.security');
+    });
 
+    Route::middleware('permission:'.AdminAccess::SUPPORT.'|'.AdminAccess::COMPLIANCE)->group(function () {
     Route::get('/companies', [AdminCompanyController::class, 'index'])->name('companies.index');
     Route::get('/companies/approvals', [AdminCompanyController::class, 'approvals'])->name('companies.approvals');
     Route::post('/workspace/exit', [AdminCompanyController::class, 'exitWorkspace'])->name('workspace.exit');
@@ -375,6 +410,8 @@ Route::middleware(['auth', 'verified.email', 'role:admin'])->prefix('admin')->na
     Route::patch('/companies/{company}/verification', [AdminCompanyController::class, 'updateVerification'])->name('companies.verification.update');
     Route::post('/companies/{company}/deletion-requests', [AdminCompanyController::class, 'storeDeletionRequest'])->name('companies.deletion.store');
     Route::patch('/companies/{company}/deletion-requests/{deletionRequest}', [AdminCompanyController::class, 'updateDeletionRequest'])->name('companies.deletion.update');
+    });
+    });
 });
 
 // Staff-only routes

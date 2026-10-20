@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\EnsureAdminArea;
+use App\Http\Middleware\EnsureAdminMfaVerified;
 use App\Http\Middleware\EnsurePlatformNotInMaintenance;
 use App\Http\Middleware\EnsureEmailVerifiedForSession;
 use App\Http\Middleware\EnsureUserIsAuthenticated;
@@ -29,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->web(append: [
             SetLocale::class,
+            EnsureAccountIsActive::class,
             EnsurePlatformNotInMaintenance::class,
             HandleInertiaRequests::class,
         ]);
@@ -38,6 +42,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.check' => EnsureUserIsAuthenticated::class,
             'verified.email' => EnsureEmailVerifiedForSession::class,
             'redirect.admin' => RedirectPlatformAdmin::class,
+            'admin.area' => EnsureAdminArea::class,
+            'admin.mfa' => EnsureAdminMfaVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

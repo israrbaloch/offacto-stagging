@@ -19,6 +19,6 @@ final class SupportPolicy
 
     public static function accessApprovalRequired(): bool
     {
-        return SiteSetting::getBoolean('sup_require_access_approval', true);
+        return SiteSetting::getBoolean('sup_require_access_approval', false);
     }
 }

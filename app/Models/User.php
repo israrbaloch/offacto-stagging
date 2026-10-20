@@ -46,12 +46,18 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'billing_reminders_enabled' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
     public function roles()
     {
         return $this->belongsToMany(Role::class);
+    }
+
+    public function mfaCredential()
+    {
+        return $this->hasOne(UserMfaCredential::class);
     }
 
     /**

@@ -63,15 +63,15 @@ export default function CommunicationsShow({
                     {section.id === 'incoming-email' && (
                         <AdminCard className="mb-6" title="Webhook address for your email provider">
                             <p className="text-sm text-slate-600">
-                                Point Postmark, Mailgun, SendGrid, or a custom script to this URL. Include your webhook secret in the{' '}
+                                Point Postmark, Mailgun, SendGrid, or a custom script to this URL. Authenticate with the{' '}
                                 <code className="rounded bg-slate-100 px-1 text-xs">X-Inbound-Secret</code> header (or{' '}
-                                <code className="rounded bg-slate-100 px-1 text-xs">?secret=</code> query parameter).
+                                <code className="rounded bg-slate-100 px-1 text-xs">X-Webhook-Secret</code>). Query-string secrets are rejected. Provider HMAC signatures are not verified yet — keep the shared secret private.
                             </p>
                             <p className="mt-3 break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-800">
                                 {inboundWebhookUrl}
                             </p>
                             <p className="mt-3 text-xs text-slate-500">
-                                Replies are matched to open tickets when the subject contains the ticket reference (e.g. TKT-…). Otherwise a new ticket is created when enabled below.
+                                Replies are attached only when the sender is the ticket company, company owner, or ticket customer. A ticket reference in the subject is not enough on its own.
                             </p>
                         </AdminCard>
                     )}

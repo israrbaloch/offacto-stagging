@@ -87,7 +87,7 @@ final class CommunicationSettingsRegistry
                     ['key' => 'comm_inbound_address', 'type' => 'email', 'label' => 'Support inbox address', 'default' => '', 'hint' => 'The address customers email (e.g. support@yourdomain.com).'],
                     ['key' => 'comm_inbound_provider', 'type' => 'select', 'label' => 'Email provider', 'default' => 'postmark', 'options' => ['postmark', 'mailgun', 'sendgrid', 'generic']],
                     ['key' => 'comm_inbound_mode', 'type' => 'select', 'label' => 'How mail reaches Offacto', 'default' => 'webhook', 'options' => ['webhook', 'forward_only']],
-                    ['key' => 'comm_inbound_webhook_secret', 'type' => 'password', 'label' => 'Webhook secret', 'default' => '', 'optional' => true, 'hint' => 'Send this in the X-Inbound-Secret header from your provider.'],
+                    ['key' => 'comm_inbound_webhook_secret', 'type' => 'password', 'label' => 'Webhook secret', 'default' => '', 'optional' => true, 'hint' => 'Your provider must send this in the X-Inbound-Secret header. Query parameters are not accepted.'],
                     ['key' => 'comm_inbound_create_tickets', 'type' => 'boolean', 'label' => 'Create a ticket when no open ticket matches the sender', 'default' => true],
                     ['key' => 'comm_inbound_forward_emails', 'type' => 'structured', 'widget' => 'email_recipient_list', 'label' => 'Also forward copies to (optional)', 'default' => []],
                 ],

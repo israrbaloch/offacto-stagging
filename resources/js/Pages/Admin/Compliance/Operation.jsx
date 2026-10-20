@@ -40,6 +40,7 @@ export default function ComplianceOperation({
     consents = [],
     requests = [],
     holds = [],
+    companies = [],
     jobs = [],
     privacy = {},
     breaches = [],
@@ -79,7 +80,7 @@ export default function ComplianceOperation({
         scope_confirm: false,
     });
     const evidenceForm = useForm({ authority_request_id: '', record_type: '', record_reference: '', content_hash: '' });
-    const holdForm = useForm({ title: '', scope_description: '' });
+    const holdForm = useForm({ title: '', scope_description: '', company_id: '' });
     const deletionForm = useForm({ category: 'logs', summary: '', scheduled_for: '' });
     const breachForm = useForm({ severity: 'medium', summary: '', discovered_at: new Date().toISOString().slice(0, 16) });
 
@@ -262,17 +263,26 @@ export default function ComplianceOperation({
                                     <AdminField label="Title">
                                         <input className={inputClass} value={holdForm.data.title} onChange={(e) => holdForm.setData('title', e.target.value)} />
                                     </AdminField>
+                                    <AdminField label="Company (optional)">
+                                        <select className={selectClass} value={holdForm.data.company_id} onChange={(e) => holdForm.setData('company_id', e.target.value)}>
+                                            <option value="">All companies (platform-wide)</option>
+                                            {(companies || []).map((company) => (
+                                                <option key={company.id} value={company.id}>{company.company_name}</option>
+                                            ))}
+                                        </select>
+                                    </AdminField>
                                     <AdminField label="Scope">
                                         <textarea className={textareaClass} rows={3} value={holdForm.data.scope_description} onChange={(e) => holdForm.setData('scope_description', e.target.value)} />
                                     </AdminField>
                                     <AdminButton type="submit">Place hold</AdminButton>
                                 </form>
                             </AdminCard>
-                            <AdminTable columns={['Reference', 'Title', 'Status', 'Placed', '']}>
+                            <AdminTable columns={['Reference', 'Title', 'Company', 'Status', 'Placed', '']}>
                                 {(holds || []).map((row) => (
                                     <tr key={row.id}>
                                         <td className="px-4 py-3 font-mono text-xs">{row.reference}</td>
                                         <td className="px-4 py-3 text-sm">{row.title}</td>
+                                        <td className="px-4 py-3 text-sm">{row.company?.company_name || 'All companies'}</td>
                                         <td className="px-4 py-3">
                                             <AdminBadge tone={row.status === 'active' ? 'warning' : 'neutral'}>{row.status}</AdminBadge>
                                         </td>
