@@ -18,14 +18,19 @@ class InvoiceReminder extends Mailable
 
     public function __construct(
         public Invoice $invoice,
-        public string $customMessage = ''
+        public string $bodyHtml = '',
+        public string $subjectLine = '',
     ) {
     }
 
     public function envelope(): Envelope
     {
+        $subject = $this->subjectLine !== ''
+            ? $this->subjectLine
+            : 'Payment reminder: Invoice #'.($this->invoice->invoice_number ?? 'N/A');
+
         return new Envelope(
-            subject: 'Payment reminder: Invoice #'.($this->invoice->invoice_number ?? 'N/A'),
+            subject: $subject,
         );
     }
 
@@ -35,14 +40,14 @@ class InvoiceReminder extends Mailable
             view: 'emails.invoice-reminder',
             with: [
                 'invoice' => $this->invoice,
-                'customMessage' => $this->customMessage,
+                'customMessage' => $this->bodyHtml,
             ],
         );
     }
 
     public function attachments(): array
     {
-        $this->invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer']);
+        $this->invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer', 'blocks']);
         $pdf = Pdf::loadView('pdf.invoice', [
             'invoice' => $this->invoice,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),

@@ -1,110 +1,29 @@
-import { Link, router, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { Link, router, useForm } from '@inertiajs/react';
 import Icon from '../../Components/Icon';
-import CompanyIntegrationsPanel from '../../Components/CompanyIntegrationsPanel';
-import NumberingSeriesEditor from '../../Components/NumberingSeriesEditor';
-import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
-import { localeTag, t } from '../../lib/i18n';
-import { optionsFromMap } from '../../lib/utils';
+import { t } from '../../lib/i18n';
 
 const fieldClass =
     'w-full rounded-xl border border-indigo-100 bg-indigo-50/80 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100';
-const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
 
-function Field({ label, error, children }) {
-    return (
-        <label className="block">
-            <span className={labelClass}>{label}</span>
-            {children}
-            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
-        </label>
-    );
-}
-
-function formatTrialDate(value) {
-    if (!value) return '—';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString(localeTag(), { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function Card({ icon, title, action, children, className = '' }) {
+function Card({ icon, title, children, className = '' }) {
     return (
         <section className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ${className}`}>
-            <div className="mb-5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                        <Icon name={icon} className="h-4 w-4" />
-                    </span>
-                    <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-                </div>
-                {action}
+            <div className="mb-5 flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                    <Icon name={icon} className="h-4 w-4" />
+                </span>
+                <h2 className="text-base font-semibold text-slate-900">{title}</h2>
             </div>
             {children}
         </section>
     );
 }
 
-function Toggle({ checked, onChange }) {
-    return (
-        <button
-            type="button"
-            role="switch"
-            aria-checked={checked}
-            onClick={() => onChange(!checked)}
-            className={`relative h-6 w-11 rounded-full transition ${checked ? 'bg-indigo-600' : 'bg-slate-300'}`}
-        >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${checked ? 'left-5' : 'left-0.5'}`} />
-        </button>
-    );
-}
-
-export default function Edit({
-    user,
-    company,
-    companySettings,
-    invoiceLogoUrl,
-    numberingSeriesList = [],
-    activeNumberingSeriesId = null,
-    languages = {},
-    legalDocuments = [],
-    integrations = {},
-    integrationLinks = {},
-}) {
-    const { activeCompany } = usePage().props;
-    const [addingLegal, setAddingLegal] = useState(false);
-    const [logoPreview, setLogoPreview] = useState(invoiceLogoUrl || null);
-
-    useEffect(() => {
-        setLogoPreview(invoiceLogoUrl || null);
-    }, [invoiceLogoUrl]);
-
+export default function Edit({ user, hasCompany }) {
     const profile = useForm({
         name: user?.name || '',
         email: user?.email || '',
-    });
-    const companyForm = useForm({
-        company_name: company?.company_name || '',
-        first_name: company?.first_name || '',
-        surname: company?.surname || '',
-        email: company?.email || '',
-        phone: company?.phone || '',
-        vat_number: company?.vat_number || '',
-        street: company?.street || '',
-        house: company?.house || '',
-        postal_code: company?.postal_code || '',
-        city: company?.city || '',
-        language: company?.language || '',
-        self_employed_activity: company?.self_employed_activity || '',
-    });
-    const settings = useForm({
-        theme: {
-            primary: companySettings?.theme?.primary || '#4054b2',
-            secondary: companySettings?.theme?.secondary || '#94a3b8',
-        },
-        invoice_logo: null,
-        logo_in_emails: companySettings?.logo_in_emails ?? true,
     });
     const destroy = useForm({ password: '' });
 
@@ -113,60 +32,43 @@ export default function Edit({
         profile.patch('/profile');
     };
 
-    const saveCompany = (e) => {
-        e.preventDefault();
-        companyForm.transform((data) => ({
-            ...data,
-            house: data.house?.trim() || '-',
-        }));
-        companyForm.patch('/profile/company');
-    };
-
-    const saveBranding = (extra = {}) => {
-        const uploadFile = extra.invoice_logo instanceof File ? extra.invoice_logo : null;
-        if (uploadFile) {
-            settings.setData('invoice_logo', uploadFile);
-        } else {
-            Object.entries(extra).forEach(([key, value]) => settings.setData(key, value));
-        }
-
-        const hasFile = uploadFile instanceof File || settings.data.invoice_logo instanceof File;
-
-        settings.patch('/profile/company-settings', {
-            forceFormData: hasFile,
-            preserveScroll: true,
-            onSuccess: () => {
-                settings.setData('invoice_logo', null);
-                router.reload({ preserveScroll: true });
-            },
-        });
-    };
-
-    const typeLabel = {
-        terms: t('profile.terms'),
-        contract: t('profile.contract'),
-        other: t('profile.other'),
-    };
-
     return (
         <AuthenticatedLayout title={t('profile.title')}>
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{t('profile.title')}</h1>
-                <p className="mt-1 text-sm text-slate-500">{t('profile.subtitle')}</p>
-            </div>
+            <div className="mx-auto max-w-2xl">
+                <div className="mb-6">
+                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{t('profile.title')}</h1>
+                    <p className="mt-1 text-sm text-slate-500">{t('profile.account_subtitle')}</p>
+                </div>
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
+                {hasCompany && (
+                    <Link
+                        href="/company/settings"
+                        className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50/60 px-5 py-4 text-sm transition hover:border-indigo-300 hover:bg-indigo-50"
+                    >
+                        <span className="flex items-center gap-3">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+                                <Icon name="building" className="h-5 w-5" />
+                            </span>
+                            <span>
+                                <span className="block font-semibold text-slate-900">{t('company_settings.link_title')}</span>
+                                <span className="mt-0.5 block text-slate-600">{t('company_settings.link_body')}</span>
+                            </span>
+                        </span>
+                        <span className="shrink-0 font-medium text-indigo-700">→</span>
+                    </Link>
+                )}
+
                 <div className="space-y-6">
                     <Card icon="user" title={t('profile.account')}>
                         <form onSubmit={saveAccount} className="space-y-5">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <label className="block">
-                                    <span className={labelClass}>{t('profile.full_name')}</span>
+                                    <span className="mb-1.5 block text-sm font-medium text-slate-700">{t('profile.full_name')}</span>
                                     <input className={fieldClass} value={profile.data.name} onChange={(e) => profile.setData('name', e.target.value)} />
                                     {profile.errors.name && <span className="mt-1 block text-xs text-rose-600">{profile.errors.name}</span>}
                                 </label>
                                 <label className="block">
-                                    <span className={labelClass}>{t('profile.email')}</span>
+                                    <span className="mb-1.5 block text-sm font-medium text-slate-700">{t('profile.email')}</span>
                                     <input type="email" className={fieldClass} value={profile.data.email} onChange={(e) => profile.setData('email', e.target.value)} />
                                     {profile.errors.email && <span className="mt-1 block text-xs text-rose-600">{profile.errors.email}</span>}
                                 </label>
@@ -190,335 +92,36 @@ export default function Edit({
                         </form>
                     </Card>
 
-                    <Card icon="building" title={t('profile.company_info')}>
-                        {company ? (
-                            <form onSubmit={saveCompany} className="space-y-5">
-                                <Field label={t('companies.name')} error={companyForm.errors.company_name}>
-                                    <input className={fieldClass} value={companyForm.data.company_name} onChange={(e) => companyForm.setData('company_name', e.target.value)} />
-                                </Field>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <Field label={t('companies.first_name')} error={companyForm.errors.first_name}>
-                                        <input className={fieldClass} value={companyForm.data.first_name} onChange={(e) => companyForm.setData('first_name', e.target.value)} />
-                                    </Field>
-                                    <Field label={t('companies.surname')} error={companyForm.errors.surname}>
-                                        <input className={fieldClass} value={companyForm.data.surname} onChange={(e) => companyForm.setData('surname', e.target.value)} />
-                                    </Field>
-                                </div>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <Field label={t('profile.company_email')} error={companyForm.errors.email}>
-                                        <input type="email" className={fieldClass} value={companyForm.data.email} onChange={(e) => companyForm.setData('email', e.target.value)} />
-                                    </Field>
-                                    <Field label={t('profile.company_phone')} error={companyForm.errors.phone}>
-                                        <input className={fieldClass} value={companyForm.data.phone} onChange={(e) => companyForm.setData('phone', e.target.value)} />
-                                    </Field>
-                                </div>
-                                <Field label={t('companies.vat')} error={companyForm.errors.vat_number}>
-                                    <input className={fieldClass} value={companyForm.data.vat_number} onChange={(e) => companyForm.setData('vat_number', e.target.value)} />
-                                </Field>
-                                <Field label={t('companies.activity')} error={companyForm.errors.self_employed_activity}>
-                                    <SelectMenu
-                                        value={companyForm.data.self_employed_activity}
-                                        onChange={(e) => companyForm.setData('self_employed_activity', e.target.value)}
-                                        placeholder={t('common.optional')}
-                                        className={fieldClass}
-                                        options={[
-                                            { value: 'main_profession', label: t('companies.main_profession') },
-                                            { value: 'secondary_profession', label: t('companies.secondary_profession') },
-                                        ]}
-                                    />
-                                </Field>
-                                <div className="border-t border-slate-100 pt-4">
-                                    <p className="mb-3 text-sm font-medium text-slate-800">{t('companies.address')}</p>
-                                    <div className="space-y-4">
-                                        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem]">
-                                            <Field label={t('companies.street')} error={companyForm.errors.street}>
-                                                <input className={fieldClass} value={companyForm.data.street} onChange={(e) => companyForm.setData('street', e.target.value)} />
-                                            </Field>
-                                            <Field label={t('companies.house')} error={companyForm.errors.house}>
-                                                <input className={fieldClass} value={companyForm.data.house} onChange={(e) => companyForm.setData('house', e.target.value)} />
-                                            </Field>
-                                        </div>
-                                        <div className="grid gap-4 sm:grid-cols-2">
-                                            <Field label={t('companies.postal')} error={companyForm.errors.postal_code}>
-                                                <input className={fieldClass} value={companyForm.data.postal_code} onChange={(e) => companyForm.setData('postal_code', e.target.value)} />
-                                            </Field>
-                                            <Field label={t('companies.city')} error={companyForm.errors.city}>
-                                                <input className={fieldClass} value={companyForm.data.city} onChange={(e) => companyForm.setData('city', e.target.value)} />
-                                            </Field>
-                                        </div>
-                                        <Field label={t('companies.language')} error={companyForm.errors.language}>
-                                            <SelectMenu
-                                                value={companyForm.data.language}
-                                                onChange={(e) => companyForm.setData('language', e.target.value)}
-                                                options={optionsFromMap(languages)}
-                                                placeholder={t('common.select')}
-                                                className={fieldClass}
-                                            />
-                                        </Field>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end pt-2">
-                                    <button type="submit" disabled={companyForm.processing} className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                                        {t('profile.save_company')}
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <p className="text-sm text-slate-500">
-                                {t('profile.no_company')}{' '}
-                                <a href="/companies/create" className="font-medium text-indigo-600">{t('profile.add_company')}</a>
-                            </p>
-                        )}
-                    </Card>
+                    <Link href="/upgrade" className="block rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm shadow-sm hover:border-indigo-200">
+                        <span className="font-semibold text-slate-900">{t('profile.plan_teaser_title')}</span>
+                        <p className="mt-1 text-slate-600">{t('profile.plan_teaser_body')}</p>
+                    </Link>
+                </div>
 
-                    <Card icon="document" title={t('numbering.title')}>
-                        <NumberingSeriesEditor
-                            series={numberingSeriesList}
-                            activeSeriesId={activeNumberingSeriesId}
-                            company={company}
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        destroy.delete('/profile');
+                    }}
+                    className="mt-6 flex flex-col gap-4 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div>
+                        <h2 className="font-semibold text-rose-700">{t('profile.danger')}</h2>
+                        <p className="mt-1 text-sm text-rose-600/80">{t('profile.danger_body')}</p>
+                        <input
+                            type="password"
+                            placeholder={t('profile.confirm_password')}
+                            className="mt-3 w-full max-w-xs rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm"
+                            value={destroy.data.password}
+                            onChange={(e) => destroy.setData('password', e.target.value)}
                         />
-                    </Card>
-                </div>
-
-                <div className="space-y-6">
-                    {company && (
-                        <Card icon="clock" title={t('profile.trial_plan')}>
-                            <div className="space-y-4">
-                                <div
-                                    className={`rounded-2xl px-4 py-3 text-sm ${
-                                        activeCompany?.subscription_plan
-                                            ? 'bg-emerald-50 text-emerald-900'
-                                            : activeCompany?.trial_expired
-                                              ? 'bg-rose-50 text-rose-800'
-                                              : 'bg-indigo-50 text-indigo-900'
-                                    }`}
-                                >
-                                    <div className="font-semibold">
-                                        {activeCompany?.subscription_plan
-                                            ? t('upgrade.active_plan', {
-                                                  plan: t(`upgrade.plans.${activeCompany.subscription_plan}.name`),
-                                              })
-                                            : activeCompany?.trial_expired
-                                              ? t('profile.trial_expired_title')
-                                              : t('profile.trial_active_title', {
-                                                    days: activeCompany?.trial_days_left ?? 0,
-                                                })}
-                                    </div>
-                                    {!activeCompany?.subscription_plan && (
-                                        <p className="mt-1 text-xs opacity-90">
-                                            {t('profile.trial_period', {
-                                                start: formatTrialDate(activeCompany?.trial_starts_at || company?.trial_starts_at),
-                                                end: formatTrialDate(activeCompany?.trial_ends_at || company?.trial_ends_at),
-                                            })}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                                    <p className="font-medium text-slate-800">{t('profile.plan_teaser_title')}</p>
-                                    <p className="mt-1">{t('profile.plan_teaser_body')}</p>
-                                    <Link
-                                        href="/upgrade"
-                                        className="mt-3 inline-flex text-sm font-medium text-indigo-600 hover:text-indigo-700"
-                                    >
-                                        {activeCompany?.trial_expired ? t('profile.upgrade_now') : t('profile.upgrade_cta')} →
-                                    </Link>
-                                </div>
-                            </div>
-                        </Card>
-                    )}
-
-                    <Card icon="palette" title={t('profile.branding')}>
-                        <div className="space-y-5">
-                            {(settings.errors.invoice_logo || settings.errors['theme.primary'] || settings.errors['theme.secondary']) && (
-                                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                                    {settings.errors.invoice_logo && <p>{settings.errors.invoice_logo}</p>}
-                                    {settings.errors['theme.primary'] && <p>{settings.errors['theme.primary']}</p>}
-                                    {settings.errors['theme.secondary'] && <p>{settings.errors['theme.secondary']}</p>}
-                                </div>
-                            )}
-                            <div>
-                                <span className={labelClass}>{t('profile.logo')}</span>
-                                <label className="mt-1 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 px-4 py-8 text-center hover:border-indigo-300 hover:bg-indigo-50">
-                                    {logoPreview ? (
-                                        <img src={logoPreview} alt="Company logo" className="mb-3 max-h-16 w-auto object-contain" />
-                                    ) : (
-                                        <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white text-indigo-500 shadow-sm">
-                                            <Icon name="upload" className="h-5 w-5" />
-                                        </span>
-                                    )}
-                                    <span className="text-sm font-medium text-indigo-700">{t('profile.upload')}</span>
-                                    <span className="mt-1 text-xs text-slate-400">{t('profile.upload_hint')}</span>
-                                    <input
-                                        type="file"
-                                        accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (!file) return;
-                                            setLogoPreview(URL.createObjectURL(file));
-                                            settings.setData('invoice_logo', file);
-                                            saveBranding({ invoice_logo: file });
-                                        }}
-                                    />
-                                </label>
-                                <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        checked={!!settings.data.logo_in_emails}
-                                        onChange={(e) => {
-                                            settings.setData('logo_in_emails', e.target.checked);
-                                            saveBranding({ logo_in_emails: e.target.checked });
-                                        }}
-                                    />
-                                    {t('profile.logo_in_emails')}
-                                </label>
-                                <p className="mt-1 text-xs text-slate-400">{t('profile.logo_in_emails_hint')}</p>
-                            </div>
-                            <div>
-                                <span className={labelClass}>{t('profile.theme_colors')}</span>
-                                <div className="mt-2 space-y-3">
-                                    {[
-                                        { key: 'primary', label: t('profile.primary') },
-                                        { key: 'secondary', label: t('profile.accent') },
-                                    ].map((item) => (
-                                        <label key={item.key} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-                                            <span className="text-sm text-slate-700">{item.label}</span>
-                                            <span className="flex items-center gap-2">
-                                                <span className="h-8 w-8 overflow-hidden rounded-full ring-2 ring-white shadow">
-                                                    <input
-                                                        type="color"
-                                                        className="h-10 w-10 -translate-x-1 -translate-y-1 cursor-pointer border-0 bg-transparent p-0"
-                                                        value={settings.data.theme[item.key]}
-                                                        onChange={(e) => settings.setData('theme', { ...settings.data.theme, [item.key]: e.target.value })}
-                                                        onBlur={() => saveBranding()}
-                                                    />
-                                                </span>
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            {company && (
-                                <div className="flex justify-end border-t border-slate-100 pt-4">
-                                    <button
-                                        type="button"
-                                        disabled={settings.processing}
-                                        onClick={() => saveBranding()}
-                                        className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                                    >
-                                        {t('profile.save_branding')}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-
-                    <Card icon="settings" title={t('integrations.title')} className="lg:col-span-2">
-                        {company ? (
-                            <CompanyIntegrationsPanel integrations={integrations} links={integrationLinks} />
-                        ) : (
-                            <p className="text-sm text-slate-500">{t('integrations.no_company')}</p>
-                        )}
-                    </Card>
-
-                    <Card
-                        icon="scale"
-                        title={t('profile.legal')}
-                        action={
-                            company ? (
-                                <button type="button" onClick={() => setAddingLegal((open) => !open)} className="text-indigo-600 hover:text-indigo-700" aria-label={t('profile.add_legal')}>
-                                    <Icon name="plus" className="h-5 w-5" />
-                                </button>
-                            ) : null
-                        }
-                    >
-                        {!company && <p className="text-sm text-slate-500">{t('profile.no_legal_company')}</p>}
-                        <ul className="space-y-3">
-                            {legalDocuments.map((doc) => (
-                                <li key={doc.id} className="rounded-2xl bg-indigo-50/80 px-4 py-3">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <div className="truncate font-medium text-slate-900">{typeLabel[doc.type] || doc.original_name}</div>
-                                            <div className="mt-0.5 truncate text-xs text-slate-500">{doc.original_name}</div>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-slate-400">
-                                            <Icon name="document" className="h-4 w-4 text-indigo-400" />
-                                            <button type="button" className="hover:text-rose-600" onClick={() => router.delete(`/profile/legal-documents/${doc.id}`)} aria-label={t('common.delete')}>
-                                                <Icon name="trash" className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 flex items-center justify-between">
-                                        <span className="text-xs font-medium text-slate-600">{t('profile.attach_quotes')}</span>
-                                        <Toggle
-                                            checked={!!doc.attach_to_quotes_default}
-                                            onChange={(checked) => router.patch(`/profile/legal-documents/${doc.id}`, { attach_to_quotes_default: checked })}
-                                        />
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                        {addingLegal && company && (
-                            <form
-                                className="mt-4 space-y-3 border-t border-slate-100 pt-4"
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const formEl = e.currentTarget;
-                                    const data = new FormData(formEl);
-                                    if (formEl.attach_to_quotes_default?.checked) {
-                                        data.set('attach_to_quotes_default', '1');
-                                    }
-                                    router.post('/profile/legal-documents', data, {
-                                        forceFormData: true,
-                                        onSuccess: () => {
-                                            formEl.reset();
-                                            setAddingLegal(false);
-                                        },
-                                    });
-                                }}
-                            >
-                                <select name="type" className={fieldClass} defaultValue="terms">
-                                    <option value="terms">{t('profile.terms')}</option>
-                                    <option value="contract">{t('profile.contract')}</option>
-                                    <option value="other">{t('profile.other')}</option>
-                                </select>
-                                <input name="file" type="file" accept="application/pdf" required className={fieldClass} />
-                                <label className="flex items-center gap-2 text-sm text-slate-600">
-                                    <input type="checkbox" name="attach_to_quotes_default" value="1" defaultChecked />
-                                    {t('profile.attach_default')}
-                                </label>
-                                <button type="submit" className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white">
-                                    {t('profile.upload_pdf')}
-                                </button>
-                            </form>
-                        )}
-                    </Card>
-                </div>
+                        {destroy.errors.password && <span className="mt-1 block text-xs text-rose-600">{destroy.errors.password}</span>}
+                    </div>
+                    <button type="submit" disabled={destroy.processing} className="shrink-0 rounded-full border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-100">
+                        {t('profile.delete_account')}
+                    </button>
+                </form>
             </div>
-
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    destroy.delete('/profile');
-                }}
-                className="mt-6 flex flex-col gap-4 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
-            >
-                <div>
-                    <h2 className="font-semibold text-rose-700">{t('profile.danger')}</h2>
-                    <p className="mt-1 text-sm text-rose-600/80">{t('profile.danger_body')}</p>
-                    <input
-                        type="password"
-                        placeholder={t('profile.confirm_password')}
-                        className="mt-3 w-full max-w-xs rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm"
-                        value={destroy.data.password}
-                        onChange={(e) => destroy.setData('password', e.target.value)}
-                    />
-                    {destroy.errors.password && <span className="mt-1 block text-xs text-rose-600">{destroy.errors.password}</span>}
-                </div>
-                <button type="submit" disabled={destroy.processing} className="shrink-0 rounded-full border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-100">
-                    {t('profile.delete_account')}
-                </button>
-            </form>
         </AuthenticatedLayout>
     );
 }

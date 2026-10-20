@@ -3,18 +3,30 @@
 namespace App\Services;
 
 use App\Models\Invoice;
-use App\Support\IntegrationPolicy;
+use App\Support\CompanyIntegrations;
 use Illuminate\Support\Facades\Http;
 
 class PeppolSendService
 {
     public function send(Invoice $invoice): void
     {
-        $endpoint = IntegrationPolicy::peppolEndpoint();
-        $token = IntegrationPolicy::peppolToken();
+        $invoice->loadMissing('company.companySetting');
+        $company = $invoice->company;
+
+        if (! CompanyIntegrations::peppolEnabled($company)) {
+            throw new \RuntimeException('Peppol is disabled for this company.');
+        }
+
+        $settings = CompanyIntegrations::settings($company);
+        if (! $settings) {
+            throw new \RuntimeException('Company settings could not be loaded.');
+        }
+
+        $endpoint = CompanyIntegrations::peppolEndpoint($settings);
+        $token = CompanyIntegrations::peppolToken($settings);
 
         if (! $endpoint || ! $token) {
-            throw new \RuntimeException('Peppol test credentials are not configured.');
+            throw new \RuntimeException('Peppol credentials are not configured.');
         }
 
         $ubl = (new UblInvoiceService())->generate($invoice);

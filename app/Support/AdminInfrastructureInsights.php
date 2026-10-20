@@ -99,7 +99,8 @@ final class AdminInfrastructureInsights
     {
         return [
             ['command' => 'invoices:generate-recurring', 'schedule' => 'Daily', 'purpose' => 'Recurring invoice generation'],
-            ['command' => 'subscriptions:process', 'schedule' => 'Daily', 'purpose' => 'Subscription billing processing'],
+            ['command' => 'invoices:send-overdue-reminders', 'schedule' => 'Daily', 'purpose' => 'Automated overdue invoice payment reminders'],
+            ['command' => 'subscriptions:process', 'schedule' => 'Daily', 'purpose' => 'Subscription/trial expiry reminders'],
         ];
     }
 

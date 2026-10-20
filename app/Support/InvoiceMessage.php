@@ -16,10 +16,11 @@ class InvoiceMessage
         $number = $invoice->invoice_number ?: (string) $invoice->id;
 
         $payLink = filled($invoice->mollie_checkout_url) ? (string) $invoice->mollie_checkout_url : '';
+        $invoiceLink = method_exists($invoice, 'publicUrl') ? $invoice->publicUrl() : '';
 
         return str_replace(
-            ['#CLIENTNAME#', '#COMPANY#', '#INVOICENUMBER#', '#PAYLINK#'],
-            [e($client), e($company), e($number), e($payLink)],
+            ['#CLIENTNAME#', '#COMPANY#', '#INVOICENUMBER#', '#PAYLINK#', '#INVOICELINK#'],
+            [e($client), e($company), e($number), e($payLink), e($invoiceLink)],
             $html
         );
     }

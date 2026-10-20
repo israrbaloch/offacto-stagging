@@ -29,6 +29,27 @@ class CompanyIntegrations
             : 'test';
     }
 
+    public static function mollieEnabled(?Company $company): bool
+    {
+        $settings = self::settings($company);
+
+        return $settings && ($settings->mollie_enabled ?? true);
+    }
+
+    public static function postbodeEnabled(?Company $company): bool
+    {
+        $settings = self::settings($company);
+
+        return $settings && ($settings->postbode_enabled ?? true);
+    }
+
+    public static function peppolEnabled(?Company $company): bool
+    {
+        $settings = self::settings($company);
+
+        return $settings && ($settings->peppol_enabled ?? false);
+    }
+
     public static function mollieApiKey(CompanySetting $settings): ?string
     {
         $mode = self::mode($settings);
@@ -40,6 +61,10 @@ class CompanyIntegrations
 
     public static function mollieConfigured(?Company $company): bool
     {
+        if (! self::mollieEnabled($company)) {
+            return false;
+        }
+
         $settings = self::settings($company);
 
         return $settings && filled(self::mollieApiKey($settings));
@@ -56,6 +81,10 @@ class CompanyIntegrations
 
     public static function postbodeConfigured(?Company $company): bool
     {
+        if (! self::postbodeEnabled($company)) {
+            return false;
+        }
+
         $settings = self::settings($company);
         if (! $settings || ! filled(self::postbodeToken($settings))) {
             return false;
@@ -68,13 +97,54 @@ class CompanyIntegrations
         return filled($settings->postbode_mailbox_code) && filled($settings->postbode_envelope_uuid);
     }
 
+    public static function peppolEndpoint(CompanySetting $settings): ?string
+    {
+        $mode = self::mode($settings);
+        $companyEndpoint = $mode === 'live'
+            ? ($settings->peppol_live_endpoint ?: null)
+            : ($settings->peppol_test_endpoint ?: $settings->peppol_live_endpoint);
+
+        return filled($companyEndpoint) ? $companyEndpoint : IntegrationPolicy::peppolEndpoint();
+    }
+
+    public static function peppolToken(CompanySetting $settings): ?string
+    {
+        $mode = self::mode($settings);
+        $companyToken = $mode === 'live'
+            ? ($settings->peppol_live_token ?: null)
+            : ($settings->peppol_test_token ?: $settings->peppol_live_token);
+
+        return filled($companyToken) ? $companyToken : IntegrationPolicy::peppolToken();
+    }
+
+    public static function peppolConfigured(?Company $company): bool
+    {
+        if (! self::peppolEnabled($company)) {
+            return false;
+        }
+
+        $settings = self::settings($company);
+        if (! $settings) {
+            return false;
+        }
+
+        return filled(self::peppolEndpoint($settings)) && filled(self::peppolToken($settings));
+    }
+
     /**
      * @return array<string, mixed>
      */
-    public static function postbodeFormDefaults(?CompanySetting $settings): array
+    public static function postbodeFormDefaults(?CompanySetting $settings, ?Company $company = null): array
     {
+        $company = $company ?? $settings?->company;
+
         return [
             'integrations_mode' => $settings?->integrations_mode ?? 'test',
+            'mollie_enabled' => (bool) ($settings?->mollie_enabled ?? true),
+            'postbode_enabled' => (bool) ($settings?->postbode_enabled ?? true),
+            'peppol_enabled' => (bool) ($settings?->peppol_enabled ?? false),
+            'peppol_test_endpoint' => $settings?->peppol_test_endpoint ?? '',
+            'peppol_live_endpoint' => $settings?->peppol_live_endpoint ?? '',
             'postbode_mailbox_code' => $settings?->postbode_mailbox_code ?? '',
             'postbode_envelope_uuid' => $settings?->postbode_envelope_uuid ?? '',
             'postbode_v1_mailbox_id' => $settings?->postbode_v1_mailbox_id ?? '',
@@ -87,8 +157,12 @@ class CompanyIntegrations
             'mollie_live_key_set' => filled($settings?->mollie_live_key),
             'postbode_test_token_set' => filled($settings?->postbode_test_token),
             'postbode_live_token_set' => filled($settings?->postbode_live_token),
-            'postbode_configured' => $settings ? self::postbodeConfigured($settings->company) : false,
-            'mollie_configured' => $settings ? filled(self::mollieApiKey($settings)) : false,
+            'peppol_test_token_set' => filled($settings?->peppol_test_token),
+            'peppol_live_token_set' => filled($settings?->peppol_live_token),
+            'peppol_platform_fallback' => filled(IntegrationPolicy::peppolEndpoint()) && filled(IntegrationPolicy::peppolToken()),
+            'postbode_configured' => $company ? self::postbodeConfigured($company) : false,
+            'mollie_configured' => $company ? self::mollieConfigured($company) : false,
+            'peppol_configured' => $company ? self::peppolConfigured($company) : false,
         ];
     }
 }

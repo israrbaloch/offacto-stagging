@@ -6,12 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\SiteSetting;
+use Illuminate\Support\Str;
 
 class Invoice extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $appends = ['total', 'subtotal', 'tax_amount', 'amount_paid', 'amount_due'];
+
+    /** @var list<string> */
+    protected $hidden = ['signature_data'];
 
     /**
      * IP Transfer Types
@@ -43,6 +47,11 @@ class Invoice extends Model
         'attachment',
         'notes',
         'email_message',
+        'reminder_enabled',
+        'reminder_days_before_due',
+        'reminder_send_on',
+        'reminder_sent_at',
+        'reminder_auto_stage',
         'needs_resend',
         'status',
         'payment_status',
@@ -58,6 +67,10 @@ class Invoice extends Model
         'postbode_customer_reference',
         'mollie_payment_id',
         'mollie_checkout_url',
+        'share_token',
+        'customer_acknowledged_at',
+        'signature_data',
+        'voice_note_path',
     ];
 
     /**
@@ -71,16 +84,44 @@ class Invoice extends Model
             'invoice_date' => 'date',
             'due_date' => 'date',
             'next_run_at' => 'date',
+            'reminder_send_on' => 'date',
+            'reminder_sent_at' => 'datetime',
+            'reminder_enabled' => 'boolean',
             'peppol_sent_at' => 'datetime',
             'postbode_sent_at' => 'datetime',
+            'customer_acknowledged_at' => 'datetime',
             'is_recurring' => 'boolean',
             'needs_resend' => 'boolean',
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (Invoice $invoice) {
+            if (! $invoice->share_token) {
+                $invoice->share_token = Str::random(40);
+            }
+        });
+    }
+
+    public function publicUrl(): string
+    {
+        if (! $this->share_token) {
+            $this->update(['share_token' => Str::random(40)]);
+            $this->refresh();
+        }
+
+        return url('/i/'.$this->share_token);
+    }
+
     public function attachments()
     {
         return $this->hasMany(InvoiceAttachment::class);
+    }
+
+    public function blocks()
+    {
+        return $this->hasMany(InvoiceBlock::class)->orderBy('sort_order');
     }
 
     public function parentInvoice()

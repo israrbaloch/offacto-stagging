@@ -167,6 +167,16 @@ export default function TopBar() {
                                     </span>
                                     {t('topbar.profile')}
                                 </Link>
+                                <Link
+                                    href="/company/settings"
+                                    onClick={() => setOpen(false)}
+                                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
+                                >
+                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                                        <Icon name="building" className="h-4 w-4" />
+                                    </span>
+                                    {t('topbar.company_settings')}
+                                </Link>
                             </div>
                             <div className="border-t border-slate-100 p-1.5">
                                 <Link

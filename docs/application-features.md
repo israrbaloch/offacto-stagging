@@ -399,7 +399,7 @@ Email behavior:
 - The email includes the quotation PDF, any uploaded PDF attachments, and the selected legal PDFs.
 - The public link in the message is `/q/{share token}`.
 
-The postal channel is offered in the same dialog. Invoice postal sending actually dispatches through Postbode. The quote postal action records a queued confirmation; it does not complete a live Postbode dispatch in the quote send handler.
+The postal channel is offered in the same dialog. When Postbode is configured, both quotations and invoices dispatch the document PDF through Postbode (same integration settings under Profile → Integrations).
 
 ### Quote statuses the user sees
 

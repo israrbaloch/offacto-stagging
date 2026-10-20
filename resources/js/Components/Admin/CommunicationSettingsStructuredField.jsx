@@ -165,9 +165,13 @@ export default function CommunicationSettingsStructuredField(props) {
             <AdminSection title={field.label}>
                 {daysField('trial_expiry_days', 'Trial ending — remind this many days before')}
                 {daysField('subscription_renewal_days', 'Subscription renewal — remind this many days before')}
+                <p className="text-sm text-slate-600">
+                    Overdue invoice timing (days after due date, grace period, escalation text) is configured under Admin → Financial → Overdue &amp; reminder policies. The daily{' '}
+                    <code className="text-xs">invoices:send-overdue-reminders</code> command applies that schedule.
+                </p>
                 <div className="mt-2">
                     <AdminCheckboxField
-                        label="Invoice reminders follow each company's own settings"
+                        label="Only send automated invoice reminders when enabled on each invoice"
                         checked={!!v.invoice_reminder_use_company_settings}
                         onChange={(e) => set('invoice_reminder_use_company_settings', e.target.checked)}
                     />

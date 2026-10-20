@@ -43,6 +43,7 @@ export default function InvoicePreview({
     totalsOverride,
     theme = {},
     logoUrl,
+    middleContent = null,
 }) {
     const primary = theme.primary || DEFAULT_BRAND_PRIMARY;
     const secondary = theme.secondary || DEFAULT_BRAND_SECONDARY;
@@ -117,6 +118,8 @@ export default function InvoicePreview({
                         <SafeHtml value={scope} />
                     </div>
                 )}
+
+                {middleContent}
 
                 <div className="mt-10 overflow-hidden rounded-sm border border-slate-200">
                     <table className="w-full text-left text-sm">

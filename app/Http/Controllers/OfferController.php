@@ -20,6 +20,8 @@ use App\Support\CompanyAccess;
 use App\Services\PdfZipExportService;
 use App\Support\CompanyIntegrations;
 use App\Support\OfferMessage;
+use App\Services\Postbode\PostbodeApiException;
+use App\Services\Postbode\PostbodeSendService;
 use App\Support\OfferPresentation;
 use App\Support\PublicStorage;
 use Illuminate\Support\Facades\Storage;
@@ -301,18 +303,44 @@ class OfferController extends Controller
         return Storage::disk('public')->download($offer->voice_note_path, $filename);
     }
 
-    public function sendPostbode(Request $request, $offer): RedirectResponse
+    public function sendPostbode(Request $request, $offer, PostbodeSendService $postbode): RedirectResponse
     {
-        $activeCompany = $request->user()?->activeCompany();
-        Offer::where('id', $offer)
+        $user = $request->user();
+        $activeCompany = $user?->activeCompany();
+        $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany?->id)
             ->firstOrFail();
+
+        if ($deny = CompanyAccess::denySend($user, $activeCompany, 'offers.send')) {
+            return $deny;
+        }
 
         $request->validate([
             'registered' => ['nullable', 'boolean'],
         ]);
 
-        return back()->with('status', 'postbode-queued');
+        $settings = CompanyIntegrations::settings($activeCompany);
+        if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
+            return back()->with('error', 'Postbode is not configured for this workspace. Add your API token under Profile → Integrations.');
+        }
+
+        try {
+            $result = $postbode->sendOffer(
+                $offer,
+                $settings,
+                $request->has('registered') ? $request->boolean('registered') : null,
+            );
+
+            $offer->update([
+                'postbode_sent_at' => now(),
+                'postbode_postal_uuid' => $result['uuid'],
+                'postbode_status' => $result['status'],
+            ]);
+
+            return back()->with('status', 'postbode-sent');
+        } catch (PostbodeApiException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     /**
@@ -527,7 +555,7 @@ class OfferController extends Controller
     /**
      * Send the offer via email.
      */
-    public function send(SendOfferRequest $request, $offer): JsonResponse|RedirectResponse
+    public function send(SendOfferRequest $request, $offer, PostbodeSendService $postbode): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -597,8 +625,27 @@ class OfferController extends Controller
                 }
             }
 
-            $postbodeQueued = in_array('postbode', $channels, true);
+            if (in_array('postbode', $channels, true)) {
+                $settings = CompanyIntegrations::settings($activeCompany);
+                if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
+                    return redirect()->back()->with('error', 'Postbode is not configured for this workspace.');
+                }
+
+                $result = $postbode->sendOffer(
+                    $offer,
+                    $settings,
+                    $request->has('registered') ? $request->boolean('registered') : null,
+                );
+
+                $offer->update([
+                    'postbode_sent_at' => now(),
+                    'postbode_postal_uuid' => $result['uuid'],
+                    'postbode_status' => $result['status'],
+                ]);
+            }
+
             $emailed = in_array('email', $channels, true);
+            $postbodeSent = in_array('postbode', $channels, true);
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -606,11 +653,20 @@ class OfferController extends Controller
                 ]);
             }
 
-            if ($postbodeQueued && ! $emailed) {
-                return redirect()->back()->with('status', 'postbode-queued');
+            if ($postbodeSent && ! $emailed) {
+                return redirect()->back()->with('status', 'postbode-sent');
             }
 
             return redirect()->back()->with('status', 'offer-sent');
+        } catch (PostbodeApiException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors' => ['postbode' => [$e->getMessage()]],
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -772,7 +828,7 @@ class OfferController extends Controller
 
         $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany->id)
-            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation'])
+            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation', 'blocks'])
             ->firstOrFail();
 
         $status = strtolower((string) $offer->statusRelation?->name);

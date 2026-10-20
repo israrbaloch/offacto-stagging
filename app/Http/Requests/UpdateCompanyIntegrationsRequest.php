@@ -18,6 +18,9 @@ class UpdateCompanyIntegrationsRequest extends FormRequest
     {
         return [
             'integrations_mode' => ['required', 'in:test,live'],
+            'mollie_enabled' => ['sometimes', 'boolean'],
+            'postbode_enabled' => ['sometimes', 'boolean'],
+            'peppol_enabled' => ['sometimes', 'boolean'],
             'mollie_test_key' => ['nullable', 'string', 'max:255'],
             'mollie_live_key' => ['nullable', 'string', 'max:255'],
             'postbode_test_token' => ['nullable', 'string', 'max:512'],
@@ -30,6 +33,10 @@ class UpdateCompanyIntegrationsRequest extends FormRequest
             'postbode_registered' => ['sometimes', 'boolean'],
             'postbode_send_immediately' => ['sometimes', 'boolean'],
             'postbode_api_version' => ['required', 'in:v1,v2'],
+            'peppol_test_endpoint' => ['nullable', 'string', 'max:512'],
+            'peppol_live_endpoint' => ['nullable', 'string', 'max:512'],
+            'peppol_test_token' => ['nullable', 'string', 'max:512'],
+            'peppol_live_token' => ['nullable', 'string', 'max:512'],
         ];
     }
 }

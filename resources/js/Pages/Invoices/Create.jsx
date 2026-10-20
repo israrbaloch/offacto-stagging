@@ -7,6 +7,8 @@ import LineItemsEditor from '../../Components/LineItemsEditor';
 import RichTextEditor from '../../Components/RichTextEditor';
 import SelectMenu from '../../Components/SelectMenu';
 import SendInvoiceModal from '../../Components/SendInvoiceModal';
+import OfferBlocksEditor from '../../Components/OfferBlocksEditor';
+import OfferBlockView from '../../Components/OfferBlockView';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
@@ -82,6 +84,7 @@ export default function Create({
         lines: true,
         copyright: true,
         comments: true,
+        blocks: Boolean(invoice?.id),
         email: false,
     });
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -407,6 +410,22 @@ export default function Create({
 
                     {invoice?.id && (
                         <Section
+                            id="blocks"
+                            title={t('offers.blocks_title')}
+                            hint={t('offers.blocks_hint')}
+                            open={open.blocks}
+                            onToggle={(id) => setOpen((value) => ({ ...value, [id]: !value[id] }))}
+                        >
+                            <OfferBlocksEditor
+                                documentId={invoice.id}
+                                routePrefix="invoices"
+                                initialBlocks={invoice?.blocks || []}
+                            />
+                        </Section>
+                    )}
+
+                    {invoice?.id && (
+                        <Section
                             id="email"
                             title={t('invoices.email_attachments')}
                             hint={t('invoices.email_attachments_hint')}
@@ -533,6 +552,17 @@ export default function Create({
                                     vatRate={vatRate}
                                     theme={activeCompany?.theme}
                                     logoUrl={activeCompany?.invoice_logo_url}
+                                    middleContent={
+                                        (invoice?.blocks || []).length > 0 ? (
+                                            <div className="mt-8 space-y-4">
+                                                {invoice.blocks.map((block) => (
+                                                    <div key={block.id} className="rounded-lg border border-slate-100 bg-slate-50/80 p-4 text-sm">
+                                                        <OfferBlockView block={block} primary={activeCompany?.theme?.primary} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : null
+                                    }
                                 />
                             </div>
                         </div>

@@ -34,7 +34,14 @@ function xsrfToken() {
     return match ? decodeURIComponent(match.split('=')[1]) : '';
 }
 
-export default function OfferBlocksEditor({ offerId, initialBlocks = [] }) {
+export default function OfferBlocksEditor({
+    offerId,
+    documentId,
+    routePrefix = 'offers',
+    initialBlocks = [],
+}) {
+    const id = documentId ?? offerId;
+    const blocksPath = `/${routePrefix}/${id}/blocks`;
     const { toast } = useUi();
     const [blocks, setBlocks] = useState(() => normalizeInitial(initialBlocks));
     const [dragIndex, setDragIndex] = useState(null);
@@ -83,7 +90,7 @@ export default function OfferBlocksEditor({ offerId, initialBlocks = [] }) {
             content: block.content || {},
         }));
         router.post(
-            `/offers/${offerId}/blocks`,
+            blocksPath,
             { blocks: payload },
             {
                 preserveScroll: true,
@@ -100,7 +107,7 @@ export default function OfferBlocksEditor({ offerId, initialBlocks = [] }) {
         try {
             const body = new FormData();
             body.append('file', file);
-            const response = await fetch(`/offers/${offerId}/blocks/image`, {
+            const response = await fetch(`${blocksPath}/image`, {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
@@ -140,7 +147,7 @@ export default function OfferBlocksEditor({ offerId, initialBlocks = [] }) {
         [],
     );
 
-    if (!offerId) {
+    if (!id) {
         return <p className="text-sm text-slate-400">{t('offers.blocks_save_first')}</p>;
     }
 

@@ -33,6 +33,18 @@ class CompanySetting extends Model
         'postbode_registered',
         'postbode_send_immediately',
         'postbode_api_version',
+        'mollie_enabled',
+        'postbode_enabled',
+        'peppol_enabled',
+        'peppol_test_endpoint',
+        'peppol_live_endpoint',
+        'peppol_test_token',
+        'peppol_live_token',
+        'automated_reminders_enabled',
+        'reminder_schedule',
+        'reminder_grace_days',
+        'reminder_escalation_text',
+        'terms_content',
     ];
 
     /**
@@ -53,6 +65,15 @@ class CompanySetting extends Model
             'postbode_send_immediately' => 'boolean',
             'postbode_v1_mailbox_id' => 'integer',
             'postbode_v1_envelope_id' => 'integer',
+            'mollie_enabled' => 'boolean',
+            'postbode_enabled' => 'boolean',
+            'peppol_enabled' => 'boolean',
+            'peppol_test_token' => 'encrypted',
+            'peppol_live_token' => 'encrypted',
+            'automated_reminders_enabled' => 'boolean',
+            'reminder_schedule' => 'array',
+            'reminder_grace_days' => 'integer',
+            'terms_content' => 'array',
         ];
     }
 

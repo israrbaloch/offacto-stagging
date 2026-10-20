@@ -55,7 +55,7 @@ const emptySeries = {
     restart_count: 'annual',
 };
 
-function SeriesForm({ series, onCancel, onSaved }) {
+function SeriesForm({ series, onCancel, onSaved, settingsBasePath = '/company/settings' }) {
     const isNew = !series?.id;
     const form = useForm({ ...emptySeries, ...series });
 
@@ -68,9 +68,9 @@ function SeriesForm({ series, onCancel, onSaved }) {
             onSuccess: () => onSaved?.(),
         };
         if (isNew) {
-            form.post('/profile/numbering-series', options);
+            form.post(`${settingsBasePath}/numbering-series`, options);
         } else {
-            form.patch(`/profile/numbering-series/${series.id}`, options);
+            form.patch(`${settingsBasePath}/numbering-series/${series.id}`, options);
         }
     };
 
@@ -221,7 +221,7 @@ function SeriesForm({ series, onCancel, onSaved }) {
     );
 }
 
-export default function NumberingSeriesEditor({ series = [], activeSeriesId = null, company }) {
+export default function NumberingSeriesEditor({ series = [], activeSeriesId = null, company, settingsBasePath = '/company/settings' }) {
     const { confirm } = useUi();
     const [expandedId, setExpandedId] = useState(null);
     const [creating, setCreating] = useState(false);
@@ -292,7 +292,7 @@ export default function NumberingSeriesEditor({ series = [], activeSeriesId = nu
                                                 type="button"
                                                 className="block w-full px-4 py-2 text-left text-sm hover:bg-slate-50"
                                                 onClick={() => {
-                                                    router.post(`/profile/numbering-series/${item.id}/default`, {}, { preserveScroll: true });
+                                                    router.post(`${settingsBasePath}/numbering-series/${item.id}/default`, {}, { preserveScroll: true });
                                                     setMenuOpenId(null);
                                                 }}
                                             >
@@ -312,7 +312,7 @@ export default function NumberingSeriesEditor({ series = [], activeSeriesId = nu
                                                             danger: true,
                                                         })
                                                     ) {
-                                                        router.delete(`/profile/numbering-series/${item.id}`, { preserveScroll: true });
+                                                        router.delete(`${settingsBasePath}/numbering-series/${item.id}`, { preserveScroll: true });
                                                     }
                                                 }}
                                             >
@@ -327,6 +327,7 @@ export default function NumberingSeriesEditor({ series = [], activeSeriesId = nu
                         {expandedId === item.id && (
                             <SeriesForm
                                 series={item}
+                                settingsBasePath={settingsBasePath}
                                 onCancel={() => setExpandedId(null)}
                                 onSaved={() => setExpandedId(null)}
                             />
@@ -342,6 +343,7 @@ export default function NumberingSeriesEditor({ series = [], activeSeriesId = nu
                     <div className="border-t border-slate-100">
                         <SeriesForm
                             series={{ ...emptySeries, name: t('numbering.new_default_name') }}
+                            settingsBasePath={settingsBasePath}
                             onCancel={() => setCreating(false)}
                             onSaved={() => setCreating(false)}
                         />

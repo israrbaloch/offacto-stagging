@@ -12,6 +12,7 @@ use App\Models\Customer;
 use App\Mail\InvoiceReminder;
 use App\Models\Invoice;
 use App\Models\InvoiceAttachment;
+use App\Models\InvoiceBlock;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Offer;
@@ -21,11 +22,13 @@ use App\Models\Status;
 use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Support\InvoiceMessage;
+use App\Support\InvoiceReminderMessage;
 use App\Support\RecurringInvoice;
 use App\Services\MolliePaymentService;
 use App\Services\Postbode\PostbodeApiException;
 use App\Services\Postbode\PostbodeSendService;
 use App\Support\CompanyIntegrations;
+use App\Support\PublicStorage;
 use App\Services\PdfZipExportService;
 use App\Services\PeppolSendService;
 use App\Services\UblInvoiceService;
@@ -223,7 +226,7 @@ class InvoiceController extends Controller
 
         $offer = Offer::where('id', $offer)
             ->where('company_id', $activeCompany->id)
-            ->with(['items.service', 'attachments'])
+            ->with(['items.service', 'attachments', 'blocks'])
             ->firstOrFail();
 
         $defaultStatus = Status::where('for', 'invoices')->where('name', 'Draft')->first()
@@ -266,6 +269,15 @@ class InvoiceController extends Controller
             ]);
             $invoiceItem->calculateTotal();
             $invoice->items()->save($invoiceItem);
+        }
+
+        foreach ($offer->blocks as $index => $block) {
+            InvoiceBlock::create([
+                'invoice_id' => $invoice->id,
+                'type' => $block->type,
+                'sort_order' => $block->sort_order ?? $index,
+                'content' => $block->content ?? [],
+            ]);
         }
 
         return redirect()->route('invoices.edit', $invoice);
@@ -380,11 +392,23 @@ class InvoiceController extends Controller
             $invoice->load(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'payments', 'offer', 'attachments', 'company']);
         }
 
+        if ($invoice->customer_acknowledged_at) {
+            $invoice->makeVisible(['signature_data']);
+        }
+
+        $invoicePayload = array_merge($invoice->toArray(), [
+            'voice_note_url' => filled($invoice->voice_note_path)
+                ? route('invoices.voice-note', $invoice, false)
+                : null,
+            'public_url' => $invoice->publicUrl(),
+        ]);
+
         return Inertia::render('Invoices/Show', [
-            'invoice' => $invoice,
+            'invoice' => $invoicePayload,
+            'defaultReminderMessage' => InvoiceReminderMessage::resolve($invoice)['body'],
             'ipTransferTypes' => Invoice::getIpTransferTypes(),
             'paymentMethods' => Invoice::getPaymentMethods(),
-            'peppolConfigured' => filled(config('services.peppol.endpoint')) && filled(config('services.peppol.token')),
+            'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),
             'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
         ]);
@@ -404,7 +428,7 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
-            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'attachments'])
+            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'attachments', 'blocks'])
             ->firstOrFail();
 
         $customers = Customer::where('company_id', $activeCompany->id)
@@ -452,7 +476,7 @@ class InvoiceController extends Controller
             'invoice' => $invoice->loadMissing('offer'),
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
-            'peppolConfigured' => filled(config('services.peppol.endpoint')) && filled(config('services.peppol.token')),
+            'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),
             'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
             'customers' => $customers,
             'services' => $services,
@@ -664,6 +688,7 @@ class InvoiceController extends Controller
 
             $channels = $request->validated()['channels'];
             $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'attachments', 'company']);
+            $invoice->publicUrl();
 
             $wantsMollie = in_array('mollie', $channels, true);
             $wantsEmail = in_array('email', $channels, true);
@@ -738,8 +763,8 @@ class InvoiceController extends Controller
             }
 
             if (in_array('peppol', $channels, true)) {
-                if (! filled(config('services.peppol.endpoint')) || ! filled(config('services.peppol.token'))) {
-                    return redirect()->back()->with('error', 'Peppol is not configured.');
+                if (! CompanyIntegrations::peppolConfigured($activeCompany)) {
+                    return redirect()->back()->with('error', 'Peppol is not enabled or configured for this company.');
                 }
                 $peppol->send($invoice);
             }
@@ -873,7 +898,7 @@ class InvoiceController extends Controller
 
     private function invoicePdf(Invoice $invoice): DomPdf
     {
-        $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer']);
+        $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer', 'blocks']);
 
         return Pdf::loadView('pdf.invoice', [
             'invoice' => $invoice,
@@ -1115,11 +1140,20 @@ class InvoiceController extends Controller
             'email' => ['required', 'email', 'max:255'],
         ]);
 
-        $message = $request->input('message');
+        $custom = $request->input('message');
+        $customStr = is_string($custom) ? trim($custom) : '';
+        $resolved = InvoiceReminderMessage::resolve(
+            $invoice,
+            $customStr !== '' ? $customStr : null,
+        );
+
         Mail::to($request->input('email'))->send(new InvoiceReminder(
             $invoice,
-            is_string($message) ? $message : '',
+            $resolved['body'],
+            $resolved['subject'],
         ));
+
+        \App\Support\CommunicationDeliveryLogger::emailSent('payment_reminder', $request->input('email'), $activeCompany->id);
 
         return back()->with('status', 'reminder-sent');
     }
@@ -1202,6 +1236,68 @@ class InvoiceController extends Controller
 
             return back()->with('error', 'Postbode could not send this invoice.');
         }
+    }
+
+    public function downloadVoiceNote(Request $request, $invoice): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)
+            ->where('company_id', $activeCompany?->id)
+            ->firstOrFail();
+
+        if (! filled($invoice->voice_note_path)) {
+            abort(404);
+        }
+
+        if (! Storage::disk('public')->exists($invoice->voice_note_path)) {
+            abort(404);
+        }
+
+        $filename = 'voice-note-'.($invoice->invoice_number ?: $invoice->id).'.'.pathinfo($invoice->voice_note_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('public')->download($invoice->voice_note_path, $filename);
+    }
+
+    public function syncBlocks(Request $request, $invoice): RedirectResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'blocks' => ['array'],
+            'blocks.*.type' => ['required', 'in:text,image,video,table'],
+            'blocks.*.content' => ['nullable', 'array'],
+            'blocks.*.sort_order' => ['nullable', 'integer'],
+        ]);
+
+        $invoice->blocks()->delete();
+        foreach ($validated['blocks'] ?? [] as $index => $block) {
+            InvoiceBlock::create([
+                'invoice_id' => $invoice->id,
+                'type' => $block['type'],
+                'sort_order' => $block['sort_order'] ?? $index,
+                'content' => $block['content'] ?? [],
+            ]);
+        }
+
+        return back()->with('status', 'blocks-updated');
+    }
+
+    public function uploadBlockImage(Request $request, $invoice): JsonResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'file' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $path = $validated['file']->store('invoice-blocks/'.$invoice->id, 'public');
+
+        return response()->json([
+            'path' => $path,
+            'url' => PublicStorage::url($path),
+        ]);
     }
 
     public function configureRecurring(Request $request, $invoice): RedirectResponse

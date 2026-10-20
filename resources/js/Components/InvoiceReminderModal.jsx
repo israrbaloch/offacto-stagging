@@ -5,20 +5,20 @@ import Input from './Input';
 import Modal from './Modal';
 import { t } from '../lib/i18n';
 
-export default function InvoiceReminderModal({ open, onClose, invoiceId, defaultEmail = '' }) {
+export default function InvoiceReminderModal({ open, onClose, invoiceId, defaultEmail = '', defaultMessage = '' }) {
     const form = useForm({
         email: defaultEmail,
-        message: '',
+        message: defaultMessage,
     });
     const wasOpen = useRef(false);
 
     useEffect(() => {
         if (open && !wasOpen.current) {
-            form.setData({ email: defaultEmail, message: '' });
+            form.setData({ email: defaultEmail, message: defaultMessage || '' });
             form.clearErrors();
         }
         wasOpen.current = open;
-    }, [open, defaultEmail]);
+    }, [open, defaultEmail, defaultMessage]);
 
     const submit = () => {
         if (!invoiceId) return;

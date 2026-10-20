@@ -34,9 +34,11 @@ use App\Http\Controllers\MollieWebhookController;
 use App\Http\Controllers\InboundEmailWebhookController;
 use App\Http\Controllers\PublicBriefingController;
 use App\Http\Controllers\PublicOfferController;
+use App\Http\Controllers\PublicInvoiceController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\NumberingSeriesController;
+use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\ServiceController;
@@ -51,6 +53,11 @@ Route::post('/q/{token}/accept', [PublicOfferController::class, 'accept'])->name
 Route::post('/q/{token}/decline', [PublicOfferController::class, 'decline'])->name('offers.public.decline');
 Route::get('/q/{token}/preview', [PublicOfferController::class, 'preview'])->name('offers.public.preview');
 Route::get('/q/{token}/download', [PublicOfferController::class, 'download'])->name('offers.public.download');
+
+Route::get('/i/{token}', [PublicInvoiceController::class, 'show'])->name('invoices.public');
+Route::post('/i/{token}/acknowledge', [PublicInvoiceController::class, 'acknowledge'])->name('invoices.public.acknowledge');
+Route::get('/i/{token}/preview', [PublicInvoiceController::class, 'preview'])->name('invoices.public.preview');
+Route::get('/i/{token}/download', [PublicInvoiceController::class, 'download'])->name('invoices.public.download');
 
 Route::post('/webhooks/mollie', MollieWebhookController::class)->name('webhooks.mollie');
 Route::post('/webhooks/inbound-email', InboundEmailWebhookController::class)
@@ -89,12 +96,32 @@ Route::get('/search', SearchController::class)
 Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
+
+    Route::get('/company/settings', [CompanySettingsController::class, 'index'])->name('company.settings.index');
+    Route::patch('/company/settings/company', [ProfileController::class, 'updateCompany'])->name('company.settings.company.update');
+    Route::patch('/company/settings/branding', [ProfileController::class, 'updateCompanySettings'])->name('company.settings.branding.update');
+    Route::patch('/company/settings/reminders', [CompanySettingsController::class, 'updateReminders'])->name('company.settings.reminders.update');
+    Route::patch('/company/settings/terms', [CompanySettingsController::class, 'updateTerms'])->name('company.settings.terms.update');
+    Route::post('/company/settings/legal-documents', [CompanySettingsController::class, 'storeLegalDocument'])->name('company.settings.legal.store');
+    Route::patch('/company/settings/legal-documents/{document}', [CompanySettingsController::class, 'updateLegalDocument'])->name('company.settings.legal.update');
+    Route::delete('/company/settings/legal-documents/{document}', [CompanySettingsController::class, 'destroyLegalDocument'])->name('company.settings.legal.destroy');
+    Route::get('/company/settings/legal-documents/{document}/download', [CompanySettingsController::class, 'downloadLegalDocument'])->name('company.settings.legal.download');
+    Route::post('/company/settings/numbering-series', [NumberingSeriesController::class, 'store'])->name('company.settings.numbering.store');
+    Route::patch('/company/settings/numbering-series/{series}', [NumberingSeriesController::class, 'update'])->name('company.settings.numbering.update');
+    Route::delete('/company/settings/numbering-series/{series}', [NumberingSeriesController::class, 'destroy'])->name('company.settings.numbering.destroy');
+    Route::post('/company/settings/numbering-series/{series}/default', [NumberingSeriesController::class, 'setDefault'])->name('company.settings.numbering.default');
+    Route::patch('/company/settings/integrations', [\App\Http\Controllers\CompanyIntegrationsController::class, 'update'])->name('company.settings.integrations.update');
+    Route::post('/company/settings/integrations/postbode/test', [\App\Http\Controllers\CompanyIntegrationsController::class, 'testPostbode'])->name('company.settings.integrations.postbode.test');
+
+    Route::redirect('/profile/company', '/company/settings?section=company');
+    Route::redirect('/profile/company-settings', '/company/settings?section=branding');
     Route::patch('/profile/company', [ProfileController::class, 'updateCompany'])->name('profile.company.update');
     Route::patch('/profile/company-settings', [ProfileController::class, 'updateCompanySettings'])->name('profile.company-settings.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::post('/profile/legal-documents', [ProfileController::class, 'storeLegalDocument'])->name('profile.legal.store');
-    Route::patch('/profile/legal-documents/{document}', [ProfileController::class, 'updateLegalDocument'])->name('profile.legal.update');
-    Route::delete('/profile/legal-documents/{document}', [ProfileController::class, 'destroyLegalDocument'])->name('profile.legal.destroy');
+    Route::post('/profile/legal-documents', [CompanySettingsController::class, 'storeLegalDocument'])->name('profile.legal.store');
+    Route::patch('/profile/legal-documents/{document}', [CompanySettingsController::class, 'updateLegalDocument'])->name('profile.legal.update');
+    Route::delete('/profile/legal-documents/{document}', [CompanySettingsController::class, 'destroyLegalDocument'])->name('profile.legal.destroy');
 
     Route::get('/support', [SupportTicketController::class, 'index'])->name('support');
     Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
@@ -111,7 +138,6 @@ Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function 
     Route::patch('/profile/numbering-series/{series}', [NumberingSeriesController::class, 'update'])->name('profile.numbering-series.update');
     Route::delete('/profile/numbering-series/{series}', [NumberingSeriesController::class, 'destroy'])->name('profile.numbering-series.destroy');
     Route::post('/profile/numbering-series/{series}/default', [NumberingSeriesController::class, 'setDefault'])->name('profile.numbering-series.default');
-    Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
     Route::patch('/profile/integrations', [\App\Http\Controllers\CompanyIntegrationsController::class, 'update'])->name('profile.integrations.update');
     Route::post('/profile/integrations/postbode/test', [\App\Http\Controllers\CompanyIntegrationsController::class, 'testPostbode'])->name('profile.integrations.postbode.test');
 
@@ -174,9 +200,12 @@ Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function 
     Route::post('invoices/{invoice}/postbode', [InvoiceController::class, 'sendPostbode'])->name('invoices.postbode');
     Route::post('offers/{offer}/postbode', [OfferController::class, 'sendPostbode'])->name('offers.postbode');
     Route::get('offers/{offer}/voice-note', [OfferController::class, 'downloadVoiceNote'])->name('offers.voice-note');
+    Route::post('invoices/{invoice}/blocks', [InvoiceController::class, 'syncBlocks'])->name('invoices.blocks.sync');
+    Route::post('invoices/{invoice}/blocks/image', [InvoiceController::class, 'uploadBlockImage'])->name('invoices.blocks.image');
     Route::post('invoices/{invoice}/attachments', [InvoiceController::class, 'storeAttachment'])->name('invoices.attachments.store');
     Route::delete('invoices/{invoice}/attachments/{attachment}', [InvoiceController::class, 'destroyAttachment'])->name('invoices.attachments.destroy');
     Route::get('invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->name('invoices.preview');
+    Route::get('invoices/{invoice}/voice-note', [InvoiceController::class, 'downloadVoiceNote'])->name('invoices.voice-note');
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
     Route::get('invoices/{invoice}/ubl', [InvoiceController::class, 'downloadUbl'])->name('invoices.ubl');
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.payment');

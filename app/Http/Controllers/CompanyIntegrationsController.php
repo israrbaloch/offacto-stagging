@@ -22,6 +22,9 @@ class CompanyIntegrationsController extends Controller
         }
 
         $data = $request->validated();
+        $data['mollie_enabled'] = $request->boolean('mollie_enabled');
+        $data['postbode_enabled'] = $request->boolean('postbode_enabled');
+        $data['peppol_enabled'] = $request->boolean('peppol_enabled');
         $data['postbode_registered'] = $request->boolean('postbode_registered');
         $data['postbode_send_immediately'] = $request->boolean('postbode_send_immediately');
         $data['postbode_default_country'] = strtoupper($data['postbode_default_country'] ?? 'NL');
@@ -37,6 +40,12 @@ class CompanyIntegrationsController extends Controller
         }
         if (! filled($data['postbode_live_token'] ?? null)) {
             unset($data['postbode_live_token']);
+        }
+        if (! filled($data['peppol_test_token'] ?? null)) {
+            unset($data['peppol_test_token']);
+        }
+        if (! filled($data['peppol_live_token'] ?? null)) {
+            unset($data['peppol_live_token']);
         }
 
         $settings->update($data);

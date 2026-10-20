@@ -98,6 +98,8 @@
         <div class="scope">@include('partials.rich', ['html' => $scope])</div>
     @endif
 
+    @include('partials.document-blocks', ['blocks' => $offer->blocks ?? collect(), 'primary' => $primary])
+
     @php
         $qtyHeader = \App\Support\ServiceBilling::quantityHeaderForItems($offer->items);
         $priceHeader = \App\Support\ServiceBilling::priceHeaderForItems($offer->items);

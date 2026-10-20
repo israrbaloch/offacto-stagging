@@ -35,6 +35,11 @@ final class CommunicationMergeCodes
                 'contexts' => ['invoice', 'reminder'],
                 'description' => 'Mollie checkout URL when available.',
             ],
+            '#INVOICELINK#' => [
+                'label' => 'Invoice link',
+                'contexts' => ['invoice', 'reminder'],
+                'description' => 'Public URL where the customer can view the invoice.',
+            ],
         ];
     }
 

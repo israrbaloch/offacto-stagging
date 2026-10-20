@@ -17,7 +17,7 @@ class PostbodeSendService
      */
     public function sendInvoice(Invoice $invoice, CompanySetting $settings, bool $registeredOverride = null): array
     {
-        $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer']);
+        $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer', 'blocks']);
         $pdfBytes = Pdf::loadView('pdf.invoice', [
             'invoice' => $invoice,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
@@ -33,7 +33,7 @@ class PostbodeSendService
      */
     public function sendOffer(Offer $offer, CompanySetting $settings, bool $registeredOverride = null): array
     {
-        $offer->loadMissing(['customer', 'items.service', 'company.companySetting', 'statusRelation']);
+        $offer->loadMissing(['customer', 'items.service', 'company.companySetting', 'statusRelation', 'blocks']);
         $pdfBytes = Pdf::loadView('pdf.offer', ['offer' => $offer])->output();
         $filename = Str::slug($offer->offer_number ?: 'offer-'.$offer->id).'.pdf';
         $reference = $offer->offer_number ?: 'OFF-'.$offer->id;

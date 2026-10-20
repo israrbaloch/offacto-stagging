@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Button from '../../Components/Button';
 import { Select } from '../../Components/Input';
 import InvoicePreview from '../../Components/InvoicePreview';
+import InvoiceAcknowledgmentPanel from '../../Components/InvoiceAcknowledgmentPanel';
 import InvoiceReminderModal from '../../Components/InvoiceReminderModal';
 import SendInvoiceModal from '../../Components/SendInvoiceModal';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
@@ -16,6 +17,7 @@ export default function Show({
     peppolConfigured = false,
     mollieConfigured = false,
     postbodeConfigured = false,
+    defaultReminderMessage = '',
 }) {
     const { activeCompany } = usePage().props;
     const { confirm } = useUi();
@@ -104,6 +106,8 @@ export default function Show({
                     {t('invoices.resend_required_banner')}
                 </div>
             )}
+
+            <InvoiceAcknowledgmentPanel invoice={invoice} />
 
             <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -268,6 +272,7 @@ export default function Show({
                 whatsappShareUrl={whatsappShareUrl}
             />
             <InvoiceReminderModal
+                defaultMessage={defaultReminderMessage}
                 open={reminderOpen}
                 onClose={() => setReminderOpen(false)}
                 invoiceId={invoice.id}

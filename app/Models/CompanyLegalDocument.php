@@ -9,6 +9,7 @@ class CompanyLegalDocument extends Model
     protected $fillable = [
         'company_id',
         'type',
+        'title',
         'file_path',
         'original_name',
         'attach_to_quotes_default',
