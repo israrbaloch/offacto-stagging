@@ -5,7 +5,9 @@ import FlashToaster from '../Components/FlashToaster';
 import FloatingFavicons from '../Components/FloatingFavicons';
 import I18nSync from '../Components/I18nSync';
 import Logo from '../Components/Logo';
+import SidebarCollapseButton from '../Components/SidebarCollapseButton';
 import SidebarNavLink, { resolveSidebarActiveHref } from '../Components/SidebarNavLink';
+import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed';
 
 const navGroups = [
     {
@@ -97,8 +99,10 @@ export default function AdminLayout({ title = 'Admin', children }) {
         .filter((group) => group.items.length > 0);
     const visibleItems = visibleGroups.flatMap((group) => group.items);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const { collapsed, toggle: toggleCollapsed } = useSidebarCollapsed('offacto.sidebar.collapsed.admin');
     const activeHref = resolveSidebarActiveHref(url, visibleItems.length ? visibleItems : allNavItems);
     const sidebarNavRef = useRef(null);
+    const sidebarExpanded = mobileNavOpen || !collapsed;
 
     useEffect(() => {
         const container = sidebarNavRef.current;
@@ -134,21 +138,33 @@ export default function AdminLayout({ title = 'Admin', children }) {
             <FlashToaster />
             <div className="flex h-full">
                 <aside
-                    className={`auth-aside-bg fixed inset-y-0 left-0 z-40 flex h-full w-[240px] shrink-0 flex-col overflow-hidden border-r border-white/40 transition-transform lg:static lg:translate-x-0 ${
-                        mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
-                    }`}
+                    className={`auth-aside-bg fixed inset-y-0 left-0 z-40 flex h-full shrink-0 flex-col overflow-hidden border-r border-white/40 transition-[width,transform] duration-200 ease-out lg:static lg:translate-x-0 ${
+                        mobileNavOpen ? 'translate-x-0 w-[240px]' : '-translate-x-full w-[240px]'
+                    } ${!mobileNavOpen && collapsed ? 'lg:w-[72px]' : 'lg:w-[240px]'}`}
                 >
-                    <FloatingFavicons count={5} minSize={20} maxSize={64} />
-                    <div className="relative z-10 px-4 pt-5">
-                        <Link href="/admin" className="flex items-center justify-center">
-                            <Logo variant={appearance === 'dark' ? 'white' : 'dark'} className="h-7 w-auto" />
+                    {!collapsed && <FloatingFavicons count={5} minSize={20} maxSize={64} />}
+                    <div className={`relative z-10 pt-5 ${sidebarExpanded ? 'px-4' : 'px-2 lg:px-2'}`}>
+                        <Link href="/admin" className="flex items-center justify-center" title={collapsed ? 'Admin' : undefined}>
+                            <Logo
+                                variant={appearance === 'dark' ? 'white' : 'dark'}
+                                className={sidebarExpanded ? 'h-7 w-auto' : 'h-6 w-auto'}
+                            />
                         </Link>
-                        <p className="mt-3 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">Platform</p>
+                        {sidebarExpanded && (
+                            <p className="mt-3 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">Platform</p>
+                        )}
                     </div>
-                    <nav ref={sidebarNavRef} className="admin-sidebar-nav relative z-10 mt-2 min-h-0 flex-1 space-y-5 overflow-y-auto px-3 pb-6">
+                    <nav
+                        ref={sidebarNavRef}
+                        className={`admin-sidebar-nav relative z-10 mt-2 min-h-0 flex-1 space-y-5 overflow-y-auto pb-2 ${
+                            sidebarExpanded ? 'px-3' : 'px-1.5 lg:px-1.5'
+                        }`}
+                    >
                         {visibleGroups.map((group) => (
                             <div key={group.label}>
-                                <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400/90">{group.label}</p>
+                                {sidebarExpanded && (
+                                    <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400/90">{group.label}</p>
+                                )}
                                 <div className="space-y-0.5">
                                     {group.items.map((item) => (
                                         <SidebarNavLink
@@ -156,6 +172,7 @@ export default function AdminLayout({ title = 'Admin', children }) {
                                             item={item}
                                             activeHref={activeHref}
                                             label={item.label}
+                                            collapsed={!sidebarExpanded}
                                             onNavigate={() => setMobileNavOpen(false)}
                                         />
                                     ))}
@@ -163,6 +180,13 @@ export default function AdminLayout({ title = 'Admin', children }) {
                             </div>
                         ))}
                     </nav>
+                    <div
+                        className={`relative z-10 hidden shrink-0 border-t border-white/30 py-2 lg:block ${
+                            collapsed ? 'px-1.5' : 'px-3'
+                        }`}
+                    >
+                        <SidebarCollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
+                    </div>
                 </aside>
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-white lg:rounded-l-none">
                     <AdminTopBar onOpenMobileNav={() => setMobileNavOpen(true)} />

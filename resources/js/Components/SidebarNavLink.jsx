@@ -38,22 +38,25 @@ export function resolveSidebarActiveHref(currentUrl, items) {
     return bestHref;
 }
 
-export default function SidebarNavLink({ item, activeHref, onNavigate, label }) {
+export default function SidebarNavLink({ item, activeHref, onNavigate, label, collapsed = false }) {
     const active = normalizeSidebarPath(item.href) === normalizeSidebarPath(activeHref || '');
 
     return (
         <Link
             href={item.href}
             onClick={onNavigate}
+            title={collapsed ? label : undefined}
             data-nav-active={active ? 'true' : undefined}
-            className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] transition ${
+            className={`flex items-center rounded-xl py-2 text-[13px] transition ${
+                collapsed ? 'justify-center px-2' : 'gap-2.5 px-3'
+            } ${
                 active
                     ? 'bg-white font-medium text-slate-900 shadow-sm ring-1 ring-slate-200/80'
                     : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
             }`}
         >
             <Icon name={item.icon} className="h-[17px] w-[17px] shrink-0 opacity-80" />
-            <span className="truncate">{label}</span>
+            {!collapsed && <span className="truncate">{label}</span>}
         </Link>
     );
 }

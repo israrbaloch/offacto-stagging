@@ -13,10 +13,14 @@ function initials(name = '') {
         .join('') || '—';
 }
 
-function CompanyAvatar({ company, active = false }) {
+function CompanyAvatar({ company, active = false, compact = false }) {
+    const sizeClass = compact ? 'h-10 w-10 rounded-xl text-[10px]' : 'h-8 w-8 rounded-xl text-[11px]';
+
     if (company?.logo_url) {
         return (
-            <span className={`flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ${active ? 'ring-2 ring-indigo-200' : ''}`}>
+            <span
+                className={`flex shrink-0 items-center justify-center overflow-hidden bg-white ${sizeClass} ${active ? 'ring-2 ring-indigo-200' : ''}`}
+            >
                 <img src={company.logo_url} alt="" className="h-full w-full object-contain p-0.5" />
             </span>
         );
@@ -24,7 +28,7 @@ function CompanyAvatar({ company, active = false }) {
 
     return (
         <span
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-semibold ${
+            className={`flex shrink-0 items-center justify-center font-semibold ${sizeClass} ${
                 active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
             }`}
         >
@@ -33,7 +37,7 @@ function CompanyAvatar({ company, active = false }) {
     );
 }
 
-export default function CompanySwitcher() {
+export default function CompanySwitcher({ collapsed = false }) {
     const { companies, activeCompany, auth } = usePage().props;
     const isAdmin = Boolean(auth?.user?.is_admin);
     const [open, setOpen] = useState(false);
@@ -47,11 +51,19 @@ export default function CompanySwitcher() {
             const el = buttonRef.current;
             if (!el) return;
             const rect = el.getBoundingClientRect();
-            setMenuStyle({
-                top: rect.bottom + 6,
-                left: rect.left,
-                width: rect.width,
-            });
+            if (collapsed) {
+                setMenuStyle({
+                    top: rect.top,
+                    left: rect.right + 8,
+                    width: 260,
+                });
+            } else {
+                setMenuStyle({
+                    top: rect.bottom + 6,
+                    left: rect.left,
+                    width: Math.max(rect.width, 220),
+                });
+            }
         };
         update();
         window.addEventListener('resize', update);
@@ -60,7 +72,7 @@ export default function CompanySwitcher() {
             window.removeEventListener('resize', update);
             window.removeEventListener('scroll', update, true);
         };
-    }, [open]);
+    }, [open, collapsed]);
 
     useEffect(() => {
         if (!open) return undefined;
@@ -84,6 +96,8 @@ export default function CompanySwitcher() {
     if (!companies?.length && !isAdmin) return null;
 
     const current = activeCompany ? companies?.find((company) => company.id === activeCompany.id) : null;
+    const currentLabel =
+        current?.company_name || (isAdmin ? t('platform.no_company_selected') : t('company.switcher.select'));
 
     const menu =
         open && menuStyle
@@ -171,23 +185,28 @@ export default function CompanySwitcher() {
                 type="button"
                 aria-expanded={open}
                 aria-haspopup="listbox"
+                title={collapsed ? currentLabel : undefined}
                 onClick={() => setOpen((value) => !value)}
-                className="flex w-full items-center gap-2.5 rounded-2xl border border-indigo-100/80 bg-white px-2.5 py-2 text-left shadow-sm shadow-indigo-100/40 transition hover:border-indigo-200 hover:shadow"
+                className={`flex w-full items-center rounded-2xl border border-indigo-100/80 bg-white shadow-sm shadow-indigo-100/40 transition hover:border-indigo-200 hover:shadow ${
+                    collapsed ? 'aspect-square justify-center p-0' : 'gap-2.5 px-2.5 py-2 text-left'
+                }`}
             >
-                <CompanyAvatar company={current} active />
-                <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-slate-800">
-                        {current?.company_name || (isAdmin ? t('platform.no_company_selected') : t('company.switcher.select'))}
-                    </span>
-                    <span className="block text-[11px] text-slate-400">
-                        {isAdmin && !current
-                            ? t('platform.admin_mode')
-                            : current?.is_active === false
-                              ? t('common.inactive')
-                              : t('common.workspace')}
-                    </span>
-                </span>
-                <Icon name="chevron" className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
+                <CompanyAvatar company={current} active compact={collapsed} />
+                {!collapsed && (
+                    <>
+                        <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-slate-800">{currentLabel}</span>
+                            <span className="block text-[11px] text-slate-400">
+                                {isAdmin && !current
+                                    ? t('platform.admin_mode')
+                                    : current?.is_active === false
+                                      ? t('common.inactive')
+                                      : t('common.workspace')}
+                            </span>
+                        </span>
+                        <Icon name="chevron" className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
+                    </>
+                )}
             </button>
             {menu}
         </>

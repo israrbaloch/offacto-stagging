@@ -4,6 +4,8 @@
     "nav.customers": "Customers",
     "nav.services": "Services",
     "nav.time": "Time",
+    "nav.collapse_sidebar": "Collapse sidebar",
+    "nav.expand_sidebar": "Expand sidebar",
     "nav.briefings": "Briefings",
     "time.title": "Time tracking",
     "time.subtitle": "Log work against hourly services and bill time on invoices.",
