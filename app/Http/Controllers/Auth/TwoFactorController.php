@@ -23,7 +23,6 @@ class TwoFactorController extends Controller
         }
 
         return Inertia::render('Auth/TwoFactorVerify', [
-            'hint' => 'Enter the 6-digit code from your authenticator app, or a one-time recovery code.',
             'recoveryAvailable' => true,
         ]);
     }

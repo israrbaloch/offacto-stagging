@@ -23,7 +23,6 @@ class AdminMfaController extends Controller
         }
 
         return Inertia::render('Admin/Auth/MfaVerify', [
-            'hint' => 'Enter the 6-digit code from your authenticator app, or a one-time recovery code.',
             'recoveryAvailable' => true,
         ]);
     }
