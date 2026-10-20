@@ -19,6 +19,8 @@ use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Services\PdfZipExportService;
 use App\Support\CompanyIntegrations;
+use App\Support\WhatsAppShare;
+use App\Services\WhatsAppApiService;
 use App\Support\OfferMessage;
 use App\Services\Postbode\PostbodeApiException;
 use App\Services\Postbode\PostbodeSendService;
@@ -279,6 +281,8 @@ class OfferController extends Controller
         return Inertia::render('Offers/Show', [
             'offer' => OfferPresentation::forStaffDetail($offer),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
+            'whatsappConfigured' => CompanyIntegrations::whatsappConfigured($activeCompany, $user),
+            'whatsappShareUrl' => WhatsAppShare::shareUrlForOffer($offer) ?? '',
             'publicQuoteUrl' => $offer->publicUrl(),
         ]);
     }
@@ -416,6 +420,8 @@ class OfferController extends Controller
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
             'publicQuoteUrl' => $offer->publicUrl(),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
+            'whatsappConfigured' => CompanyIntegrations::whatsappConfigured($activeCompany, $user),
+            'whatsappShareUrl' => $offer ? (WhatsAppShare::shareUrlForOffer($offer) ?? '') : '',
         ]);
     }
 
@@ -642,6 +648,18 @@ class OfferController extends Controller
                     'postbode_postal_uuid' => $result['uuid'],
                     'postbode_status' => $result['status'],
                 ]);
+            }
+
+            if (in_array('whatsapp', $channels, true)) {
+                if (! CompanyIntegrations::whatsappAvailable($user, $activeCompany)) {
+                    return redirect()->back()->with('error', 'WhatsApp is not enabled or configured for this company.');
+                }
+
+                $shareText = WhatsAppShare::offerShareText($offer);
+                $whatsappApi = app(WhatsAppApiService::class);
+                if ($whatsappApi->canSend($activeCompany) && filled($offer->customer?->phone) && $shareText) {
+                    $whatsappApi->sendText($activeCompany, $offer->customer->phone, $shareText);
+                }
             }
 
             $emailed = in_array('email', $channels, true);

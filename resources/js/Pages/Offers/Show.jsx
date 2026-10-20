@@ -9,7 +9,12 @@ import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
 import { customerName, formatDate } from '../../lib/utils';
 
-export default function Show({ offer }) {
+export default function Show({
+    offer,
+    postbodeConfigured = false,
+    whatsappConfigured = false,
+    whatsappShareUrl = '',
+}) {
     const { activeCompany } = usePage().props;
     const { confirm } = useUi();
     const [sendOpen, setSendOpen] = useState(false);
@@ -115,6 +120,9 @@ export default function Show({ offer }) {
                 documentNumber={offer.offer_number}
                 defaultEmail={offer.customer?.email || ''}
                 defaultMessage={offer.email_message || ''}
+                postbodeConfigured={postbodeConfigured}
+                whatsappConfigured={whatsappConfigured}
+                whatsappShareUrl={whatsappShareUrl}
             />
         </AuthenticatedLayout>
     );

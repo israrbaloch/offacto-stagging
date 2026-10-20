@@ -19,7 +19,7 @@ class SendOfferRequest extends FormRequest
     {
         return [
             'channels' => ['required', 'array', 'min:1'],
-            'channels.*' => ['in:email,postbode'],
+            'channels.*' => ['in:email,postbode,whatsapp'],
             'emails' => ['nullable', 'array'],
             'emails.*' => ['email', 'max:255'],
             'message' => ['nullable', 'string', 'max:10000'],

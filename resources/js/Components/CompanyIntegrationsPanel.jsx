@@ -66,6 +66,14 @@ export default function CompanyIntegrationsPanel({ integrations = {}, links = {}
         postbode_registered: integrations.postbode_registered ?? false,
         postbode_send_immediately: integrations.postbode_send_immediately ?? true,
         postbode_api_version: integrations.postbode_api_version || 'v2',
+        whatsapp_enabled: integrations.whatsapp_enabled ?? true,
+        whatsapp_use_customer_phone: integrations.whatsapp_use_customer_phone ?? true,
+        whatsapp_business_phone: integrations.whatsapp_business_phone || '',
+        whatsapp_invoice_template: integrations.whatsapp_invoice_template || '',
+        whatsapp_quotation_template: integrations.whatsapp_quotation_template || '',
+        whatsapp_api_enabled: integrations.whatsapp_api_enabled ?? false,
+        whatsapp_api_phone_number_id: integrations.whatsapp_api_phone_number_id || '',
+        whatsapp_api_access_token: '',
     });
 
     const [testing, setTesting] = useState(false);
@@ -305,6 +313,90 @@ export default function CompanyIntegrationsPanel({ integrations = {}, links = {}
                     <p className={`text-xs font-medium ${integrations.peppol_configured ? 'text-emerald-700' : 'text-amber-700'}`}>
                         {integrations.peppol_configured ? t('integrations.peppol_ready') : t('integrations.peppol_off_or_missing')}
                     </p>
+                </div>
+            </section>
+
+            <section className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                <IntegrationToggle
+                    enabled={!!form.data.whatsapp_enabled}
+                    onChange={(v) => form.setData('whatsapp_enabled', v)}
+                    label={t('integrations.whatsapp_enable')}
+                    hint={t('integrations.whatsapp_enable_hint')}
+                />
+                <div className={`space-y-4 ${sectionMuted(form.data.whatsapp_enabled)}`}>
+                    <div className="flex items-center gap-2">
+                        <Icon name="whatsapp" className="h-4 w-4 text-emerald-600" />
+                        <h3 className="text-sm font-semibold text-slate-900">{t('integrations.whatsapp_title')}</h3>
+                    </div>
+                    <p className="text-xs leading-relaxed text-slate-600">{t('integrations.whatsapp_body')}</p>
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                        <input
+                            type="checkbox"
+                            checked={!!form.data.whatsapp_use_customer_phone}
+                            onChange={(e) => form.setData('whatsapp_use_customer_phone', e.target.checked)}
+                        />
+                        {t('integrations.whatsapp_use_customer_phone')}
+                    </label>
+                    <label className="block">
+                        <span className="mb-1.5 block text-sm font-medium text-slate-700">{t('integrations.whatsapp_business_phone')}</span>
+                        <input
+                            className={fieldClass}
+                            value={form.data.whatsapp_business_phone}
+                            onChange={(e) => form.setData('whatsapp_business_phone', e.target.value)}
+                            placeholder="+32…"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">{t('integrations.whatsapp_business_phone_hint')}</p>
+                    </label>
+                    <label className="block">
+                        <span className="mb-1.5 block text-sm font-medium text-slate-700">{t('integrations.whatsapp_invoice_template')}</span>
+                        <textarea
+                            className={`${fieldClass} min-h-[72px] resize-y`}
+                            value={form.data.whatsapp_invoice_template}
+                            onChange={(e) => form.setData('whatsapp_invoice_template', e.target.value)}
+                            placeholder={t('integrations.whatsapp_template_placeholder')}
+                        />
+                    </label>
+                    <label className="block">
+                        <span className="mb-1.5 block text-sm font-medium text-slate-700">{t('integrations.whatsapp_quotation_template')}</span>
+                        <textarea
+                            className={`${fieldClass} min-h-[72px] resize-y`}
+                            value={form.data.whatsapp_quotation_template}
+                            onChange={(e) => form.setData('whatsapp_quotation_template', e.target.value)}
+                            placeholder={t('integrations.whatsapp_template_placeholder')}
+                        />
+                    </label>
+                    <p className="text-xs text-slate-500">{t('integrations.whatsapp_template_hint')}</p>
+                    <p className={`text-xs font-medium ${integrations.whatsapp_configured ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {integrations.whatsapp_configured ? t('integrations.whatsapp_ready') : t('integrations.whatsapp_off_or_missing')}
+                    </p>
+                    {integrations.whatsapp_api_platform_allowed && (
+                        <div className="space-y-3 border-t border-slate-200 pt-4">
+                            <IntegrationToggle
+                                enabled={!!form.data.whatsapp_api_enabled}
+                                onChange={(v) => form.setData('whatsapp_api_enabled', v)}
+                                label={t('integrations.whatsapp_api_enable')}
+                                hint={t('integrations.whatsapp_api_enable_hint')}
+                            />
+                            <div className={sectionMuted(form.data.whatsapp_api_enabled)}>
+                                <label className="block">
+                                    <span className="mb-1.5 block text-sm font-medium text-slate-700">{t('integrations.whatsapp_api_phone_number_id')}</span>
+                                    <input
+                                        className={fieldClass}
+                                        value={form.data.whatsapp_api_phone_number_id}
+                                        onChange={(e) => form.setData('whatsapp_api_phone_number_id', e.target.value)}
+                                    />
+                                </label>
+                                <SecretInput
+                                    label={t('integrations.whatsapp_api_access_token')}
+                                    placeholder={integrations.whatsapp_api_access_token_set ? t('integrations.key_keep') : t('integrations.whatsapp_api_token_placeholder')}
+                                    value={form.data.whatsapp_api_access_token}
+                                    onChange={(v) => form.setData('whatsapp_api_access_token', v)}
+                                    set={integrations.whatsapp_api_access_token_set}
+                                    hint={t('integrations.key_keep')}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
 

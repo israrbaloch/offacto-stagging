@@ -4,6 +4,8 @@ namespace App\Support;
 
 use App\Models\Company;
 use App\Models\CompanySetting;
+use App\Models\User;
+use App\Services\WhatsAppApiService;
 
 class CompanyIntegrations
 {
@@ -131,6 +133,41 @@ class CompanyIntegrations
         return filled(self::peppolEndpoint($settings)) && filled(self::peppolToken($settings));
     }
 
+    public static function whatsappEnabled(?Company $company): bool
+    {
+        $settings = self::settings($company);
+
+        return $settings && ($settings->whatsapp_enabled ?? true);
+    }
+
+    public static function whatsappShareConfigured(?Company $company): bool
+    {
+        return WhatsAppShare::shareConfigured($company);
+    }
+
+    public static function whatsappApiConfigured(?Company $company): bool
+    {
+        return app(WhatsAppApiService::class)->canSend($company);
+    }
+
+    public static function whatsappConfigured(?Company $company, ?User $user = null): bool
+    {
+        return self::whatsappAvailable($user, $company);
+    }
+
+    public static function whatsappAvailable(?User $user, ?Company $company): bool
+    {
+        if (! self::whatsappEnabled($company)) {
+            return false;
+        }
+
+        if ($user && PlanEntitlements::blockCapabilityReason($user, $company, 'integrations.whatsapp')) {
+            return false;
+        }
+
+        return self::whatsappShareConfigured($company) || self::whatsappApiConfigured($company);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -163,6 +200,18 @@ class CompanyIntegrations
             'postbode_configured' => $company ? self::postbodeConfigured($company) : false,
             'mollie_configured' => $company ? self::mollieConfigured($company) : false,
             'peppol_configured' => $company ? self::peppolConfigured($company) : false,
+            'whatsapp_enabled' => (bool) ($settings?->whatsapp_enabled ?? true),
+            'whatsapp_use_customer_phone' => (bool) ($settings?->whatsapp_use_customer_phone ?? true),
+            'whatsapp_business_phone' => $settings?->whatsapp_business_phone ?? '',
+            'whatsapp_invoice_template' => $settings?->whatsapp_invoice_template ?? '',
+            'whatsapp_quotation_template' => $settings?->whatsapp_quotation_template ?? '',
+            'whatsapp_api_enabled' => (bool) ($settings?->whatsapp_api_enabled ?? false),
+            'whatsapp_api_phone_number_id' => $settings?->whatsapp_api_phone_number_id ?? '',
+            'whatsapp_api_access_token_set' => filled($settings?->whatsapp_api_access_token),
+            'whatsapp_api_platform_allowed' => IntegrationPolicy::whatsappApiDeliveryEnabled(),
+            'whatsapp_share_configured' => $company ? self::whatsappShareConfigured($company) : false,
+            'whatsapp_api_configured' => $company ? self::whatsappApiConfigured($company) : false,
+            'whatsapp_configured' => $company ? self::whatsappConfigured($company) : false,
         ];
     }
 }

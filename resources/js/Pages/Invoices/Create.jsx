@@ -71,6 +71,8 @@ export default function Create({
     postbodeConfigured = false,
     peppolConfigured = false,
     mollieConfigured = false,
+    whatsappConfigured = false,
+    whatsappShareUrl = '',
 }) {
     const { activeCompany } = usePage().props;
     const { toast } = useUi();
@@ -162,11 +164,6 @@ export default function Create({
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
     const isDraft = String(invoice?.status_relation?.name || 'draft').toLowerCase() === 'draft';
     const isSent = !isDraft;
-    const whatsappShareUrl =
-        invoice?.id &&
-        `https://wa.me/?text=${encodeURIComponent(
-            `Invoice ${invoice.invoice_number} — due ${form.data.due_date || invoice.due_date || ''}`,
-        )}`;
     const copyrightLabel = ipTransferTypes[form.data.ip_transfer_type] || '';
 
     const submit = (e) => {
@@ -580,6 +577,7 @@ export default function Create({
                 postbodeConfigured={postbodeConfigured}
                 peppolConfigured={peppolConfigured}
                 mollieConfigured={mollieConfigured}
+                whatsappConfigured={whatsappConfigured}
                 whatsappShareUrl={whatsappShareUrl || ''}
                 onBeforeSend={(runSend) => saveThen(runSend)}
             />

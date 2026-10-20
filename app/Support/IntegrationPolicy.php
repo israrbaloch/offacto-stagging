@@ -28,6 +28,11 @@ final class IntegrationPolicy
         return SiteSetting::getBoolean('int_whatsapp_share_enabled', true);
     }
 
+    public static function whatsappApiDeliveryEnabled(): bool
+    {
+        return SiteSetting::getBoolean('int_whatsapp_api_delivery', false);
+    }
+
     public static function peppolEndpoint(): ?string
     {
         return SiteSetting::get('int_peppol_endpoint') ?: config('services.peppol.endpoint') ?: null;

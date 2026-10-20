@@ -76,6 +76,8 @@ export default function Create({
     legalDocuments = [],
     publicQuoteUrl = null,
     postbodeConfigured = false,
+    whatsappConfigured = false,
+    whatsappShareUrl = '',
 }) {
     const { activeCompany } = usePage().props;
     const { toast } = useUi();
@@ -568,6 +570,8 @@ export default function Create({
                 defaultMessage={emailMessage}
                 legalDocumentIds={selectedLegal}
                 postbodeConfigured={postbodeConfigured}
+                whatsappConfigured={whatsappConfigured}
+                whatsappShareUrl={whatsappShareUrl}
                 onBeforeSend={(runSend) => saveThen(runSend)}
             />
         </AuthenticatedLayout>

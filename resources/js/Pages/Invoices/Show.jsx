@@ -17,6 +17,8 @@ export default function Show({
     peppolConfigured = false,
     mollieConfigured = false,
     postbodeConfigured = false,
+    whatsappConfigured = false,
+    whatsappShareUrl = '',
     defaultReminderMessage = '',
 }) {
     const { activeCompany } = usePage().props;
@@ -30,10 +32,6 @@ export default function Show({
 
     const isDraft = String(invoice.status_relation?.name || '').toLowerCase() === 'draft';
     const canRemind = !isDraft && invoice.payment_status !== 'paid' && Boolean(invoice.customer?.email);
-    const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(
-        `Invoice ${invoice.invoice_number} — ${money(invoice.amount_due)} due ${formatDate(invoice.due_date)}`,
-    )}`;
-
     const company = invoice.company || activeCompany || {};
     const customer = invoice.customer || {};
     const copyrightLabel = ipTransferTypes[invoice.ip_transfer_type] || '';
@@ -269,6 +267,7 @@ export default function Show({
                 postbodeConfigured={postbodeConfigured}
                 peppolConfigured={peppolConfigured}
                 mollieConfigured={mollieConfigured && invoice.payment_status !== 'paid'}
+                whatsappConfigured={whatsappConfigured}
                 whatsappShareUrl={whatsappShareUrl}
             />
             <InvoiceReminderModal

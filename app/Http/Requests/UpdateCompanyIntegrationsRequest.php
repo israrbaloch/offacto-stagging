@@ -37,6 +37,14 @@ class UpdateCompanyIntegrationsRequest extends FormRequest
             'peppol_live_endpoint' => ['nullable', 'string', 'max:512'],
             'peppol_test_token' => ['nullable', 'string', 'max:512'],
             'peppol_live_token' => ['nullable', 'string', 'max:512'],
+            'whatsapp_enabled' => ['sometimes', 'boolean'],
+            'whatsapp_use_customer_phone' => ['sometimes', 'boolean'],
+            'whatsapp_business_phone' => ['nullable', 'string', 'max:32'],
+            'whatsapp_invoice_template' => ['nullable', 'string', 'max:2000'],
+            'whatsapp_quotation_template' => ['nullable', 'string', 'max:2000'],
+            'whatsapp_api_enabled' => ['sometimes', 'boolean'],
+            'whatsapp_api_phone_number_id' => ['nullable', 'string', 'max:64'],
+            'whatsapp_api_access_token' => ['nullable', 'string', 'max:512'],
         ];
     }
 }

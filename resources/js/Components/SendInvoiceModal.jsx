@@ -22,7 +22,7 @@ function parseDefaultEmails(defaultEmail) {
         .filter(Boolean);
 }
 
-function buildInvoiceChannels({ postbodeConfigured, peppolConfigured, mollieConfigured }) {
+function buildInvoiceChannels({ postbodeConfigured, peppolConfigured, mollieConfigured, whatsappConfigured }) {
     const channels = [
         {
             id: 'email',
@@ -33,8 +33,10 @@ function buildInvoiceChannels({ postbodeConfigured, peppolConfigured, mollieConf
         {
             id: 'whatsapp',
             titleKey: 'send_modal.channel_whatsapp',
-            subtitleKey: 'send_modal.channel_whatsapp_sub',
+            subtitleKey: whatsappConfigured ? 'send_modal.channel_whatsapp_sub' : 'send_modal.channel_whatsapp_off',
             icon: 'whatsapp',
+            alwaysShow: true,
+            disabled: !whatsappConfigured,
         },
         {
             id: 'peppol',
@@ -80,6 +82,7 @@ export default function SendInvoiceModal({
     postbodeConfigured = false,
     peppolConfigured = false,
     mollieConfigured = false,
+    whatsappConfigured = false,
     whatsappShareUrl = '',
     onBeforeSend,
 }) {
@@ -112,7 +115,7 @@ export default function SendInvoiceModal({
         wasOpen.current = open;
     }, [open, defaultEmail, defaultMessage, legalDocumentIds]);
 
-    const channelDefs = buildInvoiceChannels({ postbodeConfigured, peppolConfigured, mollieConfigured });
+    const channelDefs = buildInvoiceChannels({ postbodeConfigured, peppolConfigured, mollieConfigured, whatsappConfigured });
 
     const toggleChannel = (id) => {
         setChannelError('');

@@ -32,6 +32,8 @@ use App\Support\PublicStorage;
 use App\Services\PdfZipExportService;
 use App\Services\PeppolSendService;
 use App\Services\UblInvoiceService;
+use App\Services\WhatsAppApiService;
+use App\Support\WhatsAppShare;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
 use Illuminate\Http\JsonResponse;
@@ -411,6 +413,8 @@ class InvoiceController extends Controller
             'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),
             'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
+            'whatsappConfigured' => CompanyIntegrations::whatsappConfigured($activeCompany, $user),
+            'whatsappShareUrl' => WhatsAppShare::shareUrlForInvoice($invoice) ?? '',
         ]);
     }
 
@@ -478,6 +482,8 @@ class InvoiceController extends Controller
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
             'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),
             'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
+            'whatsappConfigured' => CompanyIntegrations::whatsappConfigured($activeCompany, $user),
+            'whatsappShareUrl' => WhatsAppShare::shareUrlForInvoice($invoice) ?? '',
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,
@@ -767,6 +773,18 @@ class InvoiceController extends Controller
                     return redirect()->back()->with('error', 'Peppol is not enabled or configured for this company.');
                 }
                 $peppol->send($invoice);
+            }
+
+            if (in_array('whatsapp', $channels, true)) {
+                if (! CompanyIntegrations::whatsappAvailable($user, $activeCompany)) {
+                    return redirect()->back()->with('error', 'WhatsApp is not enabled or configured for this company.');
+                }
+
+                $shareText = WhatsAppShare::invoiceShareText($invoice);
+                $whatsappApi = app(WhatsAppApiService::class);
+                if ($whatsappApi->canSend($activeCompany) && filled($invoice->customer?->phone) && $shareText) {
+                    $whatsappApi->sendText($activeCompany, $invoice->customer->phone, $shareText);
+                }
             }
 
             if ($invoice->isDraft()) {

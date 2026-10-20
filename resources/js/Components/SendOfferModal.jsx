@@ -12,22 +12,6 @@ import {
 } from './SendModalUi';
 import { t } from '../lib/i18n';
 
-const OFFER_CHANNELS = [
-    {
-        id: 'email',
-        titleKey: 'send_modal.channel_email',
-        subtitleKey: 'send_modal.channel_email_quote_sub',
-        icon: 'email',
-    },
-    {
-        id: 'postbode',
-        titleKey: 'send_modal.channel_postbode',
-        subtitleKey: 'send_modal.channel_postbode_sub',
-        badgeKey: 'send_modal.badge_postal',
-        icon: 'postbode',
-    },
-];
-
 function parseDefaultEmails(defaultEmail) {
     if (!defaultEmail || typeof defaultEmail !== 'string') {
         return [];
@@ -38,6 +22,34 @@ function parseDefaultEmails(defaultEmail) {
         .filter(Boolean);
 }
 
+function buildOfferChannels({ postbodeConfigured, whatsappConfigured }) {
+    return [
+        {
+            id: 'email',
+            titleKey: 'send_modal.channel_email',
+            subtitleKey: 'send_modal.channel_email_quote_sub',
+            icon: 'email',
+        },
+        {
+            id: 'whatsapp',
+            titleKey: 'send_modal.channel_whatsapp',
+            subtitleKey: whatsappConfigured ? 'send_modal.channel_whatsapp_sub' : 'send_modal.channel_whatsapp_off',
+            icon: 'whatsapp',
+            alwaysShow: true,
+            disabled: !whatsappConfigured,
+        },
+        {
+            id: 'postbode',
+            titleKey: 'send_modal.channel_postbode',
+            subtitleKey: postbodeConfigured ? 'send_modal.channel_postbode_sub' : 'send_modal.channel_postbode_off',
+            badgeKey: 'send_modal.badge_postal',
+            icon: 'postbode',
+            alwaysShow: true,
+            disabled: !postbodeConfigured,
+        },
+    ];
+}
+
 export default function SendOfferModal({
     open,
     onClose,
@@ -46,7 +58,9 @@ export default function SendOfferModal({
     defaultEmail = '',
     defaultMessage = '',
     legalDocumentIds = [],
-    postbodeConfigured = true,
+    postbodeConfigured = false,
+    whatsappConfigured = false,
+    whatsappShareUrl = '',
     onBeforeSend,
 }) {
     const [channelError, setChannelError] = useState('');
@@ -73,6 +87,8 @@ export default function SendOfferModal({
         }
         wasOpen.current = open;
     }, [open, defaultEmail, defaultMessage, legalDocumentIds]);
+
+    const channelDefs = buildOfferChannels({ postbodeConfigured, whatsappConfigured });
 
     const toggleChannel = (id) => {
         setChannelError('');
@@ -107,10 +123,17 @@ export default function SendOfferModal({
             return;
         }
 
+        const openWhatsapp = form.data.channels.includes('whatsapp') && whatsappShareUrl;
+
         const runSend = () => {
             form.post(`/offers/${offerId}/send`, {
                 preserveScroll: true,
-                onSuccess: () => onClose(),
+                onSuccess: () => {
+                    if (openWhatsapp) {
+                        window.open(whatsappShareUrl, '_blank', 'noopener,noreferrer');
+                    }
+                    onClose();
+                },
             });
         };
 
@@ -158,22 +181,19 @@ export default function SendOfferModal({
                         )
                     }
                 >
-                    {OFFER_CHANNELS.map((channel) => {
-                        const disabled = channel.id === 'postbode' && !postbodeConfigured;
-                        return (
-                            <ChannelCard
-                                key={channel.id}
-                                id={channel.id}
-                                icon={channel.icon}
-                                title={t(channel.titleKey)}
-                                subtitle={t(channel.subtitleKey)}
-                                badge={channel.badgeKey ? t(channel.badgeKey) : null}
-                                checked={form.data.channels.includes(channel.id)}
-                                disabled={disabled}
-                                onToggle={toggleChannel}
-                            />
-                        );
-                    })}
+                    {channelDefs.map((channel) => (
+                        <ChannelCard
+                            key={channel.id}
+                            id={channel.id}
+                            icon={channel.icon}
+                            title={t(channel.titleKey)}
+                            subtitle={t(channel.subtitleKey)}
+                            badge={channel.badgeKey ? t(channel.badgeKey) : null}
+                            checked={form.data.channels.includes(channel.id)}
+                            disabled={Boolean(channel.disabled)}
+                            onToggle={toggleChannel}
+                        />
+                    ))}
                 </DeliveryChannelsPanel>
 
                 <EmailDeliveryPanel show={showEmail} placeholderOff={t('offers.send_email_section_off')}>
