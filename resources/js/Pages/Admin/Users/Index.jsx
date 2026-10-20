@@ -6,6 +6,7 @@ import {
     AdminButton,
     AdminFilterBar,
     AdminHeader,
+    AdminLinkButton,
     AdminPage,
     AdminTable,
     inputClass,
@@ -29,7 +30,16 @@ export default function AdminUsersIndex({ users, filters = {}, roles = [] }) {
     return (
         <AdminLayout title="Users">
             <AdminPage>
-                <AdminHeader eyebrow="Directory" title="Users" description="Search accounts, roles, and access status." />
+                <AdminHeader
+                    eyebrow="Directory"
+                    title="Users"
+                    description="Search accounts, roles, and access status."
+                    actions={
+                        <AdminLinkButton href="/admin/users/create" variant="accent">
+                            Create user
+                        </AdminLinkButton>
+                    }
+                />
                 <AdminBody className="space-y-6">
                     <AdminFilterBar onSubmit={applyFilters}>
                         <input

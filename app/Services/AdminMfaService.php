@@ -30,6 +30,19 @@ class AdminMfaService
         return SecurityPolicy::adminMfaRequired();
     }
 
+    public function appliesMfa(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->two_factor_enabled) {
+            return true;
+        }
+
+        return $this->isRequiredFor($user);
+    }
+
     public function isVerified(Request $request): bool
     {
         return (bool) $request->session()->get(self::SESSION_VERIFIED);
@@ -101,9 +114,11 @@ class AdminMfaService
             ],
         );
 
+        $user->forceFill(['two_factor_enabled' => true])->save();
+
         $this->markVerified($request);
 
-        ActivityLog::record('admin.mfa.enrolled', actor: $user, request: $request);
+        ActivityLog::record('user.mfa.enrolled', actor: $user, request: $request);
 
         return $plainCodes;
     }
@@ -181,17 +196,42 @@ class AdminMfaService
         ]);
     }
 
-    public function disable(User $user, Request $request): void
+    public function disable(User $user, Request $request, ?User $actor = null): void
     {
         if ($this->isRequiredFor($user)) {
             throw ValidationException::withMessages([
-                'code' => 'MFA is required by platform policy and cannot be turned off.',
+                'code' => 'Two-step verification is required by platform policy and cannot be turned off.',
             ]);
         }
 
+        $user->forceFill(['two_factor_enabled' => false])->save();
         $user->mfaCredential()?->delete();
-        $this->clearVerified($request);
-        ActivityLog::record('admin.mfa.disabled', actor: $user, request: $request);
+
+        if ($actor === null || $actor->is($user)) {
+            $this->clearVerified($request);
+        }
+
+        ActivityLog::record('user.mfa.disabled', actor: $actor ?? $user, subject: $user, request: $request);
+    }
+
+    public function setEnabledByAdmin(User $user, bool $enabled, User $actor, Request $request): void
+    {
+        if (! $enabled) {
+            if ($this->isRequiredFor($user)) {
+                throw ValidationException::withMessages([
+                    'two_factor_enabled' => 'This account must keep two-step verification under platform policy.',
+                ]);
+            }
+
+            $user->forceFill(['two_factor_enabled' => false])->save();
+            $user->mfaCredential()?->delete();
+            ActivityLog::record('user.mfa.disabled', actor: $actor, subject: $user, request: $request, metadata: ['by_admin' => true]);
+
+            return;
+        }
+
+        $user->forceFill(['two_factor_enabled' => true])->save();
+        ActivityLog::record('user.mfa.enabled', actor: $actor, subject: $user, request: $request, metadata: ['by_admin' => true]);
     }
 
     /**

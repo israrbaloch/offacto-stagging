@@ -15,7 +15,7 @@ class EnsureAdminMfaVerified
     {
         $mfa = $this->mfa;
         $user = $request->user();
-        if (! $user || ! $mfa->isRequiredFor($user)) {
+        if (! $user || ! $mfa->appliesMfa($user)) {
             return $next($request);
         }
 

@@ -10,12 +10,28 @@ import {
     AdminPage,
     inputClass,
 } from '../../../Components/Admin/ui';
+import PlatformAccessFields, { isPlatformRoleName } from '../../../Components/Admin/PlatformAccessFields';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { formatDate } from '../../../lib/utils';
+
+function derivePlatformAccess(profile) {
+    const roleNames = profile.roles.map((role) => role.name);
+    if (roleNames.includes('admin')) {
+        return { platform_access: 'full', admin_permissions: [] };
+    }
+    const specialistPerms = (profile.permissions || []).filter((name) => name.startsWith('admin.'));
+    if (specialistPerms.length > 0) {
+        return { platform_access: 'specialist', admin_permissions: specialistPerms };
+    }
+
+    return { platform_access: 'none', admin_permissions: [] };
+}
 
 export default function AdminUsersShow({
     profile,
     allRoles = [],
+    adminCapabilities = [],
+    presets = {},
     activity = [],
     security = [],
     sessions = [],
@@ -24,8 +40,13 @@ export default function AdminUsersShow({
     const [passwordOpen, setPasswordOpen] = useState(false);
     const [suspendReason, setSuspendReason] = useState('');
 
+    const initialPlatform = derivePlatformAccess(profile);
+    const workspaceRoleIds = profile.roles.filter((role) => !isPlatformRoleName(role.name)).map((role) => role.id);
+
     const rolesForm = useForm({
-        role_ids: profile.roles.map((role) => role.id),
+        extra_role_ids: workspaceRoleIds,
+        platform_access: initialPlatform.platform_access,
+        admin_permissions: initialPlatform.admin_permissions,
     });
 
     const passwordForm = useForm({
@@ -51,8 +72,8 @@ export default function AdminUsersShow({
         );
     };
 
-    const postAction = (url) => {
-        router.post(url, {}, { preserveScroll: true });
+    const postAction = (url, data = {}) => {
+        router.post(url, data, { preserveScroll: true });
     };
 
     const saveRoles = (event) => {
@@ -147,7 +168,38 @@ export default function AdminUsersShow({
                                 label="Billing reminders"
                                 value={profile.billing_reminders_enabled ? 'Enabled' : 'Disabled'}
                             />
+                            <Row
+                                label="Two-step verification"
+                                value={
+                                    profile.two_factor_enrolled
+                                        ? 'Enrolled'
+                                        : profile.two_factor_enabled
+                                          ? 'Required — pending setup'
+                                          : 'Off'
+                                }
+                            />
+                            {profile.two_factor_required_by_policy && (
+                                <p className="text-xs text-amber-700">Platform policy requires MFA for this admin account.</p>
+                            )}
                         </dl>
+                        {!profile.two_factor_required_by_policy && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <ActionButton
+                                    label={profile.two_factor_enabled ? 'Disable two-step verification' : 'Require two-step verification'}
+                                    hint={
+                                        profile.two_factor_enabled
+                                            ? 'Removes the flag and deletes the authenticator if enrolled.'
+                                            : 'User must enroll an authenticator on next login.'
+                                    }
+                                    onClick={() =>
+                                        postAction(`/admin/users/${profile.id}/two-factor`, {
+                                            two_factor_enabled: !profile.two_factor_enabled,
+                                        })
+                                    }
+                                    variant="muted"
+                                />
+                            </div>
+                        )}
                     </AdminCard>
 
                     <AdminCard title="Account actions" className="lg:col-span-2">
@@ -231,15 +283,29 @@ export default function AdminUsersShow({
                         </div>
                     </AdminCard>
 
-                    <AdminCard title="Roles">
-                        <form onSubmit={saveRoles} className="mt-4 space-y-2">
-                            <RolePicker
-                                allRoles={allRoles}
-                                selected={rolesForm.data.role_ids}
-                                onChange={(roleIds) => rolesForm.setData('role_ids', roleIds)}
+                    <AdminCard title="Roles & platform access">
+                        <form onSubmit={saveRoles} className="mt-4 space-y-4">
+                            <PlatformAccessFields
+                                platformAccess={rolesForm.data.platform_access}
+                                onPlatformAccessChange={(value) => rolesForm.setData('platform_access', value)}
+                                adminPermissions={rolesForm.data.admin_permissions}
+                                onAdminPermissionsChange={(value) => rolesForm.setData('admin_permissions', value)}
+                                adminCapabilities={adminCapabilities}
+                                presets={presets}
+                                errors={rolesForm.errors}
                             />
+                            {allRoles.filter((role) => !isPlatformRoleName(role.name)).length > 0 && (
+                                <div>
+                                    <p className="mb-2 text-sm font-medium text-slate-700">Workspace roles</p>
+                                    <RolePicker
+                                        allRoles={allRoles.filter((role) => !isPlatformRoleName(role.name))}
+                                        selected={rolesForm.data.extra_role_ids}
+                                        onChange={(roleIds) => rolesForm.setData('extra_role_ids', roleIds)}
+                                    />
+                                </div>
+                            )}
                             <AdminButton type="submit" disabled={rolesForm.processing} className="mt-3">
-                                Save roles
+                                Save access
                             </AdminButton>
                         </form>
                     </AdminCard>

@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureAdminArea;
 use App\Http\Middleware\EnsureAdminMfaVerified;
+use App\Http\Middleware\EnsureUserMfaVerified;
 use App\Http\Middleware\EnsurePlatformNotInMaintenance;
 use App\Http\Middleware\EnsureEmailVerifiedForSession;
 use App\Http\Middleware\EnsureUserIsAuthenticated;
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'redirect.admin' => RedirectPlatformAdmin::class,
             'admin.area' => EnsureAdminArea::class,
             'admin.mfa' => EnsureAdminMfaVerified::class,
+            'mfa.verified' => EnsureUserMfaVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

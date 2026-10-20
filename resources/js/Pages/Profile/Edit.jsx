@@ -20,12 +20,13 @@ function Card({ icon, title, children, className = '' }) {
     );
 }
 
-export default function Edit({ user, hasCompany }) {
+export default function Edit({ user, hasCompany, twoFactor = {} }) {
     const profile = useForm({
         name: user?.name || '',
         email: user?.email || '',
     });
     const destroy = useForm({ password: '' });
+    const disable2fa = useForm({ enabled: false, password: '', code: '' });
 
     const saveAccount = (e) => {
         e.preventDefault();
@@ -59,6 +60,80 @@ export default function Edit({ user, hasCompany }) {
                 )}
 
                 <div className="space-y-6">
+                    <Card icon="settings" title={t('profile.two_factor_title')}>
+                        <p className="text-sm text-slate-600">{t('profile.two_factor_body')}</p>
+                        <dl className="mt-4 space-y-2 text-sm">
+                            <div className="flex justify-between gap-4">
+                                <dt className="text-slate-500">{t('profile.two_factor_status')}</dt>
+                                <dd className="font-medium text-slate-900">
+                                    {twoFactor.enrolled
+                                        ? t('profile.two_factor_on')
+                                        : twoFactor.enabled
+                                          ? t('profile.two_factor_pending')
+                                          : t('profile.two_factor_off')}
+                                </dd>
+                            </div>
+                            {twoFactor.requiredByPolicy && (
+                                <p className="text-xs text-amber-700">{t('profile.two_factor_policy')}</p>
+                            )}
+                        </dl>
+                        <div className="mt-5 flex flex-wrap gap-3">
+                            {!twoFactor.enabled && !twoFactor.requiredByPolicy && (
+                                <button
+                                    type="button"
+                                    onClick={() => router.post('/profile/two-factor', { enabled: true })}
+                                    className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                                >
+                                    {t('profile.two_factor_enable')}
+                                </button>
+                            )}
+                            {(twoFactor.enabled || twoFactor.requiredByPolicy) && !twoFactor.enrolled && (
+                                <Link
+                                    href="/two-factor/enroll"
+                                    className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                                >
+                                    {t('profile.two_factor_setup')}
+                                </Link>
+                            )}
+                            {twoFactor.enrolled && twoFactor.enabled && !twoFactor.requiredByPolicy && (
+                                <form
+                                    className="w-full max-w-md space-y-3 border-t border-slate-100 pt-4"
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        disable2fa.post('/profile/two-factor', { enabled: false });
+                                    }}
+                                >
+                                    <p className="text-xs text-slate-500">{t('profile.two_factor_disable_hint')}</p>
+                                    <input
+                                        type="password"
+                                        placeholder={t('profile.confirm_password')}
+                                        className={fieldClass}
+                                        value={disable2fa.data.password}
+                                        onChange={(e) => disable2fa.setData('password', e.target.value)}
+                                    />
+                                    <input
+                                        placeholder={t('profile.two_factor_code')}
+                                        className={fieldClass}
+                                        value={disable2fa.data.code}
+                                        onChange={(e) => disable2fa.setData('code', e.target.value)}
+                                    />
+                                    {(disable2fa.errors.password || disable2fa.errors.code) && (
+                                        <span className="block text-xs text-rose-600">
+                                            {disable2fa.errors.password || disable2fa.errors.code}
+                                        </span>
+                                    )}
+                                    <button
+                                        type="submit"
+                                        disabled={disable2fa.processing}
+                                        className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                    >
+                                        {t('profile.two_factor_disable')}
+                                    </button>
+                                </form>
+                            )}
+                        </div>
+                    </Card>
+
                     <Card icon="user" title={t('profile.account')}>
                         <form onSubmit={saveAccount} className="space-y-5">
                             <div className="grid gap-4 sm:grid-cols-2">

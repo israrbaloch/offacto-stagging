@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Role;
 use App\Models\User;
 
 final class AdminAccess
@@ -76,8 +77,97 @@ final class AdminAccess
 
     public static function assert(?User $user, string ...$anyOf): void
     {
-        if (! $user || ! $user->hasAnyPermission($anyOf)) {
+        if (! $user) {
             abort(403, 'You do not have permission to perform this action.');
         }
+
+        if ($user->hasRole('admin')) {
+            return;
+        }
+
+        if (! $user->hasAnyPermission($anyOf)) {
+            abort(403, 'You do not have permission to perform this action.');
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function roleNamesForPermissions(array $permissionNames): array
+    {
+        $permissionNames = array_values(array_intersect($permissionNames, self::all()));
+        $roles = [];
+
+        foreach (self::specialistRoles() as $roleName => $permissions) {
+            foreach ($permissionNames as $name) {
+                if (in_array($name, $permissions, true)) {
+                    $roles[] = $roleName;
+                }
+            }
+        }
+
+        return array_values(array_unique($roles));
+    }
+
+    /**
+     * @return list<int>
+     */
+    public static function roleIdsForPlatformAccess(string $platformAccess, array $adminPermissions = []): array
+    {
+        if ($platformAccess === 'full') {
+            $admin = Role::query()->where('name', 'admin')->first();
+
+            return $admin ? [$admin->id] : [];
+        }
+
+        if ($platformAccess !== 'specialist') {
+            return [];
+        }
+
+        $names = self::roleNamesForPermissions($adminPermissions);
+        if ($names === []) {
+            return [];
+        }
+
+        return Role::query()->whereIn('name', $names)->pluck('id')->all();
+    }
+
+    /**
+     * @return array<string, array{label: string, description: string, permissions: list<string>}>
+     */
+    public static function presets(): array
+    {
+        return [
+            'support' => [
+                'label' => 'Support',
+                'description' => 'Tickets, support hub, and company directory (with compliance).',
+                'permissions' => [self::SUPPORT],
+            ],
+            'billing' => [
+                'label' => 'Billing',
+                'description' => 'Subscriptions, plans, coupons, and financial document settings.',
+                'permissions' => [self::BILLING],
+            ],
+            'compliance' => [
+                'label' => 'Compliance',
+                'description' => 'Legal holds, compliance hub, and company approvals.',
+                'permissions' => [self::COMPLIANCE],
+            ],
+            'security' => [
+                'label' => 'Security & users',
+                'description' => 'User directory, security hub, fraud queue, and audit logs.',
+                'permissions' => [self::SECURITY],
+            ],
+            'settings' => [
+                'label' => 'Platform settings',
+                'description' => 'Integrations, communications, and product content.',
+                'permissions' => [self::SETTINGS],
+            ],
+            'governance' => [
+                'label' => 'Governance & infra',
+                'description' => 'Infrastructure, governance, and destructive platform operations.',
+                'permissions' => [self::GOVERNANCE],
+            ],
+        ];
     }
 }

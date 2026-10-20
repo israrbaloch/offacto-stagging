@@ -39,6 +39,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\NumberingSeriesController;
 use App\Http\Controllers\CompanySettingsController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\ServiceController;
@@ -89,18 +90,31 @@ Route::get('/', function () {
 Route::redirect('/settings', '/admin/settings')->middleware(['auth', 'admin.area']);
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified.email', 'redirect.admin'])
+    ->middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])
     ->name('dashboard');
 
 Route::get('/search', SearchController::class)
-    ->middleware(['auth', 'verified.email', 'redirect.admin'])
+    ->middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])
     ->name('search');
 
-Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function () {
+Route::middleware(['auth', 'verified.email'])->group(function () {
+    Route::prefix('two-factor')->name('two-factor.')->group(function () {
+        Route::get('/', [TwoFactorController::class, 'challenge'])->name('challenge');
+        Route::post('/verify', [TwoFactorController::class, 'verify'])->middleware('throttle:5,1')->name('verify');
+        Route::post('/recover', [TwoFactorController::class, 'recover'])->middleware('throttle:5,1')->name('recover');
+        Route::get('/enroll', [TwoFactorController::class, 'enroll'])->name('enroll');
+        Route::post('/enroll/start', [TwoFactorController::class, 'startEnroll'])->middleware('throttle:5,1')->name('enroll.start');
+        Route::post('/enroll/confirm', [TwoFactorController::class, 'confirmEnroll'])->middleware('throttle:5,1')->name('enroll.confirm');
+        Route::post('/disable', [TwoFactorController::class, 'disable'])->middleware('throttle:5,1')->name('disable');
+    });
+});
+
+Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/password-reset', [ProfileController::class, 'sendPasswordReset'])->name('profile.password-reset');
+    Route::post('/profile/two-factor', [ProfileController::class, 'updateTwoFactor'])->name('profile.two-factor');
 
     Route::get('/company/settings', [CompanySettingsController::class, 'index'])->name('company.settings.index');
     Route::patch('/company/settings/company', [ProfileController::class, 'updateCompany'])->name('company.settings.company.update');
@@ -418,6 +432,8 @@ Route::middleware(['auth', 'verified.email', 'admin.area'])->prefix('admin')->na
 
     Route::middleware('permission:'.AdminAccess::SECURITY)->group(function () {
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
+    Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
     Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
     Route::patch('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
@@ -429,6 +445,7 @@ Route::middleware(['auth', 'verified.email', 'admin.area'])->prefix('admin')->na
     Route::post('/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
     Route::post('/users/{user}/revoke-sessions', [AdminUserController::class, 'revokeSessions'])->name('users.revoke-sessions');
     Route::post('/users/{user}/toggle-billing-reminders', [AdminUserController::class, 'toggleBillingReminders'])->name('users.toggle-billing-reminders');
+    Route::post('/users/{user}/two-factor', [AdminUserController::class, 'updateTwoFactor'])->name('users.two-factor');
     Route::get('/logs/activity', [AdminActivityLogController::class, 'index'])->name('logs.activity');
     Route::get('/logs/security', [AdminSecurityLogController::class, 'index'])->name('logs.security');
     });

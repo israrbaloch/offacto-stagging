@@ -7,7 +7,9 @@ use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\SecurityEvent;
 use App\Models\User;
+use App\Services\AdminMfaService;
 use App\Services\EmailOtpService;
+use App\Support\AdminAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -20,6 +22,74 @@ use Inertia\Response;
 
 class AdminUserController extends Controller
 {
+    public function create(): Response
+    {
+        AdminAccess::assert(Auth::user(), AdminAccess::SECURITY);
+
+        return Inertia::render('Admin/Users/Create', [
+            'roles' => Role::query()->orderBy('name')->get(['id', 'name']),
+            'adminCapabilities' => $this->adminCapabilitiesPayload(),
+            'presets' => AdminAccess::presets(),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        AdminAccess::assert(Auth::user(), AdminAccess::SECURITY);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'password' => ['required', 'confirmed', Password::defaults()],
+            'mark_email_verified' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
+            'platform_access' => ['required', Rule::in(['none', 'full', 'specialist'])],
+            'admin_permissions' => ['array'],
+            'admin_permissions.*' => [Rule::in(AdminAccess::all())],
+            'extra_role_ids' => ['array'],
+            'extra_role_ids.*' => ['integer', Rule::exists('roles', 'id')],
+            'two_factor_enabled' => ['sometimes', 'boolean'],
+        ]);
+
+        if ($data['platform_access'] === 'full' && ! Auth::user()?->hasRole('admin')) {
+            return back()->with('error', 'Only a full platform admin can grant the admin role.');
+        }
+
+        if ($data['platform_access'] === 'specialist' && empty($data['admin_permissions'])) {
+            return back()->withErrors(['admin_permissions' => 'Select at least one platform area for specialist access.']);
+        }
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'is_active' => $request->boolean('is_active', true),
+            'email_verified_at' => $request->boolean('mark_email_verified', true) ? now() : null,
+        ]);
+
+        $roleIds = collect($data['extra_role_ids'] ?? [])
+            ->merge(AdminAccess::roleIdsForPlatformAccess($data['platform_access'], $data['admin_permissions'] ?? []))
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($roleIds !== []) {
+            $user->roles()->sync($roleIds);
+        }
+
+        if ($request->boolean('two_factor_enabled')) {
+            app(AdminMfaService::class)->setEnabledByAdmin($user, true, Auth::user(), $request);
+        }
+
+        ActivityLog::record('admin.user.created', subject: $user, metadata: [
+            'platform_access' => $data['platform_access'],
+            'admin_permissions' => $data['admin_permissions'] ?? [],
+            'roles' => Role::query()->whereIn('id', $roleIds)->pluck('name')->values()->all(),
+        ]);
+
+        return redirect()->route('admin.users.show', $user)->with('status', 'user-created');
+    }
+
     public function index(Request $request): Response
     {
         $filters = $request->validate([
@@ -110,6 +180,8 @@ class AdminUserController extends Controller
         return Inertia::render('Admin/Users/Show', [
             'profile' => $this->userProfile($user),
             'allRoles' => Role::query()->orderBy('name')->get(['id', 'name']),
+            'adminCapabilities' => $this->adminCapabilitiesPayload(),
+            'presets' => AdminAccess::presets(),
             'activity' => $activity,
             'security' => $security,
             'sessions' => $this->sessionRows($user),
@@ -248,14 +320,50 @@ class AdminUserController extends Controller
         return back()->with('status', 'user-billing-reminders-updated');
     }
 
-    public function syncRoles(Request $request, User $user): RedirectResponse
+    public function updateTwoFactor(Request $request, User $user, AdminMfaService $mfa): RedirectResponse
     {
+        AdminAccess::assert(Auth::user(), AdminAccess::SECURITY);
+
         $data = $request->validate([
-            'role_ids' => ['required', 'array'],
-            'role_ids.*' => ['integer', Rule::exists('roles', 'id')],
+            'two_factor_enabled' => ['required', 'boolean'],
         ]);
 
-        $roleIds = collect($data['role_ids'])->unique()->values()->all();
+        $mfa->setEnabledByAdmin($user, $data['two_factor_enabled'], Auth::user(), $request);
+
+        return back()->with('status', 'user-two-factor-updated');
+    }
+
+    public function syncRoles(Request $request, User $user): RedirectResponse
+    {
+        AdminAccess::assert(Auth::user(), AdminAccess::SECURITY);
+
+        $data = $request->validate([
+            'role_ids' => ['sometimes', 'array'],
+            'role_ids.*' => ['integer', Rule::exists('roles', 'id')],
+            'extra_role_ids' => ['array'],
+            'extra_role_ids.*' => ['integer', Rule::exists('roles', 'id')],
+            'platform_access' => ['nullable', Rule::in(['none', 'full', 'specialist'])],
+            'admin_permissions' => ['array'],
+            'admin_permissions.*' => [Rule::in(AdminAccess::all())],
+        ]);
+
+        if (array_key_exists('platform_access', $data) && $data['platform_access'] !== null) {
+            if ($data['platform_access'] === 'full' && ! Auth::user()?->hasRole('admin')) {
+                return back()->with('error', 'Only a full platform admin can grant the admin role.');
+            }
+
+            if ($data['platform_access'] === 'specialist' && empty($data['admin_permissions'])) {
+                return back()->withErrors(['admin_permissions' => 'Select at least one platform area.']);
+            }
+
+            $roleIds = collect($data['extra_role_ids'] ?? [])
+                ->merge(AdminAccess::roleIdsForPlatformAccess($data['platform_access'], $data['admin_permissions'] ?? []))
+                ->unique()
+                ->values()
+                ->all();
+        } else {
+            $roleIds = collect($data['role_ids'] ?? [])->unique()->values()->all();
+        }
         $roles = Role::query()->whereIn('id', $roleIds)->pluck('name');
 
         $actor = Auth::user();
@@ -277,6 +385,23 @@ class AdminUserController extends Controller
         ]);
 
         return back()->with('status', 'user-roles-saved');
+    }
+
+    /**
+     * @return list<array{key: string, label: string, description: string}>
+     */
+    protected function adminCapabilitiesPayload(): array
+    {
+        $labels = AdminAccess::labels();
+
+        return collect(AdminAccess::all())
+            ->map(fn (string $key) => [
+                'key' => $key,
+                'label' => $labels[$key] ?? $key,
+                'description' => $labels[$key] ?? '',
+            ])
+            ->values()
+            ->all();
     }
 
     protected function activeAdminCount(): int
@@ -313,6 +438,9 @@ class AdminUserController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'is_active' => (bool) $user->is_active,
+            'two_factor_enabled' => (bool) $user->two_factor_enabled,
+            'two_factor_enrolled' => (bool) app(AdminMfaService::class)->confirmedCredential($user),
+            'two_factor_required_by_policy' => app(AdminMfaService::class)->isRequiredFor($user),
             'billing_reminders_enabled' => (bool) $user->billing_reminders_enabled,
             'email_verified_at' => $user->email_verified_at?->toIso8601String(),
             'created_at' => $user->created_at?->toIso8601String(),

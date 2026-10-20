@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCompanyRequest;
 use App\Http\Requests\UpdateCompanySettingsRequest;
 use App\Mail\Admin\CompanyPendingApproval;
 use App\Mail\CompanySubmittedConfirmation;
+use App\Services\AdminMfaService;
 use App\Services\EmailOtpService;
 use App\Models\Company;
 use App\Models\CompanySetting;
@@ -32,10 +33,54 @@ class ProfileController extends Controller
         $user = $request->user();
         $company = $user->activeCompany();
 
+        $mfa = app(AdminMfaService::class);
+
         return Inertia::render('Profile/Edit', [
             'user' => $user,
             'hasCompany' => (bool) $company,
+            'twoFactor' => [
+                'enabled' => (bool) $user->two_factor_enabled,
+                'enrolled' => (bool) $mfa->confirmedCredential($user),
+                'requiredByPolicy' => $mfa->isRequiredFor($user),
+            ],
         ]);
+    }
+
+    public function updateTwoFactor(Request $request, AdminMfaService $mfa): RedirectResponse
+    {
+        $user = $request->user();
+        $enabled = $request->boolean('enabled');
+
+        if ($enabled) {
+            $user->forceFill(['two_factor_enabled' => true])->save();
+
+            if (! $mfa->confirmedCredential($user)) {
+                return redirect()->route('two-factor.enroll');
+            }
+
+            return back()->with('status', '2fa-enabled');
+        }
+
+        $request->validate([
+            'password' => ['required', 'string'],
+            'code' => ['required', 'string', 'max:32'],
+        ]);
+
+        if (! Hash::check($request->input('password'), $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => 'The password is incorrect.',
+            ]);
+        }
+
+        try {
+            $mfa->verifyChallenge($user, $request, $request->input('code'));
+        } catch (ValidationException) {
+            $mfa->consumeRecoveryCode($user, $request, $request->input('code'));
+        }
+
+        $mfa->disable($user, $request);
+
+        return back()->with('status', '2fa-disabled');
     }
 
     public function sendPasswordReset(Request $request): RedirectResponse

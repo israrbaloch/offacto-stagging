@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'is_active',
+        'two_factor_enabled',
         'billing_reminders_enabled',
     ];
 
@@ -47,6 +48,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'billing_reminders_enabled' => 'boolean',
             'is_active' => 'boolean',
+            'two_factor_enabled' => 'boolean',
         ];
     }
 

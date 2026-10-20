@@ -68,7 +68,7 @@ class AuthenticatedSessionController extends Controller
         SecurityEvent::record('login_success', 'success', user: $user, request: $request);
         ActivityLog::record('auth.login', actor: $user, request: $request);
 
-        if ($user->hasRole('admin')) {
+        if (\App\Support\AdminAccess::canAccessAdminArea($user) && ! $user->hasRole('staff')) {
             $request->session()->forget('active_company_id');
         }
 
@@ -79,7 +79,17 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
-        $home = $user->hasRole('admin')
+        $mfa = app(\App\Services\AdminMfaService::class);
+        if ($mfa->appliesMfa($user)) {
+            $adminShell = \App\Support\AdminAccess::canAccessAdminArea($user) && ! $user->hasRole('staff');
+            if (! $mfa->confirmedCredential($user)) {
+                return redirect($adminShell ? route('admin.mfa.enroll') : route('two-factor.enroll'));
+            }
+
+            return redirect($adminShell ? route('admin.mfa') : route('two-factor.challenge'));
+        }
+
+        $home = \App\Support\AdminAccess::canAccessAdminArea($user) && ! $user->hasRole('staff')
             ? route('admin.dashboard', absolute: false)
             : route('dashboard', absolute: false);
 
