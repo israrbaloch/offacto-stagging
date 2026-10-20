@@ -17,7 +17,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if ($this->app->runningInConsole()) {
+            return;
+        }
+
+        $publicHtml = realpath(dirname($this->app->basePath()).DIRECTORY_SEPARATOR.'public_html');
+
+        if ($publicHtml && is_file($publicHtml.DIRECTORY_SEPARATOR.'index.php')) {
+            $this->app->usePublicPath($publicHtml);
+        }
     }
 
     /**
