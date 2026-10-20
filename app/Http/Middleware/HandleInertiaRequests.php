@@ -3,8 +3,12 @@
 namespace App\Http\Middleware;
 
 use App\Http\Middleware\SetLocale;
+use App\Models\Customer;
+use App\Models\Service;
+use App\Models\TimeEntry;
 use App\Support\AdminShellInsights;
 use App\Support\PublicStorage;
+use App\Support\ServiceBilling;
 use App\Support\SubscriptionReminder;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -106,6 +110,58 @@ class HandleInertiaRequests extends Middleware
                     'environmentBanner' => AdminShellInsights::environmentBanner(),
                 ]
                 : null,
+            'timeTracking' => $this->timeTrackingShare($user, $active),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function timeTrackingShare(?\App\Models\User $user, ?\App\Models\Company $active): ?array
+    {
+        if (! $user || ! $active) {
+            return null;
+        }
+
+        $running = TimeEntry::query()
+            ->where('user_id', $user->id)
+            ->where('company_id', $active->id)
+            ->where('status', TimeEntry::STATUS_RUNNING)
+            ->with(['service:id,name', 'customer:id,first_name,surname,org_name'])
+            ->first();
+
+        $hourlyServices = Service::query()
+            ->where('company_id', $active->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'price', 'billing_mode', 'unit'])
+            ->filter(fn (Service $s) => ServiceBilling::isHourly($s))
+            ->map(fn (Service $s) => ['id' => $s->id, 'name' => $s->name, 'price' => $s->price])
+            ->values();
+
+        $customers = Customer::query()
+            ->where('company_id', $active->id)
+            ->orderBy('first_name')
+            ->limit(300)
+            ->get(['id', 'first_name', 'surname', 'org_name'])
+            ->map(fn (Customer $c) => [
+                'id' => $c->id,
+                'label' => trim($c->org_name ?: ($c->first_name.' '.$c->surname)),
+            ])
+            ->values();
+
+        return [
+            'running' => $running ? [
+                'id' => $running->id,
+                'started_at' => $running->started_at?->toIso8601String(),
+                'description' => $running->description,
+                'service' => $running->service ? ['id' => $running->service->id, 'name' => $running->service->name] : null,
+                'customer' => $running->customer ? [
+                    'id' => $running->customer->id,
+                    'label' => trim($running->customer->org_name ?: ($running->customer->first_name.' '.$running->customer->surname)),
+                ] : null,
+            ] : null,
+            'hourlyServices' => $hourlyServices,
+            'customers' => $customers,
         ];
     }
 

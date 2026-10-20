@@ -168,6 +168,41 @@ class CompanyIntegrations
         return self::whatsappShareConfigured($company) || self::whatsappApiConfigured($company);
     }
 
+    public static function creditsafeEnabled(?Company $company): bool
+    {
+        $settings = self::settings($company);
+
+        return $settings && ($settings->creditsafe_enabled ?? false);
+    }
+
+    public static function creditsafeApiKey(?CompanySetting $settings): ?string
+    {
+        if (! $settings) {
+            return null;
+        }
+
+        $mode = self::mode($settings);
+
+        return $mode === 'live'
+            ? ($settings->creditsafe_live_api_key ?: null)
+            : ($settings->creditsafe_test_api_key ?: $settings->creditsafe_live_api_key);
+    }
+
+    public static function creditsafeConfigured(?Company $company): bool
+    {
+        if (! IntegrationPolicy::creditsafeEnabled()) {
+            return false;
+        }
+
+        if (! self::creditsafeEnabled($company)) {
+            return false;
+        }
+
+        $settings = self::settings($company);
+
+        return $settings && filled(self::creditsafeApiKey($settings));
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -212,6 +247,11 @@ class CompanyIntegrations
             'whatsapp_share_configured' => $company ? self::whatsappShareConfigured($company) : false,
             'whatsapp_api_configured' => $company ? self::whatsappApiConfigured($company) : false,
             'whatsapp_configured' => $company ? self::whatsappConfigured($company) : false,
+            'creditsafe_enabled' => (bool) ($settings?->creditsafe_enabled ?? false),
+            'creditsafe_test_api_key_set' => filled($settings?->creditsafe_test_api_key),
+            'creditsafe_live_api_key_set' => filled($settings?->creditsafe_live_api_key),
+            'creditsafe_configured' => $company ? self::creditsafeConfigured($company) : false,
+            'creditsafe_platform_enabled' => IntegrationPolicy::creditsafeEnabled(),
         ];
     }
 }

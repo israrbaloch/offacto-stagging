@@ -51,4 +51,8 @@ return [
         'token_app_url' => env('POSTBODE_TOKEN_URL', 'https://app.postbode.nu/settings/api'),
     ],
 
+    'creditsafe' => [
+        'base_url' => env('CREDITSAFE_BASE_URL', 'https://connect.creditsafe.com/v1'),
+    ],
+
 ];

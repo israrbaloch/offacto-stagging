@@ -633,6 +633,8 @@ class InvoiceController extends Controller
             return redirect()->back()->with('error', 'Sent invoices cannot be deleted.');
         }
 
+        app(\App\Services\TimeEntryInvoicingService::class)->releaseEntriesForInvoice($invoice);
+
         $invoice->delete(); // Soft delete
 
         if ($request->expectsJson()) {

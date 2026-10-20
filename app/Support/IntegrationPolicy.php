@@ -42,4 +42,9 @@ final class IntegrationPolicy
     {
         return SiteSetting::get('int_peppol_token') ?: config('services.peppol.token') ?: null;
     }
+
+    public static function creditsafeEnabled(): bool
+    {
+        return SiteSetting::getBoolean('int_creditsafe_enabled', true);
+    }
 }

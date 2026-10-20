@@ -69,6 +69,16 @@ class PlanEntitlementCatalog
                 ],
             ],
             [
+                'id' => 'time_tracking',
+                'label_key' => 'plan_entitlements.groups.time_tracking',
+                'limit_key' => null,
+                'capabilities' => [
+                    ['key' => 'time_tracking.access', 'label_key' => 'plan_entitlements.cap.time_tracking.access'],
+                    ['key' => 'time_tracking.create', 'label_key' => 'plan_entitlements.cap.time_tracking.create'],
+                    ['key' => 'time_tracking.timer', 'label_key' => 'plan_entitlements.cap.time_tracking.timer'],
+                ],
+            ],
+            [
                 'id' => 'briefings',
                 'label_key' => 'plan_entitlements.groups.briefings',
                 'limit_key' => 'briefings',
@@ -102,6 +112,7 @@ class PlanEntitlementCatalog
                     ['key' => 'integrations.postbode', 'label_key' => 'plan_entitlements.cap.integrations.postbode'],
                     ['key' => 'integrations.peppol', 'label_key' => 'plan_entitlements.cap.integrations.peppol'],
                     ['key' => 'integrations.whatsapp', 'label_key' => 'plan_entitlements.cap.integrations.whatsapp'],
+                    ['key' => 'integrations.creditsafe', 'label_key' => 'plan_entitlements.cap.integrations.creditsafe'],
                 ],
             ],
         ];
@@ -147,7 +158,9 @@ class PlanEntitlementCatalog
     {
         $capabilities = [];
         foreach (self::capabilityKeys() as $key) {
-            $capabilities[$key] = str_ends_with($key, '.access') || str_ends_with($key, '.create');
+            $capabilities[$key] = str_ends_with($key, '.access')
+                || str_ends_with($key, '.create')
+                || str_ends_with($key, '.timer');
         }
 
         $limits = [];

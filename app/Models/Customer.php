@@ -81,4 +81,9 @@ class Customer extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    public function creditChecks()
+    {
+        return $this->hasMany(CustomerCreditCheck::class);
+    }
 }

@@ -31,7 +31,7 @@ class InvoiceItem extends Model
     protected function casts(): array
     {
         return [
-            'quantity' => 'integer',
+            'quantity' => 'decimal:2',
             'price' => 'decimal:2',
             'total' => 'decimal:2',
         ];
@@ -51,6 +51,11 @@ class InvoiceItem extends Model
     public function service()
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function timeEntries()
+    {
+        return $this->belongsToMany(TimeEntry::class, 'invoice_item_time_entry');
     }
 
     /**

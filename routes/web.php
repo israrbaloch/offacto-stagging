@@ -42,6 +42,9 @@ use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\TimeEntryController;
+use App\Http\Controllers\InvoiceFromTimeController;
+use App\Http\Controllers\CustomerCreditCheckController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -161,9 +164,18 @@ Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function 
     
     // Services
     Route::resource('services', ServiceController::class);
+
+    Route::get('time', [TimeEntryController::class, 'index'])->name('time.index');
+    Route::post('time', [TimeEntryController::class, 'store'])->name('time.store');
+    Route::patch('time/{timeEntry}', [TimeEntryController::class, 'update'])->name('time.update');
+    Route::delete('time/{timeEntry}', [TimeEntryController::class, 'destroy'])->name('time.destroy');
+    Route::get('time/timer', [TimeEntryController::class, 'timerShow'])->name('time.timer.show');
+    Route::post('time/timer/start', [TimeEntryController::class, 'timerStart'])->name('time.timer.start');
+    Route::post('time/timer/stop', [TimeEntryController::class, 'timerStop'])->name('time.timer.stop');
     
     // Customers
     Route::resource('customers', CustomerController::class);
+    Route::post('customers/{customer}/credit-check', [CustomerCreditCheckController::class, 'store'])->name('customers.credit-check');
     
     Route::get('briefings', [BriefingController::class, 'index'])->name('briefings.index');
     Route::get('briefings/create', [BriefingController::class, 'create'])->name('briefings.create');
@@ -190,6 +202,7 @@ Route::middleware(['auth', 'verified.email', 'redirect.admin'])->group(function 
     // Invoices
     Route::get('invoices/export-zip', [InvoiceController::class, 'exportZip'])->name('invoices.export-zip');
     Route::get('invoices/from-offer/{offer}', [InvoiceController::class, 'createFromOffer'])->name('invoices.from-offer');
+    Route::post('invoices/from-time-entries', [InvoiceFromTimeController::class, 'store'])->name('invoices.from-time');
     Route::resource('invoices', InvoiceController::class);
     Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
     Route::post('invoices/{invoice}/reminder', [InvoiceController::class, 'sendReminder'])->name('invoices.reminder');

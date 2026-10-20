@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { t } from '../lib/i18n';
 import Icon from './Icon';
 import LocaleSelect from './LocaleSelect';
+import TimeTrackerWidget from './TimeTrackerWidget';
 
 function SearchIcon() {
     return (
@@ -82,6 +83,7 @@ export default function TopBar() {
             </form>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                <TimeTrackerWidget />
                 {activeCompany && !auth?.user?.is_admin && (
                     activeCompany.subscription_plan ? (
                         <Link

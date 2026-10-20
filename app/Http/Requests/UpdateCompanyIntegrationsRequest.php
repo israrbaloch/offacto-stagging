@@ -45,6 +45,9 @@ class UpdateCompanyIntegrationsRequest extends FormRequest
             'whatsapp_api_enabled' => ['sometimes', 'boolean'],
             'whatsapp_api_phone_number_id' => ['nullable', 'string', 'max:64'],
             'whatsapp_api_access_token' => ['nullable', 'string', 'max:512'],
+            'creditsafe_enabled' => ['sometimes', 'boolean'],
+            'creditsafe_test_api_key' => ['nullable', 'string', 'max:512'],
+            'creditsafe_live_api_key' => ['nullable', 'string', 'max:512'],
         ];
     }
 }

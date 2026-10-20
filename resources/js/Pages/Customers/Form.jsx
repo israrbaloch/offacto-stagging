@@ -1,4 +1,4 @@
-import { Link, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import Icon from '../../Components/Icon';
 import SelectMenu from '../../Components/SelectMenu';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
@@ -35,7 +35,14 @@ function Card({ icon, title, hint, children }) {
     );
 }
 
-export default function Form({ customer = null, statuses = {}, countries = {}, defaultStatusId }) {
+export default function Form({
+    customer = null,
+    statuses = {},
+    countries = {},
+    defaultStatusId,
+    latestCreditCheck = null,
+    creditsafeConfigured = false,
+}) {
     const editing = Boolean(customer?.id);
     const { data, setData, post, put, processing, errors } = useForm({
         first_name: customer?.first_name || '',
@@ -158,6 +165,44 @@ export default function Form({ customer = null, statuses = {}, countries = {}, d
                             </Field>
                         </div>
                     </Card>
+
+                    {editing && (
+                        <Card icon="document" title="Creditsafe" hint="Optional credit check using the customer VAT number.">
+                            {latestCreditCheck ? (
+                                <dl className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                                    <div>
+                                        <dt className="text-slate-500">Last check</dt>
+                                        <dd>{new Date(latestCreditCheck.checked_at).toLocaleString()}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-slate-500">Identifier</dt>
+                                        <dd>{latestCreditCheck.identifier_used || '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-slate-500">Rating</dt>
+                                        <dd>{latestCreditCheck.rating || '—'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-slate-500">Status</dt>
+                                        <dd>{latestCreditCheck.status_label || '—'}</dd>
+                                    </div>
+                                </dl>
+                            ) : (
+                                <p className="text-sm text-slate-500">No credit check run yet.</p>
+                            )}
+                            <button
+                                type="button"
+                                disabled={!creditsafeConfigured}
+                                onClick={() => router.post(`/customers/${customer.id}/credit-check`)}
+                                className="mt-4 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                            >
+                                Run credit check
+                            </button>
+                            {!creditsafeConfigured && (
+                                <p className="mt-2 text-xs text-slate-500">Enable Creditsafe under Company settings → Integrations.</p>
+                            )}
+                        </Card>
+                    )}
                 </div>
             </form>
         </AuthenticatedLayout>

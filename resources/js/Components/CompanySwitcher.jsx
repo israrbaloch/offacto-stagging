@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { t } from '../lib/i18n';
 import Icon from './Icon';
 
@@ -22,9 +23,11 @@ function CompanyAvatar({ company, active = false }) {
     }
 
     return (
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-semibold ${
-            active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
-        }`}>
+        <span
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-semibold ${
+                active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+            }`}
+        >
             {initials(company?.company_name)}
         </span>
     );
@@ -34,14 +37,38 @@ export default function CompanySwitcher() {
     const { companies, activeCompany, auth } = usePage().props;
     const isAdmin = Boolean(auth?.user?.is_admin);
     const [open, setOpen] = useState(false);
-    const rootRef = useRef(null);
+    const [menuStyle, setMenuStyle] = useState(null);
+    const buttonRef = useRef(null);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        if (!open) return undefined;
+        const update = () => {
+            const el = buttonRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            setMenuStyle({
+                top: rect.bottom + 6,
+                left: rect.left,
+                width: rect.width,
+            });
+        };
+        update();
+        window.addEventListener('resize', update);
+        window.addEventListener('scroll', update, true);
+        return () => {
+            window.removeEventListener('resize', update);
+            window.removeEventListener('scroll', update, true);
+        };
+    }, [open]);
 
     useEffect(() => {
         if (!open) return undefined;
         const onPointer = (event) => {
-            if (!rootRef.current?.contains(event.target)) {
-                setOpen(false);
+            if (buttonRef.current?.contains(event.target) || menuRef.current?.contains(event.target)) {
+                return;
             }
+            setOpen(false);
         };
         const onKey = (event) => {
             if (event.key === 'Escape') setOpen(false);
@@ -56,14 +83,94 @@ export default function CompanySwitcher() {
 
     if (!companies?.length && !isAdmin) return null;
 
-    const current = activeCompany
-        ? companies?.find((company) => company.id === activeCompany.id)
-        : null;
+    const current = activeCompany ? companies?.find((company) => company.id === activeCompany.id) : null;
+
+    const menu =
+        open && menuStyle
+            ? createPortal(
+                  <>
+                      <button
+                          type="button"
+                          aria-label={t('common.cancel')}
+                          className="fixed inset-0 z-[90] cursor-default bg-slate-900/20"
+                          onClick={() => setOpen(false)}
+                      />
+                      <div
+                          ref={menuRef}
+                          className="fixed z-[100] max-h-[min(20rem,calc(100vh-6rem))] overflow-y-auto rounded-2xl border border-slate-200 bg-white py-1 shadow-2xl"
+                          style={{
+                              top: menuStyle.top,
+                              left: menuStyle.left,
+                              width: menuStyle.width,
+                          }}
+                      >
+                          {(companies || []).map((company) => {
+                              const active = company.id === current?.id;
+                              return (
+                                  <button
+                                      key={company.id}
+                                      type="button"
+                                      onClick={() => {
+                                          setOpen(false);
+                                          if (company.id !== current?.id) {
+                                              router.post(`/company/switch/${company.id}`);
+                                          }
+                                      }}
+                                      className={`flex w-full items-center gap-2.5 px-2.5 py-2.5 text-left ${
+                                          active ? 'bg-indigo-50' : 'hover:bg-slate-50'
+                                      }`}
+                                  >
+                                      <CompanyAvatar company={company} active={active} />
+                                      <span className="min-w-0 flex-1">
+                                          <span
+                                              className={`block truncate text-sm ${active ? 'font-semibold text-indigo-700' : 'font-medium text-slate-700'}`}
+                                          >
+                                              {company.company_name}
+                                          </span>
+                                      </span>
+                                      {active && <Icon name="check" className="h-4 w-4 shrink-0 text-indigo-600" />}
+                                  </button>
+                              );
+                          })}
+                          {!isAdmin && (
+                              <div className="border-t border-slate-100 px-2.5 py-2">
+                                  <Link
+                                      href="/companies/create"
+                                      onClick={() => setOpen(false)}
+                                      className="flex items-center gap-2 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                                  >
+                                      <Icon name="plus" className="h-3.5 w-3.5" />
+                                      {t('company.switcher.add')}
+                                  </Link>
+                              </div>
+                          )}
+                          {isAdmin && activeCompany && (
+                              <div className="border-t border-slate-100 px-2.5 py-2">
+                                  <button
+                                      type="button"
+                                      className="flex w-full items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-800"
+                                      onClick={() => {
+                                          setOpen(false);
+                                          router.post('/company/clear-workspace');
+                                      }}
+                                  >
+                                      {t('platform.clear_workspace')}
+                                  </button>
+                              </div>
+                          )}
+                      </div>
+                  </>,
+                  document.body,
+              )
+            : null;
 
     return (
-        <div ref={rootRef} className="relative">
+        <>
             <button
+                ref={buttonRef}
                 type="button"
+                aria-expanded={open}
+                aria-haspopup="listbox"
                 onClick={() => setOpen((value) => !value)}
                 className="flex w-full items-center gap-2.5 rounded-2xl border border-indigo-100/80 bg-white px-2.5 py-2 text-left shadow-sm shadow-indigo-100/40 transition hover:border-indigo-200 hover:shadow"
             >
@@ -82,56 +189,7 @@ export default function CompanySwitcher() {
                 </span>
                 <Icon name="chevron" className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
             </button>
-
-            {open && (
-                <div className="absolute z-40 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-xl">
-                    {(companies || []).map((company) => {
-                        const active = company.id === current?.id;
-                        return (
-                            <button
-                                key={company.id}
-                                type="button"
-                                onClick={() => {
-                                    setOpen(false);
-                                    if (company.id !== current?.id) {
-                                        router.post(`/company/switch/${company.id}`);
-                                    }
-                                }}
-                                className={`flex w-full items-center gap-2.5 px-2.5 py-2 text-left ${
-                                    active ? 'bg-indigo-50' : 'hover:bg-slate-50'
-                                }`}
-                            >
-                                <CompanyAvatar company={company} active={active} />
-                                <span className="min-w-0 flex-1">
-                                    <span className={`block truncate text-sm ${active ? 'font-semibold text-indigo-700' : 'font-medium text-slate-700'}`}>
-                                        {company.company_name}
-                                    </span>
-                                </span>
-                                {active && <Icon name="check" className="h-4 w-4 shrink-0 text-indigo-600" />}
-                            </button>
-                        );
-                    })}
-                    {!isAdmin && (
-                        <div className="mt-1 border-t border-slate-100 px-2.5 py-2">
-                            <Link href="/companies/create" className="flex items-center gap-2 text-xs font-medium text-indigo-600 hover:text-indigo-700">
-                                <Icon name="plus" className="h-3.5 w-3.5" />
-                                {t('company.switcher.add')}
-                            </Link>
-                        </div>
-                    )}
-                    {isAdmin && activeCompany && (
-                        <div className="mt-1 border-t border-slate-100 px-2.5 py-2">
-                            <button
-                                type="button"
-                                className="flex w-full items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-800"
-                                onClick={() => router.post('/company/clear-workspace')}
-                            >
-                                {t('platform.clear_workspace')}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
+            {menu}
+        </>
     );
 }

@@ -6,7 +6,9 @@ use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Country;
 use App\Models\Customer;
+use App\Models\CustomerCreditCheck;
 use App\Support\CompanyAccess;
+use App\Support\CompanyIntegrations;
 use App\Models\Status;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -72,9 +74,22 @@ class CustomerController extends Controller
             ->where('company_id', $activeCompany->id)
             ->firstOrFail();
 
+        $latestCreditCheck = CustomerCreditCheck::query()
+            ->where('company_id', $activeCompany->id)
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('checked_at')
+            ->first();
+
         return Inertia::render('Customers/Edit', [
             ...$this->formProps(),
             'customer' => $customer,
+            'latestCreditCheck' => $latestCreditCheck ? [
+                'rating' => $latestCreditCheck->rating,
+                'status_label' => $latestCreditCheck->status_label,
+                'checked_at' => $latestCreditCheck->checked_at?->toIso8601String(),
+                'identifier_used' => $latestCreditCheck->identifier_used,
+            ] : null,
+            'creditsafeConfigured' => CompanyIntegrations::creditsafeConfigured($activeCompany),
         ]);
     }
 

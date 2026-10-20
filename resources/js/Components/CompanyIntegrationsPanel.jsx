@@ -74,6 +74,9 @@ export default function CompanyIntegrationsPanel({ integrations = {}, links = {}
         whatsapp_api_enabled: integrations.whatsapp_api_enabled ?? false,
         whatsapp_api_phone_number_id: integrations.whatsapp_api_phone_number_id || '',
         whatsapp_api_access_token: '',
+        creditsafe_enabled: integrations.creditsafe_enabled ?? false,
+        creditsafe_test_api_key: '',
+        creditsafe_live_api_key: '',
     });
 
     const [testing, setTesting] = useState(false);
@@ -397,6 +400,33 @@ export default function CompanyIntegrationsPanel({ integrations = {}, links = {}
                             </div>
                         </div>
                     )}
+                </div>
+            </section>
+
+            <section className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                <IntegrationToggle
+                    enabled={!!form.data.creditsafe_enabled}
+                    onChange={(v) => form.setData('creditsafe_enabled', v)}
+                    label="Creditsafe"
+                    hint="Optional customer credit checks (requires API key)."
+                />
+                <div className={`space-y-4 ${sectionMuted(form.data.creditsafe_enabled)}`}>
+                    <SecretInput
+                        label="Creditsafe test API key"
+                        placeholder={integrations.creditsafe_test_api_key_set ? t('integrations.key_keep') : 'Test key'}
+                        value={form.data.creditsafe_test_api_key}
+                        onChange={(v) => form.setData('creditsafe_test_api_key', v)}
+                        set={integrations.creditsafe_test_api_key_set}
+                        hint={t('integrations.key_keep')}
+                    />
+                    <SecretInput
+                        label="Creditsafe live API key"
+                        placeholder={integrations.creditsafe_live_api_key_set ? t('integrations.key_keep') : 'Live key'}
+                        value={form.data.creditsafe_live_api_key}
+                        onChange={(v) => form.setData('creditsafe_live_api_key', v)}
+                        set={integrations.creditsafe_live_api_key_set}
+                        hint={t('integrations.key_keep')}
+                    />
                 </div>
             </section>
 

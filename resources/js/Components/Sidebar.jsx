@@ -11,6 +11,7 @@ const workspaceNav = [
     { href: '/dashboard', label: 'nav.dashboard', icon: 'grid', exact: true },
     { href: '/customers', label: 'nav.customers', icon: 'customers' },
     { href: '/services', label: 'nav.services', icon: 'wrench' },
+    { href: '/time', label: 'nav.time', icon: 'clock' },
     { href: '/briefings', label: 'nav.briefings', icon: 'clipboard' },
     { href: '/offers', label: 'nav.offers', icon: 'document' },
     { href: '/invoices', label: 'nav.invoices', icon: 'invoice' },
@@ -53,9 +54,9 @@ export default function Sidebar() {
     }, [activeHref, url]);
 
     return (
-        <aside className="auth-aside-bg relative hidden h-full w-[240px] shrink-0 flex-col overflow-hidden border-r border-white/40 lg:flex">
+        <aside className="auth-aside-bg relative hidden h-full w-[240px] shrink-0 flex-col border-r border-white/40 lg:flex">
             <FloatingFavicons count={6} minSize={24} maxSize={80} />
-            <div className="relative z-10 px-4 pt-5">
+            <div className="relative z-20 shrink-0 px-4 pt-5">
                 <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1">
                     {activeCompany?.invoice_logo_url ? (
                         <img
@@ -81,7 +82,7 @@ export default function Sidebar() {
                 )}
             </div>
 
-            <nav ref={sidebarNavRef} className="admin-sidebar-nav relative z-10 mt-2 min-h-0 flex-1 space-y-5 overflow-y-auto px-3 pb-6">
+            <nav ref={sidebarNavRef} className="admin-sidebar-nav relative z-0 mt-2 min-h-0 flex-1 space-y-5 overflow-y-auto px-3 pb-6">
                 <div>
                     <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400/90">
                         {viewingCompany ? t('nav.company_workspace') : t('nav.workspace_select_company')}

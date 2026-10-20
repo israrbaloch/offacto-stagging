@@ -46,10 +46,25 @@ class PlanEntitlements
             }
         }
 
+        $capabilities = self::applyTimeTrackingBundle($capabilities);
+
         return [
             'capabilities' => $capabilities,
             'limits' => $limits,
         ];
+    }
+
+    /**
+     * @param  array<string, bool>  $capabilities
+     * @return array<string, bool>
+     */
+    private static function applyTimeTrackingBundle(array $capabilities): array
+    {
+        if ($capabilities['time_tracking.create'] ?? false) {
+            $capabilities['time_tracking.timer'] = true;
+        }
+
+        return $capabilities;
     }
 
     private static function normalizeLimitValue(mixed $value): ?int

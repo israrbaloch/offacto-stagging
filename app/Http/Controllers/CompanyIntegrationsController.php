@@ -28,6 +28,7 @@ class CompanyIntegrationsController extends Controller
         $data['whatsapp_enabled'] = $request->boolean('whatsapp_enabled');
         $data['whatsapp_use_customer_phone'] = $request->boolean('whatsapp_use_customer_phone');
         $data['whatsapp_api_enabled'] = $request->boolean('whatsapp_api_enabled');
+        $data['creditsafe_enabled'] = $request->boolean('creditsafe_enabled');
         $data['postbode_registered'] = $request->boolean('postbode_registered');
         $data['postbode_send_immediately'] = $request->boolean('postbode_send_immediately');
         $data['postbode_default_country'] = strtoupper($data['postbode_default_country'] ?? 'NL');
@@ -52,6 +53,12 @@ class CompanyIntegrationsController extends Controller
         }
         if (! filled($data['whatsapp_api_access_token'] ?? null)) {
             unset($data['whatsapp_api_access_token']);
+        }
+        if (! filled($data['creditsafe_test_api_key'] ?? null)) {
+            unset($data['creditsafe_test_api_key']);
+        }
+        if (! filled($data['creditsafe_live_api_key'] ?? null)) {
+            unset($data['creditsafe_live_api_key']);
         }
 
         $settings->update($data);
