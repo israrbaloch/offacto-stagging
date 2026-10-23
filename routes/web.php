@@ -79,6 +79,15 @@ Route::post('/locale', function (\Illuminate\Http\Request $request) {
     return back();
 })->name('locale.update');
 
+Route::post('/theme', function (\Illuminate\Http\Request $request) {
+    $theme = $request->validate([
+        'theme' => ['required', 'in:light,dark'],
+    ])['theme'];
+    $request->session()->put('appearance', $theme);
+
+    return back();
+})->name('theme.update');
+
 Route::get('/', function () {
     if (auth()->user()?->hasRole('admin')) {
         return redirect()->route('admin.dashboard');
@@ -158,15 +167,6 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     Route::patch('/profile/integrations', [\App\Http\Controllers\CompanyIntegrationsController::class, 'update'])->name('profile.integrations.update');
     Route::post('/profile/integrations/postbode/test', [\App\Http\Controllers\CompanyIntegrationsController::class, 'testPostbode'])->name('profile.integrations.postbode.test');
 
-    Route::post('/theme', function (\Illuminate\Http\Request $request) {
-        $theme = $request->validate([
-            'theme' => ['required', 'in:light,dark'],
-        ])['theme'];
-        $request->session()->put('appearance', $theme);
-
-        return back();
-    })->name('theme.update');
-    
     // Company switching
     Route::post('/company/switch/{company}', [CompanyController::class, 'switchCompany'])->name('company.switch');
     Route::post('/company/clear-workspace', [CompanyController::class, 'clearWorkspace'])->name('company.clear');

@@ -24,6 +24,8 @@ class Company extends Model
         'phone',
         'vat_number',
         'company_name',
+        'legal_form',
+        'vat_regime',
         'legal_name',
         'street',
         'house',

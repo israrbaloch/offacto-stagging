@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import FlashToaster from '../../../Components/FlashToaster';
+import FormErrorsToaster from '../../../Components/FormErrorsToaster';
 import FloatingFavicons from '../../../Components/FloatingFavicons';
 import Logo from '../../../Components/Logo';
 import { AdminButton, checkboxClass, inputClass } from '../../../Components/Admin/ui';
@@ -19,6 +20,7 @@ export default function AdminLogin({ allowRegistration = true }) {
         <div className="min-h-screen bg-slate-100">
             <Head title="Admin sign in" />
             <FlashToaster />
+            <FormErrorsToaster errors={errors} />
             <div className="mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row">
                 <aside className="auth-aside-bg relative hidden w-full flex-col justify-center overflow-hidden px-10 py-12 lg:flex lg:w-[42%]">
                     <FloatingFavicons count={6} minSize={28} maxSize={96} />

@@ -9,7 +9,7 @@ const LOCALES = [
     { value: 'nl', short: 'NL', label: 'locale.nl' },
 ];
 
-export default function LocaleSelect({ className = '' }) {
+export default function LocaleSelect({ className = '', variant = 'dropdown' }) {
     const { locale } = usePage().props;
     const current = LOCALES.find((item) => item.value === locale) || LOCALES[0];
     const [open, setOpen] = useState(false);
@@ -38,6 +38,33 @@ export default function LocaleSelect({ className = '' }) {
         if (value === (locale || 'en')) return;
         router.post('/locale', { locale: value }, { preserveScroll: true, preserveState: false });
     };
+
+    if (variant === 'segmented') {
+        return (
+            <div
+                className={`inline-flex gap-0.5 rounded-full border border-[rgba(14,18,80,0.08)] bg-white p-1 dark:border-white/10 dark:bg-[#161B55] ${className}`}
+            >
+                {LOCALES.map((item) => {
+                    const active = item.value === current.value;
+                    return (
+                        <button
+                            key={item.value}
+                            type="button"
+                            aria-label={t(item.label)}
+                            onClick={() => choose(item.value)}
+                            className={`rounded-full px-2.5 py-1 text-xs font-bold transition ${
+                                active
+                                    ? 'bg-[#9D8DF1] text-[#0E1250]'
+                                    : 'text-[#48537F] hover:text-[#0E1250] dark:text-[#A1A9DD] dark:hover:text-white'
+                            }`}
+                        >
+                            {item.short}
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    }
 
     return (
         <div ref={rootRef} className={`relative ${className}`}>

@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import FlashToaster from '../Components/FlashToaster';
+import FormErrorsToaster from '../Components/FormErrorsToaster';
 import I18nSync from '../Components/I18nSync';
 import Logo from '../Components/Logo';
 import { t } from '../lib/i18n';
@@ -10,6 +11,7 @@ export default function GuestLayout({ title, children }) {
             <I18nSync />
             <Head title={title} />
             <FlashToaster />
+            <FormErrorsToaster />
             <div className="w-full max-w-md">
                 <div className="mb-8 text-center">
                     <Logo variant="white" className="mx-auto h-9 w-auto" />

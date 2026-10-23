@@ -48,7 +48,6 @@ export default function ResetPassword({ email = '' }) {
                             {showPassword ? 'Hide' : 'Show'}
                         </button>
                     </div>
-                    {errors.password && <span className="mt-1 block text-xs text-rose-600">{errors.password}</span>}
                 </div>
 
                 <div>

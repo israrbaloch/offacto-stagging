@@ -180,16 +180,6 @@ export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpC
                         />
                     ))}
                 </div>
-                {codeError && (
-                    <div
-                        id="otp-code-error"
-                        role="alert"
-                        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
-                    >
-                        {codeError}
-                    </div>
-                )}
-
                 <button
                     type="submit"
                     disabled={processing || digits.join('').length !== 6}

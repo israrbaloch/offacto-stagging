@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import AdminTopBar from '../Components/Admin/shared/AdminTopBar';
 import FlashToaster from '../Components/FlashToaster';
+import FormErrorsToaster from '../Components/FormErrorsToaster';
 import FloatingFavicons from '../Components/FloatingFavicons';
 import I18nSync from '../Components/I18nSync';
 import Logo from '../Components/Logo';
@@ -136,6 +137,7 @@ export default function AdminLayout({ title = 'Admin', children }) {
             <I18nSync />
             <Head title={title ? `${title} · Admin` : 'Admin'} />
             <FlashToaster />
+            <FormErrorsToaster />
             <div className="flex h-full">
                 <aside
                     className={`auth-aside-bg fixed inset-y-0 left-0 z-40 flex h-full shrink-0 flex-col overflow-hidden border-r border-white/40 transition-[width,transform] duration-200 ease-out lg:static lg:translate-x-0 ${

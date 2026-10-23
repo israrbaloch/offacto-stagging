@@ -1,5 +1,6 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import MfaVerifyForm from '../../Components/Auth/MfaVerifyForm';
+import FormErrorsToaster from '../../Components/FormErrorsToaster';
 import Logo from '../../Components/Logo';
 
 const inputClass =
@@ -13,7 +14,6 @@ function Field({ label, required, error, children }) {
                 {required && <span className="text-rose-500"> *</span>}
             </span>
             {children}
-            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
         </label>
     );
 }
@@ -31,9 +31,12 @@ function Button({ type, className, disabled, children }) {
 }
 
 export default function TwoFactorVerify({ recoveryAvailable = true }) {
+    const { errors } = usePage().props;
+
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4">
             <Head title="Verify identity" />
+            <FormErrorsToaster errors={errors} />
             <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
                 <Logo className="mx-auto h-7 w-auto" />
                 <h1 className="mt-6 text-center text-xl font-semibold text-slate-900">Two-step verification</h1>

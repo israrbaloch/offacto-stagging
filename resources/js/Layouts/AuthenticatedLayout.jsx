@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import FlashToaster from '../Components/FlashToaster';
+import FormErrorsToaster from '../Components/FormErrorsToaster';
 import I18nSync from '../Components/I18nSync';
 import Sidebar from '../Components/Sidebar';
 import SubscriptionReminderModal from '../Components/SubscriptionReminderModal';
@@ -23,6 +24,7 @@ export default function AuthenticatedLayout({ title, children }) {
             <I18nSync />
             <Head title={title} />
             <FlashToaster />
+            <FormErrorsToaster />
             <SubscriptionReminderModal />
             <div className="flex h-full">
                 <Sidebar />

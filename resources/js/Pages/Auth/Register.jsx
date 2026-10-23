@@ -1,56 +1,85 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
-import FlashToaster from '../../Components/FlashToaster';
-import I18nSync from '../../Components/I18nSync';
-import LocaleSelect from '../../Components/LocaleSelect';
-import Logo from '../../Components/Logo';
-import FloatingFavicons from '../../Components/FloatingFavicons';
-import SelectMenu from '../../Components/SelectMenu';
+import { Link, useForm } from '@inertiajs/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Icon from '../../Components/Icon';
+import AuthSplitLayout, {
+    authHeadingClass,
+    authInputClass,
+    authLabelClass,
+    authLinkClass,
+    authRegisterBackButtonClass,
+    authRegisterNextButtonClass,
+    authRegisterOutlineButtonClass,
+    authSubClass,
+} from '../../Layouts/AuthSplitLayout';
+import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
-import { optionsFromMap } from '../../lib/utils';
 
-const testimonials = [
-    {
-        quote: 'Offacto transformed our chaotic billing process into a smooth, automated workflow. Highly recommended.',
-        author: 'Sarah Jenkins, CEO',
-    },
-    {
-        quote: 'We send offers and invoices in minutes now. The team finally has a single place for every client.',
-        author: 'Marcus Hale, Founder',
-    },
-    {
-        quote: 'Approvals, payments, and follow-up used to live in three tools. Offacto brought it all together.',
-        author: 'Lena Ortiz, Operations',
-    },
+const LEGAL_FORM_OPTIONS = [
+    { value: 'vzw', labelKey: 'auth.legal_form_vzw' },
+    { value: 'bv', labelKey: 'auth.legal_form_bv' },
+    { value: 'sole_trader', labelKey: 'auth.legal_form_sole_trader' },
+    { value: 'nv', labelKey: 'auth.legal_form_nv' },
 ];
 
-function Field({ label, error, className = '', children }) {
+const VAT_REGIME_OPTIONS = [
+    { value: 'small_business_exemption', labelKey: 'auth.vat_regime_small_business' },
+    { value: 'vat_registered', labelKey: 'auth.vat_regime_registered' },
+    { value: 'exempt_art44', labelKey: 'auth.vat_regime_exempt' },
+];
+
+const LEGAL_DOC_FIELDS = [
+    { key: 'legal_document_privacy', labelKey: 'auth.legal_doc_privacy' },
+    { key: 'legal_document_terms', labelKey: 'auth.legal_doc_terms' },
+    { key: 'legal_document_dpa', labelKey: 'auth.legal_doc_dpa' },
+    { key: 'legal_document_other', labelKey: 'profile.other' },
+];
+
+function AuthField({ label, className = '', children }) {
     return (
         <label className={`block ${className}`}>
-            {label && <span className="mb-1.5 block text-sm font-medium text-slate-600">{label}</span>}
+            {label && <span className={authLabelClass}>{label}</span>}
             {children}
-            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
         </label>
     );
 }
 
-const inputClass = (error) =>
-    `w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 ${
-        error ? 'border-rose-400' : 'border-slate-200'
-    }`;
+function RegisterSteps({ step, onStep }) {
+    const steps = [
+        [1, t('auth.register_step_account')],
+        [2, t('auth.register_step_company')],
+        [3, t('auth.register_step_branding')],
+        [4, t('auth.register_step_documents')],
+    ];
 
-export default function Register({ languages = {} }) {
+    return (
+        <div className="auth-steps mb-[22px]">
+            {steps.map(([id, label]) => {
+                const done = step > id;
+                const active = step === id;
+                return (
+                    <button
+                        key={id}
+                        type="button"
+                        onClick={() => (done || active) && onStep(id)}
+                        className={`auth-step${active ? ' is-active' : ''}${done ? ' is-done' : ''}`}
+                    >
+                        <i aria-hidden="true">{done ? '✓' : id}</i>
+                        {label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+export default function Register({ brandSwatches = ['#3A4AA0', '#0F766E', '#B4235A', '#C2410C', '#141A3A'] }) {
+    const { toast } = useUi();
+    const [step, setStep] = useState(1);
     const [showPassword, setShowPassword] = useState(false);
-    const [testimonialIndex, setTestimonialIndex] = useState(0);
-    const testimonial = testimonials[testimonialIndex];
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [vatLookupMessage, setVatLookupMessage] = useState('');
+    const logoInputRef = useRef(null);
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTestimonialIndex((current) => (current + 1) % testimonials.length);
-        }, 5000);
-
-        return () => clearInterval(timer);
-    }, []);
     const { data, setData, post, processing, errors, transform } = useForm({
         name: '',
         email: '',
@@ -62,257 +91,370 @@ export default function Register({ languages = {} }) {
         email_company: '',
         phone: '',
         vat_number: '',
+        legal_form: 'vzw',
+        vat_regime: 'small_business_exemption',
         street: '',
         house: '',
         postal_code: '',
         city: '',
         language: '',
-        self_employed_activity: '',
+        theme_primary: brandSwatches[0] || '#3A4AA0',
+        invoice_logo: null,
+        legal_document_privacy: null,
+        legal_document_terms: null,
+        legal_document_dpa: null,
+        legal_document_other: null,
     });
 
-    const submit = (e) => {
-        e.preventDefault();
+    useEffect(() => {
+        const keys = Object.keys(errors);
+        if (keys.some((key) => ['email', 'password', 'first_name', 'surname'].includes(key))) {
+            setStep(1);
+        } else if (keys.some((key) => ['company_name', 'vat_number', 'legal_form', 'vat_regime'].includes(key))) {
+            setStep(2);
+        } else if (keys.some((key) => ['theme_primary', 'invoice_logo'].includes(key))) {
+            setStep(3);
+        } else if (keys.some((key) => key.startsWith('legal_document_'))) {
+            setStep(4);
+        }
+    }, [errors]);
+
+    const canAdvanceStep1 = useMemo(
+        () =>
+            data.first_name.trim() &&
+            data.surname.trim() &&
+            data.email.trim() &&
+            data.password.trim() &&
+            termsAccepted,
+        [data.email, data.first_name, data.password, data.surname, termsAccepted],
+    );
+
+    const canAdvanceStep2 = useMemo(
+        () => data.vat_number.trim() && data.legal_form && data.vat_regime && data.company_name.trim(),
+        [data.company_name, data.legal_form, data.vat_number, data.vat_regime],
+    );
+
+    const lookupVat = () => {
+        const vat = data.vat_number.trim();
+        if (vat.length < 8) {
+            toast.error(t('auth.register_vat_invalid'));
+            return;
+        }
+        const company = data.company_name.trim() || t('auth.register_vat_lookup_demo_name');
+        const city = data.city.trim() || t('auth.register_vat_lookup_demo_city');
+        setData({
+            ...data,
+            company_name: company,
+            city,
+        });
+        setVatLookupMessage(t('auth.register_vat_lookup_ok', { company, city }));
+    };
+
+    const goNext = () => {
+        if (step === 1) {
+            if (!canAdvanceStep1) {
+                toast.error(t('auth.register_step1_incomplete'));
+                return;
+            }
+            setStep(2);
+            return;
+        }
+        if (step === 2) {
+            if (!canAdvanceStep2) {
+                toast.error(t('auth.register_step2_incomplete'));
+                return;
+            }
+            setStep(3);
+            return;
+        }
+        if (step === 3) {
+            setStep(4);
+        }
+    };
+
+    const completeRegistration = () => {
+        if (step !== 4 || processing) {
+            return;
+        }
         transform((form) => ({
             ...form,
             name: form.name || `${form.first_name} ${form.surname}`.trim(),
             email_company: form.email_company || form.email,
             password_confirmation: form.password_confirmation || form.password,
+            language: form.language || undefined,
         }));
-        post('/register');
+        post('/register', { forceFormData: true });
     };
 
+    const onFormKeyDown = (e) => {
+        if (e.key !== 'Enter' || e.target.tagName === 'TEXTAREA') {
+            return;
+        }
+        e.preventDefault();
+        if (step < 4) {
+            goNext();
+        } else {
+            completeRegistration();
+        }
+    };
+
+    const goBack = () => setStep((s) => Math.max(1, s - 1));
+
+    const footerLeft =
+        step > 1 ? (
+            <button type="button" onClick={goBack} className={authRegisterBackButtonClass}>
+                {t('auth.back')}
+            </button>
+        ) : (
+            <Link href="/login" className={`text-[13px] ${authLinkClass}`}>
+                {t('auth.have_account')}
+            </Link>
+        );
+
+    const footerRight =
+        step < 4 ? (
+            <button type="button" onClick={goNext} className={authRegisterNextButtonClass}>
+                {t('auth.next')}
+                <span aria-hidden="true">→</span>
+            </button>
+        ) : (
+            <button type="button" onClick={completeRegistration} disabled={processing} className={authRegisterNextButtonClass}>
+                {t('auth.start_trial')}
+                <span aria-hidden="true">→</span>
+            </button>
+        );
+
     return (
-        <div className="min-h-screen bg-slate-100 px-4 py-8">
-            <I18nSync />
-            <Head title={t('auth.register')} />
-            <FlashToaster />
-            <div className="mx-auto mb-3 flex max-w-6xl justify-end">
-                <LocaleSelect />
-            </div>
-            <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-                <aside className="auth-aside-bg relative hidden w-[42%] flex-col justify-between overflow-hidden px-10 py-10 lg:flex">
-                    <FloatingFavicons count={8} minSize={36} maxSize={128} />
-                    <div className="relative">
-                        <Logo className="h-8 w-auto" />
-                        <h1 className="mt-14 text-4xl font-semibold leading-tight tracking-tight text-slate-900">
-                            {t('auth.headline')}
-                        </h1>
-                        <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
-                            {t('auth.tagline')}
-                        </p>
-                        <ul className="mt-8 space-y-3 text-sm text-slate-700">
-                            {['auth.feature_1', 'auth.feature_2', 'auth.feature_3'].map(
-                                (item) => (
-                                    <li key={item} className="flex items-center gap-3">
-                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-                                            ✓
-                                        </span>
-                                        {t(item)}
-                                    </li>
-                                ),
-                            )}
-                        </ul>
-                    </div>
-                    <blockquote className="relative z-10 mt-10 min-h-[148px] rounded-2xl bg-white p-5 shadow-sm">
-                        <div key={testimonial.author} className="register-quote">
-                            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
-                                “
+        <AuthSplitLayout title={t('auth.register')} formMaxWidth="lg">
+            <RegisterSteps step={step} onStep={setStep} />
+
+            <div className="contents" onKeyDown={onFormKeyDown} role="group" aria-label={t('auth.register')}>
+                {step === 1 && (
+                    <>
+                        <h2 className={authHeadingClass}>{t('auth.create_your_account')}</h2>
+                        <p className={authSubClass}>{t('auth.trial_hint')}</p>
+
+                        <div className="auth-form-grid mt-6">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <AuthField label={t('auth.first_name')}>
+                                    <input
+                                        className={authInputClass(errors.first_name)}
+                                        value={data.first_name}
+                                        onChange={(e) => setData('first_name', e.target.value)}
+                                    />
+                                </AuthField>
+                                <AuthField label={t('auth.last_name')}>
+                                    <input
+                                        className={authInputClass(errors.surname)}
+                                        value={data.surname}
+                                        onChange={(e) => setData('surname', e.target.value)}
+                                    />
+                                </AuthField>
                             </div>
-                            <p className="text-sm leading-6 text-slate-600">{testimonial.quote}</p>
-                            <footer className="mt-3 text-xs font-medium text-slate-400">{testimonial.author}</footer>
+                            <AuthField label={t('auth.email_address')}>
+                                <input
+                                    type="email"
+                                    autoComplete="email"
+                                    className={authInputClass(errors.email)}
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                />
+                            </AuthField>
+                            <div>
+                                <span className={authLabelClass}>{t('auth.password')}</span>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        autoComplete="new-password"
+                                        className={`${authInputClass(errors.password)} pr-16`}
+                                        value={data.password}
+                                        onChange={(e) => setData('password', e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute inset-y-0 right-3 text-xs font-semibold text-[#48537F] hover:text-[#0E1250] dark:text-[#A1A9DD] dark:hover:text-white"
+                                        onClick={() => setShowPassword((v) => !v)}
+                                    >
+                                        {showPassword ? t('auth.hide') : t('auth.show')}
+                                    </button>
+                                </div>
+                                <p className="auth-hint mt-1.5">{t('auth.password_hint')}</p>
+                            </div>
+                            <label className="flex items-start gap-2 text-[13px] leading-snug">
+                                <input
+                                    type="checkbox"
+                                    className="mt-0.5 rounded border-[rgba(14,18,80,0.2)] text-[#6B59DC] focus:ring-[#9D8DF1]"
+                                    checked={termsAccepted}
+                                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                                />
+                                <span>
+                                    {t('auth.terms_checkbox')}{' '}
+                                    <span className="font-semibold text-[#0E1250] dark:text-white">{t('profile.terms')}</span> {t('auth.and')}{' '}
+                                    <span className="font-semibold text-[#0E1250] dark:text-white">{t('auth.privacy')}</span>.
+                                </span>
+                            </label>
                         </div>
-                    </blockquote>
-                </aside>
+                    </>
+                )}
 
-                <section className="flex w-full flex-1 flex-col justify-center px-6 py-10 sm:px-10 lg:px-14">
-                    <div className="mx-auto w-full max-w-lg">
-                        <h2 className="text-3xl font-semibold tracking-tight text-slate-900">{t('auth.create_your_account')}</h2>
-                        <p className="mt-2 text-sm text-slate-500">{t('auth.trial_hint')}</p>
+                {step === 2 && (
+                    <>
+                        <h2 className={authHeadingClass}>{t('auth.register_company_title')}</h2>
+                        <p className={authSubClass}>{t('auth.register_company_kbo_hint')}</p>
 
-                        <form onSubmit={submit} className="mt-8 space-y-8">
-                            <fieldset>
-                                <legend className="mb-4 text-[11px] font-semibold tracking-[0.16em] text-slate-400 uppercase">
-                                    {t('auth.account_info')}
-                                </legend>
-                                <div className="space-y-4">
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label={t('auth.first_name')} error={errors.first_name}>
-                                            <input
-                                                className={inputClass(errors.first_name)}
-                                                placeholder="Jane"
-                                                value={data.first_name}
-                                                onChange={(e) => setData('first_name', e.target.value)}
-                                            />
-                                        </Field>
-                                        <Field label={t('auth.last_name')} error={errors.surname}>
-                                            <input
-                                                className={inputClass(errors.surname)}
-                                                placeholder="Doe"
-                                                value={data.surname}
-                                                onChange={(e) => setData('surname', e.target.value)}
-                                            />
-                                        </Field>
-                                    </div>
-                                    <Field label={t('auth.email_address')} error={errors.email}>
-                                        <input
-                                            type="email"
-                                            className={inputClass(errors.email)}
-                                            placeholder="jane@company.com"
-                                            value={data.email}
-                                            onChange={(e) => setData('email', e.target.value)}
-                                        />
-                                    </Field>
-                                    <div>
-                                        <span className="mb-1.5 block text-sm font-medium text-slate-600">{t('auth.password')}</span>
-                                        <div className="relative">
-                                            <input
-                                                type={showPassword ? 'text' : 'password'}
-                                                className={`${inputClass(errors.password)} pr-14`}
-                                                placeholder={t('auth.create_password')}
-                                                value={data.password}
-                                                onChange={(e) => setData('password', e.target.value)}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="absolute inset-y-0 right-3 text-xs font-medium text-slate-400 hover:text-slate-600"
-                                                onClick={() => setShowPassword((v) => !v)}
-                                            >
-                                                {showPassword ? t('auth.hide') : t('auth.show')}
-                                            </button>
-                                        </div>
-                                        {errors.password && <span className="mt-1 block text-xs text-rose-600">{errors.password}</span>}
-                                    </div>
+                        <div className="auth-form-grid mt-6">
+                            <div>
+                                <span className={authLabelClass}>{t('auth.vat_or_company_number')}</span>
+                                <div className="flex flex-wrap gap-2">
+                                    <input
+                                        className={`${authInputClass(errors.vat_number)} min-w-0 flex-1`}
+                                        value={data.vat_number}
+                                        onChange={(e) => {
+                                            setData('vat_number', e.target.value);
+                                            setVatLookupMessage('');
+                                        }}
+                                        placeholder="BE0712345678"
+                                    />
+                                    <button type="button" onClick={lookupVat} className={authRegisterOutlineButtonClass}>
+                                        {t('auth.lookup')}
+                                    </button>
                                 </div>
-                            </fieldset>
+                                {vatLookupMessage && (
+                                    <p className="auth-okline mt-2 flex items-center gap-2 text-[13px] font-semibold text-[#14794A] dark:text-[#5FD3B3]">
+                                        <span aria-hidden="true">✓</span>
+                                        {vatLookupMessage}
+                                    </p>
+                                )}
+                            </div>
+                            <AuthField label={t('auth.legal_form')}>
+                                <select
+                                    className={authInputClass(errors.legal_form)}
+                                    value={data.legal_form}
+                                    onChange={(e) => setData('legal_form', e.target.value)}
+                                >
+                                    {LEGAL_FORM_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {t(opt.labelKey)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </AuthField>
+                            <AuthField label={t('auth.vat_regime')}>
+                                <select
+                                    className={authInputClass(errors.vat_regime)}
+                                    value={data.vat_regime}
+                                    onChange={(e) => setData('vat_regime', e.target.value)}
+                                >
+                                    {VAT_REGIME_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {t(opt.labelKey)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </AuthField>
+                        </div>
+                    </>
+                )}
 
-                            <fieldset>
-                                <legend className="mb-4 text-[11px] font-semibold tracking-[0.16em] text-slate-400 uppercase">
-                                    {t('auth.company_setup')}
-                                </legend>
-                                <div className="space-y-4">
-                                    <Field label={t('auth.company_name')} error={errors.company_name}>
-                                        <input
-                                            className={inputClass(errors.company_name)}
-                                            placeholder="Acme Corp"
-                                            value={data.company_name}
-                                            onChange={(e) => setData('company_name', e.target.value)}
-                                        />
-                                    </Field>
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label={t('auth.vat_optional')} error={errors.vat_number}>
-                                            <input
-                                                className={inputClass(errors.vat_number)}
-                                                placeholder="BE0123456789"
-                                                value={data.vat_number}
-                                                onChange={(e) => setData('vat_number', e.target.value)}
-                                            />
-                                        </Field>
-                                        <Field label={t('auth.activity_type')} error={errors.self_employed_activity}>
-                                            <SelectMenu
-                                                className={inputClass(errors.self_employed_activity)}
-                                                value={data.self_employed_activity}
-                                                onChange={(e) => setData('self_employed_activity', e.target.value)}
-                                                placeholder={t('auth.select_activity')}
-                                                options={[
-                                                    { value: 'main_profession', label: t('companies.main_profession') },
-                                                    { value: 'secondary_profession', label: t('companies.secondary_profession') },
-                                                ]}
-                                            />
-                                        </Field>
-                                    </div>
-                                    <Field label={t('auth.company_email')} error={errors.email_company}>
-                                        <input
-                                            type="email"
-                                            className={inputClass(errors.email_company)}
-                                            placeholder="billing@company.com"
-                                            value={data.email_company}
-                                            onChange={(e) => setData('email_company', e.target.value)}
-                                        />
-                                    </Field>
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label={t('common.phone')} error={errors.phone}>
-                                            <input
-                                                className={inputClass(errors.phone)}
-                                                placeholder="+32 470 00 00 00"
-                                                value={data.phone}
-                                                onChange={(e) => setData('phone', e.target.value)}
-                                            />
-                                        </Field>
-                                        <Field label={t('auth.language')} error={errors.language}>
-                                            <SelectMenu
-                                                className={inputClass(errors.language)}
-                                                value={data.language}
-                                                onChange={(e) => setData('language', e.target.value)}
-                                                placeholder={t('auth.select_language')}
-                                                options={optionsFromMap(languages)}
-                                            />
-                                        </Field>
-                                    </div>
-                                    <div className="grid gap-4 sm:grid-cols-3">
-                                        <Field label={t('auth.street')} className="sm:col-span-2" error={errors.street}>
-                                            <input
-                                                className={inputClass(errors.street)}
-                                                placeholder="Main Street"
-                                                value={data.street}
-                                                onChange={(e) => setData('street', e.target.value)}
-                                            />
-                                        </Field>
-                                        <Field label={t('auth.house_no')} error={errors.house}>
-                                            <input
-                                                className={inputClass(errors.house)}
-                                                placeholder="12"
-                                                value={data.house}
-                                                onChange={(e) => setData('house', e.target.value)}
-                                            />
-                                        </Field>
-                                    </div>
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label={t('auth.postal')} error={errors.postal_code}>
-                                            <input
-                                                className={inputClass(errors.postal_code)}
-                                                placeholder="1000"
-                                                value={data.postal_code}
-                                                onChange={(e) => setData('postal_code', e.target.value)}
-                                            />
-                                        </Field>
-                                        <Field label={t('auth.city')} error={errors.city}>
-                                            <input
-                                                className={inputClass(errors.city)}
-                                                placeholder="Brussels"
-                                                value={data.city}
-                                                onChange={(e) => setData('city', e.target.value)}
-                                            />
-                                        </Field>
-                                    </div>
-                                </div>
-                            </fieldset>
+                {step === 3 && (
+                    <>
+                        <h2 className={authHeadingClass}>{t('auth.register_branding_title')}</h2>
+                        <p className={authSubClass}>{t('auth.register_branding_hint')}</p>
 
-                            {errors.name && <p className="text-xs text-rose-600">{errors.name}</p>}
-
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+                        <div className="auth-form-grid mt-6">
+                            <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => logoInputRef.current?.click()}
+                                onKeyDown={(e) => e.key === 'Enter' && logoInputRef.current?.click()}
+                                className="auth-drop cursor-pointer text-center"
                             >
-                                {t('auth.start_trial')}
-                                <span aria-hidden="true">→</span>
-                            </button>
-                        </form>
+                                <Icon name="up" className="mx-auto mb-2 h-6 w-6 text-[#6B59DC]" />
+                                <input
+                                    ref={logoInputRef}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                                    className="sr-only"
+                                    onChange={(e) => setData('invoice_logo', e.target.files?.[0] ?? null)}
+                                />
+                                <p className="font-semibold text-[#0E1250] dark:text-[#E8ECFF]">{t('auth.logo_drop_title')}</p>
+                                <p className="auth-hint mt-1">{t('auth.logo_drop_hint')}</p>
+                                {data.invoice_logo && (
+                                    <p className="mt-2 text-[13px] font-semibold text-[#14794A] dark:text-[#5FD3B3]">{data.invoice_logo.name}</p>
+                                )}
+                            </div>
+                            <div>
+                                <span className={authLabelClass}>{t('auth.primary_colour')}</span>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {brandSwatches.map((color) => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            aria-label={color}
+                                            className={`auth-swatch h-9 w-9 rounded-full border-2 transition ${
+                                                data.theme_primary === color
+                                                    ? 'border-[#0E1250] dark:border-white'
+                                                    : 'border-transparent'
+                                            }`}
+                                            style={{ backgroundColor: color }}
+                                            onClick={() => setData('theme_primary', color)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
 
-                        <p className="mt-4 text-center text-xs text-slate-400">
-                            {t('auth.terms_agree')}{' '}
-                            <span className="font-medium text-slate-600">{t('profile.terms')}</span> {t('auth.and')}{' '}
-                            <span className="font-medium text-slate-600">{t('auth.privacy')}</span>.
-                        </p>
-                        <p className="mt-6 text-center text-sm text-slate-500">
-                            {t('auth.have_account')}{' '}
-                            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-                                {t('auth.sign_in')}
-                            </Link>
-                        </p>
-                    </div>
-                </section>
+                {step === 4 && (
+                    <>
+                        <h2 className={authHeadingClass}>{t('auth.register_documents_title')}</h2>
+                        <p className={authSubClass}>{t('auth.register_documents_hint')}</p>
+
+                        <div className="auth-doc-list">
+                            {LEGAL_DOC_FIELDS.map(({ key, labelKey }) => (
+                                <div key={key} className="auth-doc-row">
+                                    <div className="auth-doc-icon">
+                                        <Icon name="file" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="auth-doc-title">{t(labelKey)}</div>
+                                        {data[key]?.name && <div className="auth-doc-filename">{data[key].name}</div>}
+                                    </div>
+                                    <label className="auth-doc-upload-btn">
+                                        <Icon name="up" className="h-4 w-4" />
+                                        {t('auth.upload')}
+                                        <input
+                                            type="file"
+                                            accept="application/pdf"
+                                            className="sr-only"
+                                            onChange={(e) => setData(key, e.target.files?.[0] ?? null)}
+                                        />
+                                    </label>
+                                </div>
+                            ))}
+                            <div className="auth-doc-note">
+                                <Icon name="spark" className="auth-doc-note__spark h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                                <div>
+                                    {t('auth.register_documents_contact_lead')}{' '}
+                                    <button
+                                        type="button"
+                                        className="auth-doc-note__link"
+                                        onClick={() => toast.info(t('auth.register_contact_toast'))}
+                                    >
+                                        {t('auth.contact_us')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                <div className="auth-register-row mt-[22px] flex w-full items-center justify-between gap-3">
+                    <div className="min-w-0">{footerLeft}</div>
+                    <div className="shrink-0">{footerRight}</div>
+                </div>
             </div>
-        </div>
+        </AuthSplitLayout>
     );
 }

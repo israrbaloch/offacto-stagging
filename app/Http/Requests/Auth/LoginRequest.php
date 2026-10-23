@@ -53,7 +53,7 @@ class LoginRequest extends FormRequest
             );
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'auth' => trans('auth.failed'),
             ]);
         }
 
@@ -84,7 +84,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            'auth' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),

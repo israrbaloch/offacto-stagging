@@ -127,3 +127,400 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
         animation: none;
     }
 }
+
+@keyframes auth-diamond-float {
+    0%,
+    100% {
+        transform: rotate(45deg) translate3d(0, 0, 0);
+    }
+    50% {
+        transform: rotate(45deg) translate3d(0, -10px, 0);
+    }
+}
+
+.auth-diamond {
+    transform: rotate(45deg);
+    transform-origin: center;
+    border-radius: 6px;
+    animation: auth-diamond-float 9s ease-in-out infinite both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-diamond {
+        animation: none;
+    }
+}
+
+/* Auth fields: explicit colors so html.dark .bg-white overrides do not apply */
+.auth-field {
+    background-color: #fff;
+    border: 1px solid rgba(14, 18, 80, 0.1);
+    color: #0e1250;
+    font-size: 14.5px;
+    line-height: 1.3;
+}
+
+.auth-field::placeholder {
+    color: rgb(72 83 127 / 0.7);
+}
+
+.auth-field:hover {
+    border-color: rgb(107 89 220 / 0.35);
+}
+
+.auth-field:focus {
+    border-color: #9d8df1;
+    box-shadow: 0 0 0 3px rgb(157 141 241 / 0.35);
+    outline: none;
+}
+
+html.dark .auth-field {
+    background-color: #1e2466;
+    border-color: rgb(255 255 255 / 0.12);
+    color: #e8ecff;
+}
+
+html.dark .auth-field::placeholder {
+    color: #a1a9dd;
+}
+
+.auth-google-btn {
+    background-color: #fff;
+    color: #0e1250;
+}
+
+html.dark .auth-google-btn {
+    background-color: #fff;
+    color: #0e1250;
+}
+
+/* Demo toast (offacto-app-demo.html .toast + v6 pill) */
+.offacto-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100% - 32px);
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: #0e1250;
+    background-color: #0e1250 !important;
+    border: none;
+    box-shadow: none;
+    color: #ffffff;
+    font-family: Figtree, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
+    line-height: 1.35;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, 30px);
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+}
+
+.offacto-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+html.dark .offacto-toast {
+    background: #0e1250;
+    background-color: #0e1250 !important;
+    color: #ffffff;
+}
+
+.offacto-toast__icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.offacto-toast__message {
+    color: #ffffff;
+}
+
+html.dark .offacto-toast__message {
+    color: #ffffff;
+}
+
+.auth-form-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.auth-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.auth-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: #e7edfb;
+    font-size: 13px;
+    font-weight: 600;
+    color: #48537f;
+    cursor: default;
+}
+
+html.dark .auth-step {
+    background: #1e2466;
+    color: #a1a9dd;
+}
+
+.auth-step i {
+    display: grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border-radius: 50%;
+    background: #d8e2f7;
+    font-style: normal;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+html.dark .auth-step i {
+    background: #252e80;
+    color: #c8cef0;
+}
+
+.auth-step.is-active {
+    background: #0e1250;
+    color: #fff;
+}
+
+.auth-step.is-active i {
+    background: #9d8df1;
+    color: #0e1250;
+}
+
+.auth-step.is-done i {
+    background: #14794a;
+    color: #fff;
+}
+
+.auth-hint {
+    font-size: 12px;
+    color: #48537f;
+}
+
+html.dark .auth-hint {
+    color: #a1a9dd;
+}
+
+.auth-drop {
+    border: 1px dashed rgba(14, 18, 80, 0.2);
+    border-radius: 16px;
+    padding: 24px 16px;
+    background: rgba(255, 255, 255, 0.65);
+}
+
+html.dark .auth-drop {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(30, 36, 102, 0.5);
+}
+
+.auth-swatch {
+    box-shadow: 0 0 0 1px rgba(14, 18, 80, 0.08);
+}
+
+/* Register step 4 — demo .integ / .av-s / .btn.sm / .note */
+.auth-doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.auth-doc-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: #fff;
+    border: 0;
+}
+
+html.dark .auth-doc-row {
+    background: #1e2466;
+}
+
+.auth-doc-icon {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 10px;
+    background: #fff;
+    color: #0e1250;
+}
+
+html.dark .auth-doc-icon {
+    background: #252e80;
+    color: #e8ecff;
+}
+
+.auth-doc-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.auth-doc-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #0e1250;
+    line-height: 1.35;
+}
+
+html.dark .auth-doc-title {
+    color: #e8ecff;
+}
+
+.auth-doc-filename {
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 500;
+    color: #48537f;
+}
+
+html.dark .auth-doc-filename {
+    color: #a1a9dd;
+}
+
+.auth-doc-upload-btn {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(14, 18, 80, 0.1);
+    background: #fff;
+    font-family: Figtree, system-ui, sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0e1250;
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.auth-doc-upload-btn:hover {
+    border-color: #6b59dc;
+    color: #6b59dc;
+}
+
+html.dark .auth-doc-upload-btn {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: #1e2466;
+    color: #e8ecff;
+}
+
+.auth-doc-upload-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.auth-doc-note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #48537f;
+}
+
+html.dark .auth-doc-note {
+    background: #1e2466;
+    color: #a1a9dd;
+}
+
+.auth-doc-note__spark {
+    flex-shrink: 0;
+    color: #6b59dc;
+}
+
+.auth-doc-note__link {
+    font-weight: 600;
+    color: #5a48c8;
+    text-decoration: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+.auth-doc-note__link:hover {
+    color: #6b59dc;
+}
+
+/* Demo auth-form primary CTA (overrides v6 lilac where v9 applies) */
+.auth-form .auth-register-cta {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border: 0;
+    border-radius: 999px;
+    background: #6b59dc;
+    font-family: Figtree, system-ui, sans-serif;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #fff;
+    transition: background 0.15s ease;
+}
+
+.auth-form .auth-register-cta:hover {
+    background: #5a48c8;
+}
+
+.auth-form .auth-register-cta:disabled {
+    opacity: 0.5;
+}
+
+.auth-shell {
+    padding: 32px 16px;
+}
+
+@media (max-width: 1023px) {
+    .auth-box {
+        min-height: 0;
+    }
+
+    .auth-art {
+        display: none;
+    }
+
+    .auth-form {
+        padding: 32px 24px;
+    }
+}

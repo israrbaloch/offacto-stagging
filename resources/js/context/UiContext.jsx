@@ -1,41 +1,56 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import Icon from '../Components/Icon';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { t } from '../lib/i18n';
 
 const UiContext = createContext(null);
 
-const VARIANT_STYLES = {
-    success: 'bg-slate-900 text-white',
-    error: 'bg-rose-600 text-white',
-    info: 'bg-indigo-600 text-white',
-    warning: 'bg-amber-500 text-slate-900',
+/** Demo v6 toast pill background (offacto-app-demo.html line 636). */
+export const TOAST_BG = '#0E1250';
+
+/** Demo offacto-app-demo.html: icon accent only; pill bg + message stay white. */
+const TOAST_ICON_COLOR = {
+    success: '#5FD3B3',
+    info: '#5FD3B3',
+    warning: '#F0B44C',
+    error: '#F27D8C',
 };
 
-function ToastStack({ items, onDismiss }) {
-    if (items.length === 0) {
-        return null;
+function ToastIcon({ variant }) {
+    const color = TOAST_ICON_COLOR[variant] || TOAST_ICON_COLOR.success;
+
+    if (variant === 'error' || variant === 'warning') {
+        return (
+            <svg viewBox="0 0 24 24" className="offacto-toast__icon shrink-0" style={{ color }} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <path d="M12 9v4M12 17h.01" />
+            </svg>
+        );
     }
 
     return (
-        <div className="pointer-events-none fixed right-4 top-4 z-[100] flex max-w-sm flex-col gap-2">
-            {items.map((item) => (
-                <div
-                    key={item.id}
-                    role="status"
-                    className={`pointer-events-auto flex items-start gap-3 rounded-2xl px-4 py-3 text-sm shadow-lg ring-1 ring-black/5 ${VARIANT_STYLES[item.variant] || VARIANT_STYLES.info}`}
-                >
-                    <p className="flex-1 leading-snug">{item.message}</p>
-                    <button
-                        type="button"
-                        onClick={() => onDismiss(item.id)}
-                        className="shrink-0 rounded-full p-0.5 opacity-80 hover:opacity-100"
-                        aria-label={t('common.dismiss')}
-                    >
-                        <Icon name="close" className="h-4 w-4" />
-                    </button>
-                </div>
-            ))}
-        </div>
+        <svg viewBox="0 0 24 24" className="offacto-toast__icon shrink-0" style={{ color }} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+        </svg>
+    );
+}
+
+const TOAST_ANIM_MS = 250;
+
+function ToastStack({ item, visible }) {
+    if (!item || typeof document === 'undefined') {
+        return null;
+    }
+
+    return createPortal(
+        <div
+            className={`offacto-toast${visible ? ' is-visible' : ''}`}
+            style={{ backgroundColor: TOAST_BG }}
+            role={item.variant === 'error' ? 'alert' : 'status'}
+        >
+            <ToastIcon variant={item.variant} />
+            <span className="offacto-toast__message">{item.message}</span>
+        </div>,
+        document.body,
     );
 }
 
@@ -76,25 +91,78 @@ function ConfirmDialog({ state, onCancel, onConfirm }) {
 let toastSeq = 0;
 
 export function UiProvider({ children }) {
-    const [toasts, setToasts] = useState([]);
+    const [toastItem, setToastItem] = useState(null);
+    const [toastVisible, setToastVisible] = useState(false);
     const [confirmState, setConfirmState] = useState(null);
+    const toastTimerRef = useRef(null);
+    const toastExitTimerRef = useRef(null);
+    const toastVisibleRef = useRef(false);
 
     const dismissToast = useCallback((id) => {
-        setToasts((prev) => prev.filter((item) => item.id !== id));
+        if (toastTimerRef.current) {
+            clearTimeout(toastTimerRef.current);
+            toastTimerRef.current = null;
+        }
+        setToastVisible(false);
+        toastVisibleRef.current = false;
+        if (toastExitTimerRef.current) {
+            clearTimeout(toastExitTimerRef.current);
+        }
+        toastExitTimerRef.current = setTimeout(() => {
+            setToastItem((current) => (current?.id === id ? null : current));
+            toastExitTimerRef.current = null;
+        }, TOAST_ANIM_MS);
     }, []);
 
     const pushToast = useCallback(
-        (message, variant = 'success', duration = 4500) => {
+        (message, variant = 'success', duration = 2400) => {
             if (!message) {
                 return;
             }
             const id = ++toastSeq;
-            setToasts((prev) => [...prev.slice(-4), { id, message, variant }]);
+            if (toastTimerRef.current) {
+                clearTimeout(toastTimerRef.current);
+            }
+            if (toastExitTimerRef.current) {
+                clearTimeout(toastExitTimerRef.current);
+                toastExitTimerRef.current = null;
+            }
+
+            const wasVisible = toastVisibleRef.current;
+            setToastItem({ id, message, variant });
+
+            if (!wasVisible) {
+                setToastVisible(false);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setToastVisible(true);
+                        toastVisibleRef.current = true;
+                    });
+                });
+            } else {
+                setToastVisible(true);
+                toastVisibleRef.current = true;
+            }
+
             if (duration > 0) {
-                setTimeout(() => dismissToast(id), duration);
+                toastTimerRef.current = setTimeout(() => {
+                    dismissToast(id);
+                }, duration);
             }
         },
         [dismissToast],
+    );
+
+    useEffect(
+        () => () => {
+            if (toastTimerRef.current) {
+                clearTimeout(toastTimerRef.current);
+            }
+            if (toastExitTimerRef.current) {
+                clearTimeout(toastExitTimerRef.current);
+            }
+        },
+        [],
     );
 
     const toast = useMemo(
@@ -132,7 +200,7 @@ export function UiProvider({ children }) {
     return (
         <UiContext.Provider value={value}>
             {children}
-            <ToastStack items={toasts} onDismiss={dismissToast} />
+            <ToastStack item={toastItem} visible={toastVisible} />
             <ConfirmDialog state={confirmState} onCancel={() => closeConfirm(false)} onConfirm={() => closeConfirm(true)} />
         </UiContext.Provider>
     );

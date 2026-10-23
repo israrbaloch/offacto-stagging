@@ -19,7 +19,6 @@ export default function Input({ label, error, className = '', type, ...props }) 
                     {...props}
                 />
             )}
-            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
         </label>
     );
 }
@@ -34,7 +33,6 @@ export function TextArea({ label, error, className = '', ...props }) {
                 }`}
                 {...props}
             />
-            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
         </label>
     );
 }
@@ -51,7 +49,6 @@ export function Select({ label, error, options = [], className = '', placeholder
                 error={error}
                 className={controlClass(error)}
             />
-            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
         </label>
     );
 }

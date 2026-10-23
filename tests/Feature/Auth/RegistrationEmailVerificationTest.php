@@ -37,12 +37,11 @@ class RegistrationEmailVerificationTest extends TestCase
             'first_name' => 'Test',
             'surname' => 'User',
             'email_company' => 'billing@acme.test',
-            'phone' => '+32 000',
-            'street' => 'Main',
-            'house' => '1',
-            'postal_code' => '1000',
-            'city' => 'Brussels',
+            'vat_number' => 'BE0123456789',
+            'legal_form' => 'bv',
+            'vat_regime' => 'vat_registered',
             'language' => $languageId,
+            'theme_primary' => '#3A4AA0',
         ])->assertRedirect(route('register.verify'));
 
         $this->assertGuest();

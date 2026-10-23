@@ -1,4 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import FormErrorsToaster from '../../Components/FormErrorsToaster';
 import Logo from '../../Components/Logo';
 
 const inputClass =
@@ -12,6 +13,7 @@ export default function TwoFactorEnroll({ required, alreadyEnrolled, mustReenrol
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 py-10">
             <Head title="Set up authenticator" />
+            <FormErrorsToaster errors={{ ...start.errors, ...confirm.errors }} />
             <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
                 <Logo className="mx-auto h-7 w-auto" />
                 <h1 className="mt-6 text-center text-xl font-semibold text-slate-900">Authenticator app</h1>
@@ -62,7 +64,6 @@ export default function TwoFactorEnroll({ required, alreadyEnrolled, mustReenrol
                                 value={start.data.password}
                                 onChange={(e) => start.setData('password', e.target.value)}
                             />
-                            {start.errors.password && <span className="mt-1 block text-xs text-rose-600">{start.errors.password}</span>}
                         </label>
                         <button
                             type="submit"
@@ -101,7 +102,6 @@ export default function TwoFactorEnroll({ required, alreadyEnrolled, mustReenrol
                                 value={confirm.data.code}
                                 onChange={(e) => confirm.setData('code', e.target.value.replace(/\s/g, ''))}
                             />
-                            {confirm.errors.code && <span className="mt-1 block text-xs text-rose-600">{confirm.errors.code}</span>}
                         </label>
                         <button
                             type="submit"
