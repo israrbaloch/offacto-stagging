@@ -225,7 +225,7 @@ export default function Register({ brandSwatches = ['#3A4AA0', '#0F766E', '#B423
         );
 
     return (
-        <AuthSplitLayout title={t('auth.register')} formMaxWidth="lg">
+        <AuthSplitLayout title={t('auth.register')} formMaxWidth="lg" showFormLogo>
             <RegisterSteps step={step} onStep={setStep} />
 
             <div className="contents" onKeyDown={onFormKeyDown} role="group" aria-label={t('auth.register')}>

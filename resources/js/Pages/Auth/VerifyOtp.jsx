@@ -1,7 +1,14 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Logo from '../../Components/Logo';
-import AuthSplitLayout from '../../Layouts/AuthSplitLayout';
+import AuthSplitLayout, {
+    authHeadingClass,
+    authLinkClass,
+    authMutedClass,
+    authOtpInputClass,
+    authPrimaryButtonClass,
+    authSubClass,
+} from '../../Layouts/AuthSplitLayout';
+import { t } from '../../lib/i18n';
 
 function secondsUntil(iso) {
     if (!iso) return 0;
@@ -14,24 +21,24 @@ function formatTime(total) {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-const OTP_ROUTES = {
+const OTP_ROUTE_KEYS = {
     registration: {
         verify: '/register/verify',
         resend: '/register/resend',
         cancel: '/register/verify/cancel',
-        backLabel: 'Back to login',
-        submitLabel: 'Verify email',
-        title: 'Verify your email',
-        hint: 'Enter the code we sent to finish creating your account.',
+        backLabelKey: 'auth.back_login',
+        submitLabelKey: 'auth.otp_verify_email_submit',
+        titleKey: 'auth.otp_verify_email_title',
+        hintKey: 'auth.otp_verify_email_hint',
     },
     password_reset: {
         verify: '/forgot-password/verify',
         resend: '/forgot-password/resend',
         cancel: '/forgot-password/verify/cancel',
-        backLabel: 'Use a different email',
-        submitLabel: 'Continue',
-        title: 'Enter reset code',
-        hint: 'Enter the code we sent to reset your password.',
+        backLabelKey: 'auth.otp_back_reset',
+        submitLabelKey: 'auth.otp_reset_submit',
+        titleKey: 'auth.otp_reset_title',
+        hintKey: 'auth.otp_reset_hint',
     },
 };
 
@@ -60,7 +67,8 @@ function firstError(errors, key) {
 export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpContextProp }) {
     const { props, url } = usePage();
     const otpContext = useMemo(() => resolveOtpContext(otpContextProp, url), [otpContextProp, url]);
-    const routes = OTP_ROUTES[otpContext] ?? OTP_ROUTES.password_reset;
+    const routes = OTP_ROUTE_KEYS[otpContext] ?? OTP_ROUTE_KEYS.password_reset;
+    const title = t(routes.titleKey);
 
     const [digits, setDigits] = useState(['', '', '', '', '', '']);
     const [expiresIn, setExpiresIn] = useState(() => secondsUntil(expiresAt));
@@ -142,21 +150,21 @@ export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpC
     };
 
     return (
-        <AuthSplitLayout title={routes.title}>
-            <Logo className="h-7 w-auto" />
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{routes.title}</h2>
-            <p className="mt-2 text-sm text-slate-500">{routes.hint}</p>
-            <p className="mt-1 text-sm text-slate-500">
-                Code sent to <span className="font-medium text-slate-700">{email}</span>
+        <AuthSplitLayout title={title} showFormLogo>
+            <h2 className={authHeadingClass}>{title}</h2>
+            <p className={authSubClass}>{t(routes.hintKey)}</p>
+            <p className={`mt-1 ${authMutedClass}`}>
+                {t('auth.otp_sent_to')}{' '}
+                <span className="font-semibold text-[#0E1250] dark:text-[#E8ECFF]">{email}</span>
             </p>
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
                     submitCode(data.code || digits.join(''));
                 }}
-                className="mt-8 space-y-6"
+                className="mt-6 space-y-5"
             >
-                <div className="flex justify-between gap-2" onPaste={onPaste}>
+                <div className="auth-otp-row" onPaste={onPaste}>
                     {digits.map((digit, index) => (
                         <input
                             key={index}
@@ -174,44 +182,44 @@ export default function VerifyOtp({ email, expiresAt, resendAt, otpContext: otpC
                             }}
                             aria-invalid={codeError ? 'true' : undefined}
                             aria-describedby={codeError ? 'otp-code-error' : undefined}
-                            className={`h-12 w-11 rounded-lg border bg-white text-center text-lg font-semibold outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 ${
-                                codeError ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200'
-                            }`}
+                            className={authOtpInputClass(codeError)}
                         />
                     ))}
                 </div>
                 <button
                     type="submit"
                     disabled={processing || digits.join('').length !== 6}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+                    className={authPrimaryButtonClass}
                 >
-                    {routes.submitLabel}
+                    {t(routes.submitLabelKey)}
                     <span aria-hidden="true">→</span>
                 </button>
             </form>
 
-            <div className="mt-6 space-y-2 text-center text-sm text-slate-500">
+            <div className={`mt-6 space-y-2 text-center ${authMutedClass}`}>
                 {resendIn > 0 ? (
-                    <p>Resend code in {formatTime(resendIn)}</p>
+                    <p>{t('auth.otp_resend_in', { time: formatTime(resendIn) })}</p>
                 ) : (
                     <button
                         type="button"
                         disabled={resending}
-                        className="font-medium text-indigo-600 hover:text-indigo-500 disabled:opacity-50"
+                        className={`${authLinkClass} disabled:opacity-50`}
                         onClick={resendCode}
                     >
-                        {resending ? 'Sending…' : 'Resend code'}
+                        {resending ? t('auth.otp_resending') : t('auth.otp_resend')}
                     </button>
                 )}
-                <p className="text-xs text-slate-400">
-                    {expiresIn > 0 ? `Code expires in ${formatTime(expiresIn)}` : 'This code has expired. Use resend for a new one.'}
+                <p className="text-xs opacity-80">
+                    {expiresIn > 0
+                        ? t('auth.otp_expires_in', { time: formatTime(expiresIn) })
+                        : t('auth.otp_expired')}
                 </p>
                 <button
                     type="button"
-                    className="block w-full text-sm text-slate-500 hover:text-slate-700"
+                    className={`block w-full text-sm opacity-90 hover:opacity-100 ${authLinkClass}`}
                     onClick={() => router.post(routes.cancel)}
                 >
-                    {routes.backLabel}
+                    {t(routes.backLabelKey)}
                 </button>
             </div>
         </AuthSplitLayout>

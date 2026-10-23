@@ -184,6 +184,18 @@ html.dark .auth-field::placeholder {
     color: #a1a9dd;
 }
 
+.auth-otp-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.auth-otp-cell {
+    min-height: 48px;
+    max-width: 52px;
+    padding-inline: 0;
+}
+
 .auth-google-btn {
     background-color: #fff;
     color: #0e1250;

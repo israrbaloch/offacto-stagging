@@ -5,7 +5,6 @@ import FormErrorsToaster from '../Components/FormErrorsToaster';
 import I18nSync from '../Components/I18nSync';
 import Icon from '../Components/Icon';
 import LocaleSelect from '../Components/LocaleSelect';
-import Logo from '../Components/Logo';
 import { t } from '../lib/i18n';
 
 const AUTH_MARK_SRC = '/assets/images/favicon.ico';
@@ -97,6 +96,25 @@ export const authHeadingClass =
 
 export const authLinkClass = 'font-semibold text-[#5A48C8] hover:text-[#6B59DC] dark:text-[#C4BBFF]';
 
+export const authOtpInputClass = (error) =>
+    `auth-field auth-otp-cell flex-1 min-w-0 text-center text-lg font-semibold tabular-nums ${error ? '!border-rose-400' : ''}`;
+
+/** Favicon mark + word on narrow viewports (demo auth-form branding). */
+export function AuthFormMobileBrand({ showFormLogo = false }) {
+    if (showFormLogo) {
+        return <AuthMark size={38} className="mb-[28px] lg:hidden" />;
+    }
+
+    return (
+        <div className="mb-7 flex items-center gap-2.5 lg:hidden">
+            <AuthMark size={38} />
+            <span className="font-[Urbanist,system-ui,sans-serif] text-[22px] font-extrabold tracking-[-0.02em] text-[#0E1250] dark:text-[#E8ECFF]">
+                Offacto
+            </span>
+        </div>
+    );
+}
+
 function AuthThemeToggle() {
     const { appearance } = usePage().props;
     const isDark = appearance === 'dark';
@@ -138,7 +156,9 @@ export default function AuthSplitLayout({ title, children, showFormLogo = false,
     return (
         <div className="auth-shell relative grid min-h-screen place-items-center overflow-x-hidden bg-[#C9D7F2] font-[Figtree,system-ui,sans-serif] text-[14.5px] leading-normal text-[#0E1250] dark:bg-[#0B0E3A] dark:text-[#E8ECFF]">
             <I18nSync />
-            <Head title={title} />
+            <Head title={title}>
+                <link rel="icon" href={AUTH_MARK_SRC} sizes="any" />
+            </Head>
             <FlashToaster />
             <FormErrorsToaster />
 
@@ -192,13 +212,7 @@ export default function AuthSplitLayout({ title, children, showFormLogo = false,
 
                 <section className="auth-form flex flex-col justify-center bg-[#E7EDFB] p-12 text-[#0E1250] dark:bg-[#161B55] dark:text-[#E8ECFF]">
                     <div className={`w-full ${formMaxWidth === 'lg' ? 'max-w-lg' : ''}`}>
-                        {showFormLogo && <AuthMark size={38} className="mb-[28px]" />}
-                        {!showFormLogo && (
-                            <>
-                                <Logo className="mb-7 h-9 w-auto lg:hidden dark:hidden" />
-                                <Logo variant="white" className="mb-7 hidden h-9 w-auto dark:block lg:dark:hidden" />
-                            </>
-                        )}
+                        <AuthFormMobileBrand showFormLogo={showFormLogo} />
                         {children}
                     </div>
                 </section>

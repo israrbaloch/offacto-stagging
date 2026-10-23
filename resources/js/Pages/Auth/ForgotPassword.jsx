@@ -5,6 +5,8 @@ import AuthSplitLayout, {
     authLinkClass,
     authMutedClass,
     authPrimaryButtonClass,
+    authHeadingClass,
+    authSubClass,
 } from '../../Layouts/AuthSplitLayout';
 import { t } from '../../lib/i18n';
 
@@ -12,12 +14,12 @@ export default function ForgotPassword() {
     const { data, setData, post, processing, errors } = useForm({ email: '' });
 
     return (
-        <AuthSplitLayout title={t('auth.reset_title')}>
+        <AuthSplitLayout title={t('auth.reset_title')} showFormLogo>
             <Link href="/login" className={`inline-flex items-center gap-1 text-xs font-semibold ${authLinkClass}`}>
                 ← {t('auth.back_login')}
             </Link>
-            <h2 className="mt-4 font-[Urbanist,system-ui,sans-serif] text-[28px] font-extrabold tracking-tight">{t('auth.reset_title')}</h2>
-            <p className={`mt-1.5 ${authMutedClass}`}>{t('auth.reset_body')}</p>
+            <h2 className={`mt-4 ${authHeadingClass}`}>{t('auth.reset_title')}</h2>
+            <p className={authSubClass}>{t('auth.reset_body')}</p>
 
             <form
                 onSubmit={(e) => {

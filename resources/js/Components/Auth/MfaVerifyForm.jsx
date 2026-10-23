@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useForm } from '@inertiajs/react';
+import { authLinkClass, authMutedClass } from '../../Layouts/AuthSplitLayout';
+import { t } from '../../lib/i18n';
 
 /**
- * @param {{ verifyUrl: string, recoverUrl: string, recoveryAvailable?: boolean, inputClass: string, Button: import('react').ComponentType<any>, Field: import('react').ComponentType<any> }} props
+ * @param {{ verifyUrl: string, recoverUrl: string, recoveryAvailable?: boolean, inputClass: string, Button: import('react').ComponentType<any>, Field: import('react').ComponentType<any>, className?: string }} props
  */
 export default function MfaVerifyForm({
     verifyUrl,
@@ -11,29 +13,28 @@ export default function MfaVerifyForm({
     inputClass,
     Button,
     Field,
+    className = '',
 }) {
     const [mode, setMode] = useState('authenticator');
     const totp = useForm({ code: '' });
     const recovery = useForm({ recovery_code: '' });
 
     const subtitle =
-        mode === 'authenticator'
-            ? 'Enter the 6-digit code from your authenticator app.'
-            : 'Enter a one-time recovery code. You will be asked to enroll a new authenticator afterward.';
+        mode === 'authenticator' ? t('auth.mfa_code_subtitle') : t('auth.mfa_recovery_subtitle');
 
     return (
         <>
-            <p className="mt-2 text-center text-sm text-slate-500">{subtitle}</p>
+            <p className={`${className || authMutedClass}`}>{subtitle}</p>
 
             {mode === 'authenticator' ? (
                 <form
-                    className="mt-8 space-y-4"
+                    className="mt-6 grid gap-4"
                     onSubmit={(e) => {
                         e.preventDefault();
                         totp.post(verifyUrl);
                     }}
                 >
-                    <Field label="Authenticator code" required error={totp.errors.code}>
+                    <Field label={t('auth.mfa_authenticator_code')} required>
                         <input
                             inputMode="numeric"
                             autoComplete="one-time-code"
@@ -43,19 +44,19 @@ export default function MfaVerifyForm({
                             onChange={(e) => totp.setData('code', e.target.value.replace(/\s/g, ''))}
                         />
                     </Field>
-                    <Button type="submit" className="w-full" disabled={totp.processing}>
-                        Verify and continue
+                    <Button type="submit" disabled={totp.processing}>
+                        {t('auth.mfa_verify_continue')}
                     </Button>
                 </form>
             ) : (
                 <form
-                    className="mt-8 space-y-4"
+                    className="mt-6 grid gap-4"
                     onSubmit={(e) => {
                         e.preventDefault();
                         recovery.post(recoverUrl);
                     }}
                 >
-                    <Field label="Recovery code" error={recovery.errors.recovery_code}>
+                    <Field label={t('auth.mfa_recovery_code')}>
                         <input
                             className={`${inputClass} text-center font-mono tracking-widest`}
                             autoComplete="off"
@@ -63,8 +64,8 @@ export default function MfaVerifyForm({
                             onChange={(e) => recovery.setData('recovery_code', e.target.value)}
                         />
                     </Field>
-                    <Button type="submit" className="w-full" disabled={recovery.processing}>
-                        Use recovery code
+                    <Button type="submit" disabled={recovery.processing}>
+                        {t('auth.mfa_use_recovery_submit')}
                     </Button>
                 </form>
             )}
@@ -73,10 +74,10 @@ export default function MfaVerifyForm({
                 <p className="mt-6 text-center">
                     <button
                         type="button"
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                        className={`text-sm ${authLinkClass}`}
                         onClick={() => setMode(mode === 'authenticator' ? 'recovery' : 'authenticator')}
                     >
-                        {mode === 'authenticator' ? 'Use a recovery code instead' : 'Use authenticator code instead'}
+                        {mode === 'authenticator' ? t('auth.mfa_use_recovery') : t('auth.mfa_use_authenticator')}
                     </button>
                 </p>
             )}
