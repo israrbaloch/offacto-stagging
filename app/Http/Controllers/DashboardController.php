@@ -31,6 +31,7 @@ class DashboardController extends Controller
                 'topCustomers' => collect(),
                 'awaitingBriefings' => collect(),
                 'recentResponses' => collect(),
+                'recentActivity' => [],
                 'hasCompany' => false,
             ];
 
@@ -81,6 +82,8 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $activity = $this->buildRecentActivity($awaitingBriefings, $recentResponses, $openOffers);
+
         return Inertia::render('Dashboard', [
             'user' => $user,
             'stats' => $stats,
@@ -89,6 +92,7 @@ class DashboardController extends Controller
             'topCustomers' => $topCustomers,
             'awaitingBriefings' => $awaitingBriefings,
             'recentResponses' => $recentResponses,
+            'recentActivity' => $activity,
             'hasCompany' => true,
         ]);
     }
@@ -96,6 +100,51 @@ class DashboardController extends Controller
     /**
      * Get statistics for the company.
      */
+    /**
+     * @param  \Illuminate\Support\Collection<int, Briefing>  $awaitingBriefings
+     * @param  \Illuminate\Support\Collection<int, BriefingResponse>  $recentResponses
+     * @param  \Illuminate\Support\Collection<int, Offer>  $openOffers
+     * @return list<array{icon: string, title: string, meta: string, href: string|null}>
+     */
+    private function buildRecentActivity($awaitingBriefings, $recentResponses, $openOffers): array
+    {
+        $items = [];
+
+        foreach ($recentResponses->take(3) as $response) {
+            $title = $response->briefing?->title ?? 'Briefing response';
+            $items[] = [
+                'icon' => 'clipboard',
+                'title' => $title,
+                'meta' => $response->offer_id ? 'Draft quote ready' : 'Response received',
+                'href' => $response->offer_id ? '/offers/'.$response->offer_id.'/edit' : '/briefings',
+            ];
+        }
+
+        foreach ($openOffers->take(2) as $offer) {
+            $customer = $offer->customer;
+            $label = $customer?->org_name
+                ?: trim(($customer?->first_name ?? '').' '.($customer?->surname ?? ''))
+                ?: 'Customer';
+            $items[] = [
+                'icon' => 'offers',
+                'title' => "Open quote · {$label}",
+                'meta' => $offer->offer_number ?? 'Draft',
+                'href' => '/offers/'.$offer->id.'/edit',
+            ];
+        }
+
+        foreach ($awaitingBriefings->take(2) as $briefing) {
+            $items[] = [
+                'icon' => 'brief',
+                'title' => $briefing->title,
+                'meta' => 'Awaiting client response',
+                'href' => '/briefings/'.$briefing->id,
+            ];
+        }
+
+        return array_slice($items, 0, 6);
+    }
+
     private function getStats(int $companyId): array
     {
         $currentYear = now()->year;
@@ -119,9 +168,19 @@ class DashboardController extends Controller
             ->with('items')
             ->get();
 
-        $openOffersTotal = $openOffers->sum(function ($offer) {
+        $openOffersTotal = round($openOffers->sum(function ($offer) {
             return $offer->total;
-        });
+        }), 2);
+
+        $openOffersCount = $openOffers->count();
+
+        $invoices = Invoice::where('company_id', $companyId)
+            ->with(['payments', 'items'])
+            ->get();
+
+        $awaitingPaymentCount = $invoices->filter(fn (Invoice $invoice) => ! $invoice->isPaid())->count();
+        $overdueInvoices = $invoices->filter(fn (Invoice $invoice) => $invoice->isOverdue());
+        $overdueTotal = round($overdueInvoices->sum(fn (Invoice $invoice) => (float) $invoice->amount_due), 2);
 
         $expenses = 0;
         $netResult = $revenue - $expenses;
@@ -132,6 +191,10 @@ class DashboardController extends Controller
             'expensesTracked' => false,
             'netResult' => $netResult,
             'openOffersTotal' => $openOffersTotal,
+            'openOffersCount' => $openOffersCount,
+            'awaitingPaymentCount' => $awaitingPaymentCount,
+            'overdueInvoiceCount' => $overdueInvoices->count(),
+            'overdueTotal' => $overdueTotal,
             'periodStart' => $startOfYear->format('F j, Y'),
             'periodEnd' => 'today',
         ];
@@ -148,6 +211,10 @@ class DashboardController extends Controller
             'expensesTracked' => false,
             'netResult' => 0,
             'openOffersTotal' => 0,
+            'openOffersCount' => 0,
+            'awaitingPaymentCount' => 0,
+            'overdueInvoiceCount' => 0,
+            'overdueTotal' => 0,
             'periodStart' => now()->startOfYear()->format('F j, Y'),
             'periodEnd' => 'today',
         ];

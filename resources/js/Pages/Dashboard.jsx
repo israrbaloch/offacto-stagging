@@ -1,48 +1,133 @@
 import { Link, usePage } from '@inertiajs/react';
-import { CashflowChart, DsoBars, PaymentDonut } from '../Components/DashboardCharts';
+import { useMemo, useState } from 'react';
 import Icon from '../Components/Icon';
+import { useUi } from '../context/UiContext';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
+import { AuthDiamond } from '../Layouts/AuthSplitLayout';
 import { t } from '../lib/i18n';
-import { formatDate, money } from '../lib/utils';
+import { money } from '../lib/utils';
 
-function StatusPill({ children, tone }) {
-    const styles = {
-        action: 'bg-indigo-100 text-indigo-700',
-        draft: 'bg-slate-100 text-slate-600',
-        sent: 'bg-emerald-100 text-emerald-700',
-    };
+const PERIODS = ['Q1', 'Q2', 'Q3', 'Q4', 'Y'];
+const VAT_DUE = { Q1: '20/04', Q2: '20/07', Q3: '20/10', Q4: '20/01', Y: '—' };
 
+function firstName(name = '') {
+    return name.trim().split(/\s+/)[0] || '';
+}
+
+function periodLabel(period) {
+    const year = new Date().getFullYear();
+    if (period === 'Y') {
+        return String(year);
+    }
+    return `${period} ${year}`;
+}
+
+function DashboardKpi({ hero, icon, label, value, trend, trendMuted }) {
     return (
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${styles[tone] || styles.draft}`}>
-            {children}
-        </span>
+        <div className={`offacto-dash-card lift offacto-dash-kpi ${hero ? 'offacto-dash-kpi-hero' : ''}`}>
+            <span className="offacto-dash-kpi-corner" aria-hidden="true" />
+            <div className="offacto-dash-kpi-ic">
+                <Icon name={icon} className="h-5 w-5" />
+            </div>
+            <div className="offacto-dash-kpi-lbl">{label}</div>
+            <div className="offacto-dash-kpi-val">{value}</div>
+            {trend ? (
+                <div className={`offacto-dash-kpi-tr ${trendMuted ? 'offacto-dash-kpi-tr--muted' : ''}`}>{trend}</div>
+            ) : null}
+        </div>
     );
 }
 
-function customerLabel(customer) {
-    if (!customer) return t('dashboard.no_customer');
-    return customer.org_name || [customer.first_name, customer.surname].filter(Boolean).join(' ') || t('dashboard.customer');
+function InvoicedReceivedChart({ labels, invoiced, received }) {
+    const max = Math.max(...invoiced, ...received, 1);
+
+    return (
+        <div className="offacto-dash-chart">
+            {labels.map((label, index) => (
+                <div key={`${label}-${index}`} className="offacto-dash-chart-col">
+                    <div className="offacto-dash-chart-bars">
+                        <div
+                            className="offacto-dash-bar"
+                            style={{ height: `${(invoiced[index] / max) * 100}%` }}
+                            title={money(invoiced[index])}
+                        />
+                        <div
+                            className="offacto-dash-bar offacto-dash-bar--received"
+                            style={{ height: `${(received[index] / max) * 100}%` }}
+                            title={money(received[index])}
+                        />
+                    </div>
+                    <small>{label}</small>
+                </div>
+            ))}
+        </div>
+    );
 }
 
 export default function Dashboard({
     stats = {},
     chartData = {},
-    openOffers = [],
-    topCustomers = [],
     awaitingBriefings = [],
     recentResponses = [],
+    recentActivity = [],
     hasCompany = true,
 }) {
-    const { activeCompany } = usePage().props;
-    const daysLeft = activeCompany?.trial_days_left;
+    const { auth } = usePage().props;
+    const { toast } = useUi();
+    const [period, setPeriod] = useState('Y');
+
+    const cashflow = chartData.cashflow || {};
+    const labels = cashflow.labels || [];
+    const paid = cashflow.paid || [];
+    const outstanding = cashflow.outstanding || [];
+
+    const chartRows = useMemo(() => {
+        return labels.map((label, index) => ({
+            label,
+            invoiced: (paid[index] || 0) + (outstanding[index] || 0),
+            received: paid[index] || 0,
+        }));
+    }, [labels, paid, outstanding]);
+
+    const marginPct =
+        stats.revenue > 0 ? Math.round((stats.netResult / stats.revenue) * 100) : 0;
+
+    const heroCopy = useMemo(() => {
+        const awaiting = stats.awaitingPaymentCount ?? 0;
+        const overdueCount = stats.overdueInvoiceCount ?? 0;
+        const overdueTotal = stats.overdueTotal ?? 0;
+
+        let headline;
+        if (awaiting > 0) {
+            headline =
+                awaiting === 1
+                    ? t('dashboard.hero_awaiting_one')
+                    : t('dashboard.hero_awaiting_many', { count: awaiting });
+        } else {
+            headline = t('dashboard.hero_all_paid');
+        }
+
+        let sub = '';
+        if (overdueCount > 0 && overdueTotal > 0) {
+            const amount = money(overdueTotal);
+            sub =
+                overdueCount === 1
+                    ? t('dashboard.hero_overdue_one', { amount })
+                    : t('dashboard.hero_overdue_many', { amount, count: overdueCount });
+        }
+
+        return { headline, sub };
+    }, [stats]);
 
     if (!hasCompany) {
         return (
             <AuthenticatedLayout title={t('dashboard.title')}>
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-8 py-16 text-center">
-                    <h1 className="text-2xl font-semibold text-slate-900">{t('dashboard.no_company_title')}</h1>
-                    <p className="mt-2 text-sm text-slate-500">{t('dashboard.no_company_body')}</p>
-                    <Link href="/companies/create" className="mt-6 inline-flex rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white">
+                <div className="offacto-dash-card p-8 text-center">
+                    <h1 className="font-[Urbanist,system-ui,sans-serif] text-2xl font-extrabold text-[#0E1250]">
+                        {t('dashboard.no_company_title')}
+                    </h1>
+                    <p className="mt-2 text-[14.5px] text-[#48537F]">{t('dashboard.no_company_body')}</p>
+                    <Link href="/companies/create" className="offacto-dash-btn-ai mt-6 inline-flex">
                         {t('dashboard.add_company')}
                     </Link>
                 </div>
@@ -50,184 +135,230 @@ export default function Dashboard({
         );
     }
 
+    const briefingCount = awaitingBriefings.length + recentResponses.length;
+
     return (
         <AuthenticatedLayout title={t('dashboard.title')}>
-            <div className="space-y-6">
-                <section className="flex flex-col gap-4 rounded-3xl bg-indigo-50 px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-                    <div>
-                        <div className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-400">
-                            {activeCompany?.company_name || t('dashboard.company_hub')}
-                            {activeCompany?.subscription_plan
-                                ? ''
-                                : activeCompany?.trial_expired
-                                    ? ` · ${t('dashboard.trial_ended')}`
-                                    : ` · ${t('dashboard.trial_left', { days: daysLeft ?? 0 })}`}
-                        </div>
-                        <div className="mt-2 font-serif text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-                            {money(stats.openOffersTotal)}
-                        </div>
-                        <p className="mt-1 text-sm text-slate-500">{t('dashboard.open_quotes')}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Link href="/customers/create" className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800">
-                            {t('dashboard.new_customer')}
-                        </Link>
-                        <Link href="/briefings/create" className="rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800">
-                            {t('dashboard.new_briefing')}
-                        </Link>
-                        <Link
-                            href="/offers/create"
-                            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
-                        >
-                            <Icon name="plus" className="h-4 w-4" />
-                            {t('dashboard.create_quotation')}
-                        </Link>
-                    </div>
-                </section>
+            <section className="offacto-dash-hero">
+                <AuthDiamond size={90} className="pointer-events-none absolute right-10 -top-5" />
+                <AuthDiamond size={40} delay="2s" className="pointer-events-none absolute right-44 bottom-0" />
+                <span className="offacto-dash-hero-blob-a" aria-hidden="true" />
+                <span className="offacto-dash-hero-blob-b" aria-hidden="true" />
 
-                <div className="grid gap-6 xl:grid-cols-2">
-                    <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.briefing_activity')}</h2>
-                        </div>
-                        <ul className="space-y-3">
-                            {awaitingBriefings.length === 0 && recentResponses.length === 0 && (
-                                <li className="text-sm text-slate-400">{t('dashboard.no_briefing')}</li>
-                            )}
-                            {awaitingBriefings.map((briefing) => (
-                                <li key={`b-${briefing.id}`} className="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-3">
-                                    <div className="min-w-0 flex-1">
-                                        <div className="truncate font-medium text-slate-900">{briefing.title}</div>
-                                        <div className="truncate text-sm text-slate-400">
-                                            {t('dashboard.awaiting', { name: customerLabel(briefing.customer) })}
-                                        </div>
-                                    </div>
-                                    <StatusPill tone="action">{t('dashboard.active')}</StatusPill>
-                                </li>
-                            ))}
-                            {recentResponses.map((response) => (
-                                <li key={`r-${response.id}`} className="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-3">
-                                    <div className="min-w-0 flex-1">
-                                        <div className="truncate font-medium text-slate-900">{response.briefing?.title || t('dashboard.response')}</div>
-                                        <div className="truncate text-sm text-slate-400">
-                                            {response.offer_id ? t('dashboard.review_quote', { number: response.offer?.offer_number || response.offer_id }) : t('dashboard.response_received')}
-                                        </div>
-                                    </div>
-                                    <StatusPill tone={response.offer_id ? 'draft' : 'sent'}>{response.offer_id ? t('dashboard.review') : t('dashboard.new')}</StatusPill>
-                                </li>
-                            ))}
-                        </ul>
-                        <div className="mt-5 text-center">
-                            <Link href="/briefings" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
-                                {t('dashboard.view_briefings')}
-                            </Link>
-                        </div>
-                    </section>
-
-                    <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.open_quotations')}</h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[460px] text-left text-sm">
-                                <thead>
-                                    <tr className="text-[11px] uppercase tracking-wide text-slate-400">
-                                        <th className="pb-3 font-medium">{t('dashboard.customer')}</th>
-                                        <th className="pb-3 font-medium">{t('dashboard.date')}</th>
-                                        <th className="pb-3 font-medium">{t('common.status')}</th>
-                                        <th className="pb-3 text-right font-medium">{t('common.total')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {openOffers.length === 0 && (
-                                        <tr>
-                                            <td colSpan="4" className="py-6 text-slate-400">{t('dashboard.no_open')}</td>
-                                        </tr>
-                                    )}
-                                    {openOffers.map((row) => (
-                                        <tr key={row.id}>
-                                            <td className="py-3 font-medium text-slate-800">
-                                                <Link href={`/offers/${row.id}/edit`} className="hover:text-indigo-600">
-                                                    {customerLabel(row.customer)}
-                                                </Link>
-                                            </td>
-                                            <td className="py-3 text-slate-500">{formatDate(row.offer_date)}</td>
-                                            <td className="py-3">
-                                                <StatusPill tone={String(row.status_relation?.name || '').toLowerCase() === 'sent' ? 'sent' : 'draft'}>
-                                                    {row.status_relation?.name || t('dashboard.draft')}
-                                                </StatusPill>
-                                            </td>
-                                            <td className="py-3 text-right font-serif text-slate-900">{money(row.total)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
+                <div>
+                    <span className="offacto-dash-eyebrow">
+                        <Icon name="spark" className="!h-[22px] !w-[22px] !rounded-full !bg-[#6B59DC] !p-1 !text-white" />
+                        {t('dashboard.smart_summary')}
+                    </span>
+                    <h1>
+                        {t('dashboard.hero_greeting', { name: firstName(auth?.user?.name) })}
+                        <br />
+                        <span>{heroCopy.headline}</span>
+                    </h1>
+                    {heroCopy.sub ? <p>{heroCopy.sub}</p> : null}
                 </div>
 
-                <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-                    <h2 className="mb-4 text-lg font-semibold text-slate-900">{t('dashboard.top_customers')}</h2>
-                    <ul className="divide-y divide-slate-100">
-                        {topCustomers.length === 0 && <li className="py-4 text-sm text-slate-400">{t('dashboard.no_top')}</li>}
-                        {topCustomers.map((customer) => (
-                            <li key={customer.id} className="flex items-center justify-between py-3 text-sm">
-                                <span className="font-medium text-slate-800">{customerLabel(customer)}</span>
-                                <span className="font-serif text-slate-900">{money(customer.total_invoiced)}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
+                <div className="offacto-dash-hero-actions">
+                    <Link href="/invoices" className="offacto-dash-btn-ghost">
+                        {t('dashboard.view_invoices')}
+                    </Link>
+                    <button
+                        type="button"
+                        className="offacto-dash-btn-ai"
+                        onClick={() => toast.info(t('dashboard.reminder_toast'))}
+                    >
+                        <Icon name="spark" className="h-4 w-4" />
+                        {t('dashboard.draft_reminder')}
+                    </button>
+                </div>
+            </section>
 
-                <section className="space-y-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <h2 className="text-lg font-medium text-slate-500">{t('dashboard.insights')}</h2>
+            <div className="offacto-dash-toolbar">
+                <div>
+                    <b>{t('dashboard.period')}</b>{' '}
+                    <span className="offacto-dash-toolbar-muted">· {periodLabel(period)}</span>
+                </div>
+                <div className="offacto-dash-toolbar-right">
+                    <div className="offacto-dash-tabs" role="tablist" aria-label={t('dashboard.period')}>
+                        {PERIODS.map((key) => (
+                            <button
+                                key={key}
+                                type="button"
+                                role="tab"
+                                aria-selected={period === key}
+                                className={period === key ? 'on' : undefined}
+                                onClick={() => setPeriod(key)}
+                            >
+                                {key === 'Y' ? t('dashboard.quarter.Y') : t(`dashboard.quarter.${key}`)}
+                            </button>
+                        ))}
                     </div>
-                    <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div>
-                                <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                                    {t('dashboard.ytd')}
-                                </div>
-                                <div className="mt-2 flex items-end gap-3">
-                                    <div className="font-serif text-4xl font-semibold text-slate-900">{money(stats.revenue)}</div>
-                                </div>
-                                <p className="mt-1 text-xs text-slate-400">
-                                    {stats.expensesTracked === false
-                                        ? t('dashboard.expenses_not_tracked', { net: money(stats.netResult) })
-                                        : t('dashboard.expenses_net', {
-                                              expenses: money(stats.expenses),
-                                              net: money(stats.netResult),
-                                          })}
-                                </p>
-                            </div>
+                    <button
+                        type="button"
+                        className="offacto-dash-btn-outline"
+                        onClick={() => toast.info(t('dashboard.vat_toast'))}
+                    >
+                        <Icon name="download" className="h-4 w-4" />
+                        {t('dashboard.vat_return')}
+                    </button>
+                </div>
+            </div>
+
+            <div className="offacto-dash-grid-4">
+                <DashboardKpi
+                    hero
+                    icon="euro"
+                    label={t('dashboard.revenue')}
+                    value={money(stats.revenue)}
+                    trend={stats.revenue > 0 ? `▲ ${t('dashboard.vs_last_year')}` : '—'}
+                />
+                <DashboardKpi
+                    icon="inbox"
+                    label={t('dashboard.expenses')}
+                    value={money(stats.expenses)}
+                    trend={t('dashboard.from_incoming')}
+                    trendMuted
+                />
+                <DashboardKpi
+                    icon="spark"
+                    label={t('dashboard.net_result')}
+                    value={money(stats.netResult)}
+                    trend={stats.revenue > 0 ? `${marginPct}% ${t('dashboard.margin')}` : '—'}
+                />
+                <DashboardKpi
+                    icon="document"
+                    label={t('dashboard.vat_payable')}
+                    value={money(0)}
+                    trend={
+                        period === 'Y'
+                            ? t('dashboard.vat_not_available')
+                            : `${t('dashboard.vat_due')} ${VAT_DUE[period]}`
+                    }
+                    trendMuted
+                />
+            </div>
+
+            <div className="offacto-dash-grid-21">
+                <div className="offacto-dash-card">
+                    <div className="offacto-dash-card-head">
+                        <h3>
+                            {t('dashboard.invoiced_vs_received')} · {periodLabel(period)}
+                        </h3>
+                        <div className="offacto-dash-legend">
+                            <span>
+                                <i /> {t('dashboard.invoiced')}
+                            </span>
+                            <span>
+                                <i className="pale" /> {t('dashboard.received')}
+                            </span>
                         </div>
-                        <div className="mt-4">
-                            <CashflowChart data={chartData.cashflow} />
+                    </div>
+                    <div className="offacto-dash-card-body">
+                        <InvoicedReceivedChart
+                            labels={chartRows.map((row) => row.label)}
+                            invoiced={chartRows.map((row) => row.invoiced)}
+                            received={chartRows.map((row) => row.received)}
+                        />
+                    </div>
+                </div>
+
+                <div className="offacto-dash-card">
+                    <div className="offacto-dash-card-head">
+                        <h3>{t('dashboard.recent_activity')}</h3>
+                    </div>
+                    <div className="offacto-dash-card-body" style={{ paddingTop: 4 }}>
+                        {recentActivity.length === 0 ? (
+                            <p className="px-4 py-6 text-sm text-[#48537F]">{t('dashboard.no_activity')}</p>
+                        ) : (
+                            recentActivity.map((item) => (
+                                <div key={`${item.icon}-${item.title}`} className="offacto-dash-act">
+                                    <span className="offacto-dash-act-icon">
+                                        <Icon name={item.icon} className="h-4 w-4" />
+                                    </span>
+                                    <div className="min-w-0">
+                                        {item.href ? (
+                                            <Link href={item.href} className="offacto-dash-act-title">
+                                                {item.title}
+                                            </Link>
+                                        ) : (
+                                            <p className="offacto-dash-act-title">{item.title}</p>
+                                        )}
+                                        <span className="offacto-dash-act-meta">{item.meta}</span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="offacto-dash-grid-3">
+                <div className="offacto-dash-card lift">
+                    <div className="offacto-dash-card-body">
+                        <div className="offacto-dash-mini-row">
+                            <span className="offacto-dash-ficon">
+                                <Icon name="clipboard" className="h-5 w-5" />
+                            </span>
+                            {briefingCount > 0 ? (
+                                <span className="offacto-dash-badge">
+                                    {briefingCount} {t('dashboard.new')}
+                                </span>
+                            ) : null}
                         </div>
+                        <h3 className="mt-3.5 font-[Urbanist,system-ui,sans-serif] text-lg font-bold text-[#0E1250]">
+                            {t('nav.briefings')}
+                        </h3>
+                        <p className="mt-1 text-[14.5px] text-[#48537F]">
+                            {t('dashboard.briefings_blurb', { count: briefingCount })}
+                        </p>
+                        <Link href="/briefings" className="offacto-dash-link">
+                            {t('dashboard.open_briefings')} →
+                        </Link>
                     </div>
-                    <div className="grid gap-6 xl:grid-cols-2">
-                        <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-                            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                                {t('dashboard.payment_status')}
-                            </div>
-                            <div className="mt-6">
-                                <PaymentDonut
-                                    paymentStatus={chartData.paymentStatus}
-                                    totalOutstanding={chartData.totalOutstanding}
-                                />
-                            </div>
-                        </section>
-                        <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-                            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                                {t('dashboard.dso')}
-                            </div>
-                            <div className="mt-8">
-                                <DsoBars rows={chartData.dso} />
-                            </div>
-                        </section>
+                </div>
+
+                <div className="offacto-dash-card lift">
+                    <div className="offacto-dash-card-body">
+                        <div className="offacto-dash-mini-row">
+                            <span className="offacto-dash-ficon">
+                                <Icon name="offers" className="h-5 w-5" />
+                            </span>
+                            {stats.openOffersCount > 0 ? (
+                                <span className="offacto-dash-badge ok">{t('dashboard.open_quotes_link')}</span>
+                            ) : null}
+                        </div>
+                        <h3 className="mt-3.5 font-[Urbanist,system-ui,sans-serif] text-lg font-bold text-[#0E1250]">
+                            {t('dashboard.open_quotes_title')}
+                        </h3>
+                        <p className="mt-1 text-[14.5px] text-[#48537F]">
+                            {t('dashboard.open_quotes_blurb', {
+                                amount: money(stats.openOffersTotal),
+                                count: stats.openOffersCount ?? 0,
+                            })}
+                        </p>
+                        <Link href="/offers" className="offacto-dash-link">
+                            {t('dashboard.open_quotes_link')} →
+                        </Link>
                     </div>
-                </section>
+                </div>
+
+                <div className="offacto-dash-card lift">
+                    <div className="offacto-dash-card-body">
+                        <div className="offacto-dash-mini-row">
+                            <span className="offacto-dash-ficon">
+                                <Icon name="shield" className="h-5 w-5" />
+                            </span>
+                            <span className="offacto-dash-badge ok">{t('dashboard.peppol_connected')}</span>
+                        </div>
+                        <h3 className="mt-3.5 font-[Urbanist,system-ui,sans-serif] text-lg font-bold text-[#0E1250]">
+                            {t('dashboard.peppol_title')}
+                        </h3>
+                        <p className="mt-1 text-[14.5px] text-[#48537F]">{t('dashboard.peppol_blurb')}</p>
+                        <Link href="/company/settings?section=integrations" className="offacto-dash-link">
+                            {t('dashboard.integrations')} →
+                        </Link>
+                    </div>
+                </div>
             </div>
         </AuthenticatedLayout>
     );

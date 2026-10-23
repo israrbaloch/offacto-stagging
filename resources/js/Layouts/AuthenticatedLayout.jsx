@@ -31,7 +31,7 @@ export default function AuthenticatedLayout({ title, children }) {
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#C9D7F2] text-[14.5px] leading-normal text-[#0E1250]">
                     <TopBar />
                     {adminWorkspace && (
-                        <div className="mx-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm text-indigo-900">
+                        <div className="mx-4 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm text-indigo-900 lg:mx-7">
                             <span>
                                 Admin workspace: <strong>{adminWorkspace.company_name || `Company #${adminWorkspace.company_id}`}</strong>
                                 {' — '}
@@ -47,7 +47,7 @@ export default function AuthenticatedLayout({ title, children }) {
                         </div>
                     )}
                     {activeCompany?.trial_expired && !auth?.user?.is_admin && (
-                        <div className="mx-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+                        <div className="mx-4 mb-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-2.5 text-sm text-rose-700 lg:mx-7">
                             {t('layout.trial_expired')}{' '}
                             <Link href="/upgrade" className="font-semibold underline underline-offset-2 hover:text-rose-900">
                                 {t('layout.upgrade_now')}
@@ -55,11 +55,11 @@ export default function AuthenticatedLayout({ title, children }) {
                         </div>
                     )}
                     {activeCompany?.pending_approval && (
-                        <div className="mx-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+                        <div className="mx-4 mb-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 lg:mx-7">
                             {t('layout.pending_approval')}
                         </div>
                     )}
-                    <main className="mx-auto w-full max-w-[1320px] px-4 pb-8 pt-2 lg:px-7">{children}</main>
+                    <main className="offacto-page mx-auto w-full max-w-[1320px]">{children}</main>
                 </div>
             </div>
         </div>
