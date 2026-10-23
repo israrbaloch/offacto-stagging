@@ -774,7 +774,32 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     }
 }
 
-/* Dashboard (offacto-app-demo.html dashboard()) */
+/* Dashboard (offacto-app-demo.html v6 dashboard) */
+.offacto-dash {
+    --dash-navy: #0e1250;
+    --dash-primary: #6b59dc;
+    --dash-mid: #9d8df1;
+    --dash-pale: #cec6fb;
+    --dash-card: #e7edfb;
+    --dash-muted: #48537f;
+    --dash-line: rgb(14 18 80 / 0.08);
+    --dash-soft: #d8e2f7;
+    --dash-ok: #14794a;
+    --dash-link: #5a48c8;
+    --dash-display: Urbanist, system-ui, sans-serif;
+    --dash-body: Figtree, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: var(--dash-body);
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--dash-navy);
+    -webkit-font-smoothing: antialiased;
+}
+
+.offacto-dash :is(h1, h2, h3, .offacto-dash-kpi-val) {
+    font-family: var(--dash-display);
+    letter-spacing: -0.01em;
+}
+
 .offacto-dash-hero {
     position: relative;
     overflow: hidden;
@@ -838,22 +863,22 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     height: 22px;
     padding: 4px;
     border-radius: 50%;
-    background: #6b59dc;
+    background: var(--dash-primary);
     color: #fff;
+    stroke: currentColor;
 }
 
 .offacto-dash-hero h1 {
     margin-top: 14px;
-    font-family: Urbanist, system-ui, sans-serif;
-    font-size: clamp(22px, 4vw, 34px);
+    font-size: 34px;
     font-weight: 800;
-    line-height: 1.12;
+    line-height: 1.15;
     letter-spacing: -0.02em;
-    color: #fff;
+    color: #fff !important;
 }
 
 .offacto-dash-hero h1 span {
-    color: #9d8df1;
+    color: var(--dash-mid);
 }
 
 .offacto-dash-hero p {
@@ -898,7 +923,8 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     padding: 10px 18px;
     border-radius: 999px;
     border: 0;
-    background: #6b59dc;
+    background: var(--dash-primary);
+    font-family: var(--dash-body);
     font-size: 14.5px;
     font-weight: 600;
     color: #fff;
@@ -908,6 +934,12 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 .offacto-dash-btn-ai:hover {
     background: #5a48c8;
     transform: translateY(-1px);
+}
+
+.offacto-dash-btn-ai svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
 }
 
 .offacto-dash-toolbar {
@@ -941,8 +973,8 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 
 .offacto-dash-tabs {
     display: inline-flex;
-    gap: 2px;
-    padding: 3px;
+    gap: 3px;
+    padding: 4px;
     border-radius: 999px;
     background: rgb(14 18 80 / 0.06);
 }
@@ -950,17 +982,18 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 .offacto-dash-tabs button {
     border: 0;
     border-radius: 999px;
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #48537f;
+    padding: 7px 13px;
+    font-family: var(--dash-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dash-muted);
     background: transparent;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
 
 .offacto-dash-tabs button.on {
-    background: #0e1250;
+    background: var(--dash-navy);
     color: #fff;
 }
 
@@ -972,15 +1005,24 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     border-radius: 999px;
     border: 1px solid rgb(14 18 80 / 0.1);
     background: #fff;
+    font-family: var(--dash-body);
     font-size: 13px;
     font-weight: 600;
-    color: #0e1250;
+    color: var(--dash-navy);
+    cursor: pointer;
+}
+
+.offacto-dash-btn-outline svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
 }
 
 .offacto-dash-grid-4 {
     display: grid;
     gap: 18px;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
 }
 
 .offacto-dash-grid-21 {
@@ -1019,26 +1061,52 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     .offacto-dash-hero {
         padding: 20px;
     }
+
+    .offacto-dash-hero h1 {
+        font-size: 22px;
+    }
+
+    .offacto-dash-kpi-val {
+        font-size: 19px;
+    }
 }
 
 .offacto-dash-card {
     position: relative;
     overflow: hidden;
     border-radius: 24px;
-    background: #e7edfb;
+    background: var(--dash-card);
     border: 0;
-    box-shadow: 0 1px 2px rgb(14 18 80 / 0.04);
+    box-shadow: none;
     transition: transform 0.25s, box-shadow 0.25s, background 0.25s, color 0.25s;
+}
+
+.offacto-dash-grid-21 > .offacto-dash-card,
+.offacto-dash-grid-3 > .offacto-dash-card.lift {
+    display: flex;
+    flex-direction: column;
+}
+
+.offacto-dash-grid-21 > .offacto-dash-card > .offacto-dash-card-body,
+.offacto-dash-grid-3 > .offacto-dash-card.lift > .offacto-dash-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.offacto-dash-grid-3 > .offacto-dash-card.lift {
+    min-height: 168px;
 }
 
 .offacto-dash-card.lift:hover {
     transform: translateY(-4px);
     box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
-    background: linear-gradient(135deg, #31478a 0%, #4355a2 55%, #6186c1 130%);
+    background: var(--dash-primary);
     color: #fff;
 }
 
-.offacto-dash-card.lift:hover :is(.offacto-dash-kpi-lbl, .offacto-dash-kpi-tr, .offacto-dash-kpi-tr--muted, p, h3, a) {
+.offacto-dash-card.lift:hover :is(.offacto-dash-kpi-lbl, .offacto-dash-kpi-val, .offacto-dash-kpi-tr, .offacto-dash-kpi-tr--muted, p, h3, a) {
     color: #fff !important;
 }
 
@@ -1048,7 +1116,12 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 
 .offacto-dash-card.lift:hover .offacto-dash-kpi-ic,
 .offacto-dash-card.lift:hover .offacto-dash-ficon {
-    background: #0e1250;
+    background: var(--dash-navy);
+    color: #fff;
+}
+
+.offacto-dash-card.lift:hover .offacto-dash-kpi-ic svg,
+.offacto-dash-card.lift:hover .offacto-dash-ficon svg {
     color: #fff;
 }
 
@@ -1057,6 +1130,7 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 }
 
 .offacto-dash-kpi {
+    container-type: inline-size;
     display: flex;
     min-height: 168px;
     flex-direction: column;
@@ -1065,50 +1139,75 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 }
 
 .offacto-dash-kpi-hero {
-    background: #e7edfb;
+    background: var(--dash-card);
 }
 
-.offacto-dash-kpi-ic {
+.offacto-dash-kpi-ic,
+.offacto-dash-ficon {
     display: grid;
     place-items: center;
     width: 42px;
     height: 42px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #6b59dc, #9d8df1);
-    color: #fff;
+    background: #fff;
+    color: var(--dash-navy);
 }
 
-.offacto-dash-card.lift .offacto-dash-kpi-ic {
-    background: #fff;
-    color: #0e1250;
+.offacto-dash-ficon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0;
+}
+
+.offacto-dash-kpi-ic svg,
+.offacto-dash-ficon svg,
+.offacto-dash-act-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.offacto-dash-act-icon svg {
+    width: 16px;
+    height: 16px;
 }
 
 .offacto-dash-kpi-lbl {
     font-size: 13px;
     font-weight: 500;
-    color: #48537f;
+    color: var(--dash-muted);
+    overflow-wrap: anywhere;
 }
 
 .offacto-dash-kpi-val {
     margin-top: 2px;
-    font-family: Urbanist, system-ui, sans-serif;
-    font-size: clamp(16px, 2.5vw, 25px);
+    font-size: clamp(16px, 10.5cqi, 25px);
     font-weight: 800;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
-    color: #0e1250;
+    white-space: nowrap;
+    color: var(--dash-navy);
 }
 
 .offacto-dash-kpi-tr {
     margin-top: 6px;
     font-size: 12px;
     font-weight: 600;
-    color: #5fd3b3;
+    color: var(--dash-ok);
+    overflow-wrap: anywhere;
 }
 
 .offacto-dash-kpi-tr--muted {
-    color: #48537f;
+    color: var(--dash-muted);
+}
+
+.offacto-dash-card.lift:hover .offacto-dash-kpi-tr:not(.offacto-dash-kpi-tr--muted) {
+    color: #b9f3e1;
+}
+
+.offacto-dash-card.lift:hover .offacto-dash-kpi-tr--muted {
+    color: rgb(255 255 255 / 0.8) !important;
 }
 
 .offacto-dash-kpi-corner {
@@ -1118,7 +1217,7 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     width: 90px;
     height: 90px;
     transform: rotate(45deg);
-    border: 12px solid rgb(157 141 241 / 0.18);
+    border: 12px solid color-mix(in srgb, var(--dash-pale) 28%, transparent);
     border-radius: 10px;
     pointer-events: none;
 }
@@ -1134,10 +1233,9 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 }
 
 .offacto-dash-card-head h3 {
-    font-family: Urbanist, system-ui, sans-serif;
     font-size: 15px;
     font-weight: 700;
-    color: #0e1250;
+    color: var(--dash-navy);
 }
 
 .offacto-dash-legend {
@@ -1159,11 +1257,11 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     width: 10px;
     height: 10px;
     border-radius: 3px;
-    background: linear-gradient(135deg, #6b59dc, #9d8df1);
+    background: var(--dash-primary);
 }
 
 .offacto-dash-legend i.pale {
-    background: #d8e2f7;
+    background: var(--dash-pale);
 }
 
 .offacto-dash-card-body {
@@ -1173,35 +1271,43 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 .offacto-dash-chart {
     display: flex;
     align-items: flex-end;
-    gap: 8px;
-    min-height: 180px;
-    padding-top: 8px;
+    gap: clamp(4px, 2cqi, 14px);
+    height: 240px;
+    padding: 10px 4px 0;
 }
 
 .offacto-dash-chart-col {
     flex: 1;
+    display: flex;
     min-width: 0;
-    text-align: center;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
 }
 
 .offacto-dash-chart-bars {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    gap: 4px;
-    height: 140px;
+    gap: 5px;
+    width: 100%;
+    height: 100%;
 }
 
 .offacto-dash-bar {
-    width: 42%;
+    width: 40%;
+    max-width: 26px;
     min-height: 4px;
-    border-radius: 8px 8px 2px 2px;
-    background: linear-gradient(180deg, #6b59dc, #9d8df1);
+    border-radius: 7px 7px 3px 3px;
+    background: var(--dash-primary);
+    transform-origin: bottom;
     transition: height 0.35s ease;
 }
 
 .offacto-dash-bar--received {
-    background: #d8e2f7;
+    background: var(--dash-pale);
 }
 
 .offacto-dash-chart-col small {
@@ -1229,8 +1335,8 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     height: 32px;
     flex-shrink: 0;
     border-radius: 10px;
-    background: #d8e2f7;
-    color: #6b59dc;
+    background: var(--dash-soft);
+    color: var(--dash-primary);
 }
 
 .offacto-dash-act-title {
@@ -1247,16 +1353,6 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     color: #48537f;
 }
 
-.offacto-dash-ficon {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #6b59dc, #9d8df1);
-    color: #fff;
-}
-
 .offacto-dash-badge {
     display: inline-flex;
     align-items: center;
@@ -1266,12 +1362,35 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     font-size: 12px;
     font-weight: 600;
     background: rgb(107 89 220 / 0.12);
-    color: #5a48c8;
+    color: var(--dash-link);
 }
 
 .offacto-dash-badge.ok {
-    background: rgb(95 211 179 / 0.15);
-    color: #0e7a5c;
+    background: #e3f6f0;
+    color: var(--dash-ok);
+}
+
+.offacto-dash-promo h3 {
+    margin: 14px 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dash-navy);
+}
+
+.offacto-dash-promo p {
+    margin: 0;
+    font-size: 14.5px;
+    color: var(--dash-muted);
+}
+
+.offacto-dash-empty {
+    padding: 24px 16px;
+    font-size: 14px;
+    color: var(--dash-muted);
+}
+
+.offacto-dash-activity-body {
+    padding-top: 4px;
 }
 
 .offacto-dash-mini-row {
@@ -1286,7 +1405,7 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     margin-top: 10px;
     font-size: 14px;
     font-weight: 600;
-    color: #6b59dc;
+    color: var(--dash-link);
 }
 
 .offacto-dash-card.lift:hover .offacto-dash-link {

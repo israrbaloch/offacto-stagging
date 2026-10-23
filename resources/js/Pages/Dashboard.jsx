@@ -27,7 +27,7 @@ function DashboardKpi({ hero, icon, label, value, trend, trendMuted }) {
         <div className={`offacto-dash-card lift offacto-dash-kpi ${hero ? 'offacto-dash-kpi-hero' : ''}`}>
             <span className="offacto-dash-kpi-corner" aria-hidden="true" />
             <div className="offacto-dash-kpi-ic">
-                <Icon name={icon} className="h-5 w-5" />
+                <Icon name={icon} />
             </div>
             <div className="offacto-dash-kpi-lbl">{label}</div>
             <div className="offacto-dash-kpi-val">{value}</div>
@@ -139,6 +139,7 @@ export default function Dashboard({
 
     return (
         <AuthenticatedLayout title={t('dashboard.title')}>
+            <div className="offacto-dash">
             <section className="offacto-dash-hero">
                 <AuthDiamond size={90} className="pointer-events-none absolute right-10 -top-5" />
                 <AuthDiamond size={40} delay="2s" className="pointer-events-none absolute right-44 bottom-0" />
@@ -147,7 +148,7 @@ export default function Dashboard({
 
                 <div>
                     <span className="offacto-dash-eyebrow">
-                        <Icon name="spark" className="!h-[22px] !w-[22px] !rounded-full !bg-[#6B59DC] !p-1 !text-white" />
+                        <Icon name="spark" />
                         {t('dashboard.smart_summary')}
                     </span>
                     <h1>
@@ -167,7 +168,7 @@ export default function Dashboard({
                         className="offacto-dash-btn-ai"
                         onClick={() => toast.info(t('dashboard.reminder_toast'))}
                     >
-                        <Icon name="spark" className="h-4 w-4" />
+                        <Icon name="spark" />
                         {t('dashboard.draft_reminder')}
                     </button>
                 </div>
@@ -198,7 +199,7 @@ export default function Dashboard({
                         className="offacto-dash-btn-outline"
                         onClick={() => toast.info(t('dashboard.vat_toast'))}
                     >
-                        <Icon name="download" className="h-4 w-4" />
+                        <Icon name="download" />
                         {t('dashboard.vat_return')}
                     </button>
                 </div>
@@ -226,7 +227,7 @@ export default function Dashboard({
                     trend={stats.revenue > 0 ? `${marginPct}% ${t('dashboard.margin')}` : '—'}
                 />
                 <DashboardKpi
-                    icon="document"
+                    icon="file"
                     label={t('dashboard.vat_payable')}
                     value={money(0)}
                     trend={
@@ -266,14 +267,14 @@ export default function Dashboard({
                     <div className="offacto-dash-card-head">
                         <h3>{t('dashboard.recent_activity')}</h3>
                     </div>
-                    <div className="offacto-dash-card-body" style={{ paddingTop: 4 }}>
+                    <div className="offacto-dash-card-body offacto-dash-activity-body">
                         {recentActivity.length === 0 ? (
-                            <p className="px-4 py-6 text-sm text-[#48537F]">{t('dashboard.no_activity')}</p>
+                            <p className="offacto-dash-empty">{t('dashboard.no_activity')}</p>
                         ) : (
                             recentActivity.map((item) => (
                                 <div key={`${item.icon}-${item.title}`} className="offacto-dash-act">
                                     <span className="offacto-dash-act-icon">
-                                        <Icon name={item.icon} className="h-4 w-4" />
+                                        <Icon name={item.icon} />
                                     </span>
                                     <div className="min-w-0">
                                         {item.href ? (
@@ -293,11 +294,11 @@ export default function Dashboard({
             </div>
 
             <div className="offacto-dash-grid-3">
-                <div className="offacto-dash-card lift">
+                <div className="offacto-dash-card lift offacto-dash-promo">
                     <div className="offacto-dash-card-body">
                         <div className="offacto-dash-mini-row">
                             <span className="offacto-dash-ficon">
-                                <Icon name="clipboard" className="h-5 w-5" />
+                                <Icon name="brief" />
                             </span>
                             {briefingCount > 0 ? (
                                 <span className="offacto-dash-badge">
@@ -305,32 +306,26 @@ export default function Dashboard({
                                 </span>
                             ) : null}
                         </div>
-                        <h3 className="mt-3.5 font-[Urbanist,system-ui,sans-serif] text-lg font-bold text-[#0E1250]">
-                            {t('nav.briefings')}
-                        </h3>
-                        <p className="mt-1 text-[14.5px] text-[#48537F]">
-                            {t('dashboard.briefings_blurb', { count: briefingCount })}
-                        </p>
+                        <h3>{t('nav.briefings')}</h3>
+                        <p>{t('dashboard.briefings_blurb', { count: briefingCount })}</p>
                         <Link href="/briefings" className="offacto-dash-link">
                             {t('dashboard.open_briefings')} →
                         </Link>
                     </div>
                 </div>
 
-                <div className="offacto-dash-card lift">
+                <div className="offacto-dash-card lift offacto-dash-promo">
                     <div className="offacto-dash-card-body">
                         <div className="offacto-dash-mini-row">
                             <span className="offacto-dash-ficon">
-                                <Icon name="offers" className="h-5 w-5" />
+                                <Icon name="offers" />
                             </span>
                             {stats.openOffersCount > 0 ? (
                                 <span className="offacto-dash-badge ok">{t('dashboard.open_quotes_link')}</span>
                             ) : null}
                         </div>
-                        <h3 className="mt-3.5 font-[Urbanist,system-ui,sans-serif] text-lg font-bold text-[#0E1250]">
-                            {t('dashboard.open_quotes_title')}
-                        </h3>
-                        <p className="mt-1 text-[14.5px] text-[#48537F]">
+                        <h3>{t('dashboard.open_quotes_title')}</h3>
+                        <p>
                             {t('dashboard.open_quotes_blurb', {
                                 amount: money(stats.openOffersTotal),
                                 count: stats.openOffersCount ?? 0,
@@ -342,23 +337,22 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                <div className="offacto-dash-card lift">
+                <div className="offacto-dash-card lift offacto-dash-promo">
                     <div className="offacto-dash-card-body">
                         <div className="offacto-dash-mini-row">
                             <span className="offacto-dash-ficon">
-                                <Icon name="shield" className="h-5 w-5" />
+                                <Icon name="shield" />
                             </span>
                             <span className="offacto-dash-badge ok">{t('dashboard.peppol_connected')}</span>
                         </div>
-                        <h3 className="mt-3.5 font-[Urbanist,system-ui,sans-serif] text-lg font-bold text-[#0E1250]">
-                            {t('dashboard.peppol_title')}
-                        </h3>
-                        <p className="mt-1 text-[14.5px] text-[#48537F]">{t('dashboard.peppol_blurb')}</p>
+                        <h3>{t('dashboard.peppol_title')}</h3>
+                        <p>{t('dashboard.peppol_blurb')}</p>
                         <Link href="/company/settings?section=integrations" className="offacto-dash-link">
                             {t('dashboard.integrations')} →
                         </Link>
                     </div>
                 </div>
+            </div>
             </div>
         </AuthenticatedLayout>
     );
