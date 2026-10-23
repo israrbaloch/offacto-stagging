@@ -38,8 +38,33 @@ export function resolveSidebarActiveHref(currentUrl, items) {
     return bestHref;
 }
 
-export default function SidebarNavLink({ item, activeHref, onNavigate, label, collapsed = false }) {
+export default function SidebarNavLink({
+    item,
+    activeHref,
+    onNavigate,
+    label,
+    collapsed = false,
+    variant = 'light',
+    count,
+    badge,
+}) {
     const active = normalizeSidebarPath(item.href) === normalizeSidebarPath(activeHref || '');
+
+    if (variant === 'offacto') {
+        return (
+            <Link
+                href={item.href}
+                onClick={onNavigate}
+                data-nav-active={active ? 'true' : undefined}
+                className={active ? 'on' : undefined}
+            >
+                <Icon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
+                <span className="min-w-0 truncate text-inherit">{label}</span>
+                {count != null && count > 0 ? <span className="nav-cnt">{count}</span> : null}
+                {badge ? <span className="nav-new">{badge}</span> : null}
+            </Link>
+        );
+    }
 
     return (
         <Link

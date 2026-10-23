@@ -43,7 +43,7 @@ function roleLabel(user) {
     return user?.roles?.[0] || 'User';
 }
 
-export default function TopBar() {
+export default function TopBar({ onMenuClick }) {
     const { auth, activeCompany, appearance } = usePage().props;
     const user = auth?.user;
     const [open, setOpen] = useState(false);
@@ -61,7 +61,15 @@ export default function TopBar() {
     }, []);
 
     return (
-        <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3 lg:rounded-tr-3xl lg:px-8">
+        <header className="flex items-center justify-between gap-4 border-b border-[rgba(14,18,80,0.08)] bg-[#E7EDFB] px-4 py-3 lg:rounded-tr-[32px] lg:px-8">
+            <button
+                type="button"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[rgba(14,18,80,0.08)] bg-white text-[#48537F] lg:hidden"
+                aria-label="Menu"
+                onClick={onMenuClick}
+            >
+                <Icon name="menu" className="h-5 w-5" />
+            </button>
             <form
                 className="relative min-w-0 flex-1 max-w-xl"
                 onSubmit={(event) => {

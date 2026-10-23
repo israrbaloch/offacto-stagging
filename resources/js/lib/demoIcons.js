@@ -175,6 +175,8 @@ export const DEMO_ICON_ALIASES = {
     building: 'build',
     clipboard: 'brief',
     wrench: 'cog',
+    offers: 'quote',
+    services: 'box',
     help: 'alert',
     download: 'down',
 };

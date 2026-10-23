@@ -37,7 +37,7 @@ function CompanyAvatar({ company, active = false, compact = false }) {
     );
 }
 
-export default function CompanySwitcher({ collapsed = false }) {
+export default function CompanySwitcher({ collapsed = false, variant = 'light', onNavigate, planLabel }) {
     const { companies, activeCompany, auth } = usePage().props;
     const isAdmin = Boolean(auth?.user?.is_admin);
     const [open, setOpen] = useState(false);
@@ -178,6 +178,39 @@ export default function CompanySwitcher({ collapsed = false }) {
               )
             : null;
 
+    const workspaceMeta =
+        isAdmin && !current
+            ? t('platform.admin_mode')
+            : current?.is_active === false
+              ? t('common.inactive')
+              : planLabel || t('common.workspace');
+
+    if (variant === 'offacto') {
+        return (
+            <>
+                <button
+                    ref={buttonRef}
+                    type="button"
+                    aria-expanded={open}
+                    aria-haspopup="listbox"
+                    onClick={() => setOpen((value) => !value)}
+                    className="offacto-sidebar-ws"
+                >
+                    <span className="ws-av">{initials(current?.company_name || currentLabel)}</span>
+                    <span className="min-w-0 flex-1">
+                        <b className="truncate">{currentLabel}</b>
+                        <small>
+                            {t('common.workspace')}
+                            {planLabel ? ` · ${planLabel}` : ''}
+                        </small>
+                    </span>
+                    <Icon name="chevron" className={`ws-chev transition ${open ? 'rotate-180' : ''}`} />
+                </button>
+                {menu}
+            </>
+        );
+    }
+
     return (
         <>
             <button
@@ -196,13 +229,7 @@ export default function CompanySwitcher({ collapsed = false }) {
                     <>
                         <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-semibold text-slate-800">{currentLabel}</span>
-                            <span className="block text-[11px] text-slate-400">
-                                {isAdmin && !current
-                                    ? t('platform.admin_mode')
-                                    : current?.is_active === false
-                                      ? t('common.inactive')
-                                      : t('common.workspace')}
-                            </span>
+                            <span className="block text-[11px] text-slate-400">{workspaceMeta}</span>
                         </span>
                         <Icon name="chevron" className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
                     </>
