@@ -407,6 +407,353 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     color: #fff !important;
 }
 
+/* Demo floating sticky topbar (offacto-app-demo.html v10 .top) */
+.offacto-topbar-shell {
+    position: sticky;
+    top: 12px;
+    z-index: 30;
+    flex-shrink: 0;
+    padding: 12px 16px 8px;
+}
+
+.offacto-topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 60px;
+    padding: 0 10px 0 14px;
+    border-radius: 999px;
+    background: rgb(26 34 104 / 0.94);
+    color: #fff;
+    box-shadow: 0 10px 30px rgb(14 18 80 / 0.18);
+}
+
+.offacto-topbar-search {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    max-width: 440px;
+    min-width: 0;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.08);
+    color: #c8cef0;
+}
+
+.offacto-topbar-search svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: #c8cef0;
+}
+
+.offacto-topbar-search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 400;
+    color: #fff;
+}
+
+.offacto-topbar-search input::placeholder {
+    color: #a1a9dd;
+}
+
+.offacto-topbar-kbd {
+    flex-shrink: 0;
+    font-size: 11px;
+    line-height: 1.2;
+    border: 1px solid rgb(255 255 255 / 0.2);
+    border-radius: 6px;
+    padding: 0 6px;
+    color: #c8cef0;
+}
+
+.offacto-topbar-icobtn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 0;
+    background: rgb(255 255 255 / 0.08);
+    color: #c8cef0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.offacto-topbar-icobtn:hover {
+    background: rgb(255 255 255 / 0.16);
+    color: #fff;
+}
+
+.offacto-topbar-icobtn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.offacto-topbar-icobtn .offacto-topbar-dot {
+    position: absolute;
+    top: 8px;
+    right: 9px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #f27d8c;
+    border: 2px solid #1a2268;
+}
+
+.offacto-topbar-icobtn-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.offacto-topbar-trial {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgb(157 141 241 / 0.2);
+    color: #cec6fb;
+    transition: background 0.15s;
+}
+
+.offacto-topbar-trial:hover {
+    background: rgb(157 141 241 / 0.28);
+}
+
+.offacto-topbar-lang {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.08);
+    border: 0;
+}
+
+.offacto-topbar-lang button {
+    border: 0;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #c8cef0;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.offacto-topbar-lang button.on {
+    background: #9d8df1;
+    color: #0e1250;
+}
+
+.offacto-topbar-lang button:not(.on):hover {
+    color: #fff;
+}
+
+.offacto-topbar-me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 4px;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    color: #fff;
+    text-align: left;
+}
+
+.offacto-topbar-me .av {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #9d8df1;
+    color: #0e1250;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.offacto-topbar-me b {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #fff;
+}
+
+.offacto-topbar-me small {
+    display: block;
+    font-size: 11px;
+    line-height: 1;
+    color: #a1a9dd;
+}
+
+.offacto-topbar-spacer {
+    flex: 1;
+    min-width: 8px;
+}
+
+.offacto-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.offacto-topbar-me-avatar {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 0;
+    background: #9d8df1;
+    color: #0e1250;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.offacto-topbar-notifications-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.offacto-topbar-pop {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 60;
+    width: min(350px, calc(100vw - 32px));
+    overflow: hidden;
+    border-radius: 14px;
+    background: #e7edfb;
+    color: #0e1250;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
+    animation: offacto-pop-in 0.18s ease;
+}
+
+@keyframes offacto-pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.offacto-topbar-pop-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgb(14 18 80 / 0.08);
+}
+
+.offacto-topbar-pop-head h3 {
+    font-family: Urbanist, system-ui, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0e1250;
+}
+
+.offacto-topbar-pop-mark {
+    border: 0;
+    background: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b59dc;
+    cursor: pointer;
+}
+
+.offacto-topbar-pop-mark:hover {
+    color: #5a48c8;
+}
+
+.offacto-topbar-pop-body {
+    max-height: min(420px, 60vh);
+    overflow-y: auto;
+    padding: 0 4px;
+}
+
+.offacto-topbar-pop-empty {
+    padding: 24px 16px;
+    text-align: center;
+    font-size: 14px;
+    color: #48537f;
+}
+
+.offacto-topbar-act {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px dashed rgb(14 18 80 / 0.08);
+}
+
+.offacto-topbar-act:last-child {
+    border-bottom: 0;
+}
+
+.offacto-topbar-act-icon {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #d8e2f7;
+    color: #6b59dc;
+}
+
+.offacto-topbar-act-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #0e1250;
+}
+
+.offacto-topbar-act-body {
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #48537f;
+}
+
+.offacto-topbar-act small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #48537f;
+}
+
+@media (max-width: 1023px) {
+    .offacto-topbar-shell {
+        padding: 12px 12px 8px;
+    }
+
+    .offacto-topbar-search .offacto-topbar-kbd {
+        display: none;
+    }
+}
+
 .register-orb {
     animation: register-float var(--float-duration, 14s) ease-in-out infinite;
     will-change: transform;

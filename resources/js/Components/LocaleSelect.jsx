@@ -39,6 +39,28 @@ export default function LocaleSelect({ className = '', variant = 'dropdown' }) {
         router.post('/locale', { locale: value }, { preserveScroll: true, preserveState: false });
     };
 
+    if (variant === 'topbar') {
+        return (
+            <div className={`offacto-topbar-lang ${className}`} role="group" aria-label={t('locale.label')}>
+                {LOCALES.map((item) => {
+                    const active = item.value === current.value;
+                    return (
+                        <button
+                            key={item.value}
+                            type="button"
+                            aria-label={t(item.label)}
+                            aria-pressed={active}
+                            className={active ? 'on' : undefined}
+                            onClick={() => choose(item.value)}
+                        >
+                            {item.short}
+                        </button>
+                    );
+                })}
+            </div>
+        );
+    }
+
     if (variant === 'segmented') {
         return (
             <div

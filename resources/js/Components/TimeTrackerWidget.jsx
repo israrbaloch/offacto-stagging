@@ -19,7 +19,11 @@ function formatElapsed(startedAtIso) {
     return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
 }
 
-export default function TimeTrackerWidget() {
+export default function TimeTrackerWidget({ variant = 'default' }) {
+    const isTopbar = variant === 'topbar';
+    const idleBtnClass = isTopbar
+        ? 'offacto-topbar-icobtn disabled:cursor-not-allowed disabled:opacity-40'
+        : 'rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40';
     const { timeTracking, activeCompany } = usePage().props;
     const anchorRef = useRef(null);
     const panelRef = useRef(null);
@@ -205,6 +209,25 @@ export default function TimeTrackerWidget() {
             : null;
 
     if (running) {
+        if (isTopbar) {
+            return (
+                <div className="flex items-center gap-1.5">
+                    <span className="offacto-topbar-icobtn ring-2 ring-[#9D8DF1]/50" title={`${running.service?.name || ''} · ${elapsed}`}>
+                        <Icon name="clock" />
+                    </span>
+                    <span className="hidden font-mono text-[11px] tabular-nums text-[#CEC6FB] lg:inline">{elapsed}</span>
+                    <button
+                        type="button"
+                        disabled={busy}
+                        onClick={stop}
+                        className="rounded-full bg-[#6B59DC] px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-[#5A48C8] disabled:opacity-50"
+                    >
+                        {t('time.stop')}
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <div className="flex items-center gap-1">
                 <span
@@ -234,7 +257,7 @@ export default function TimeTrackerWidget() {
                 ref={anchorRef}
                 disabled={!canTrack}
                 onClick={() => canTrack && setOpen((v) => !v)}
-                className="rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                className={idleBtnClass}
                 aria-label={t('time.start_timer')}
                 title={canTrack ? t('time.start_timer') : t('time.no_hourly_services')}
             >

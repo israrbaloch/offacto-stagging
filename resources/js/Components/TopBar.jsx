@@ -4,25 +4,7 @@ import { t } from '../lib/i18n';
 import Icon from './Icon';
 import LocaleSelect from './LocaleSelect';
 import TimeTrackerWidget from './TimeTrackerWidget';
-
-function SearchIcon() {
-    return (
-        <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M20 20l-3-3" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-function HelpIcon() {
-    return (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.7">
-            <circle cx="12" cy="12" r="9" />
-            <path strokeLinecap="round" d="M9.6 9.4a2.4 2.4 0 1 1 3.7 2c-.8.5-1.3 1-1.3 1.8V14" />
-            <circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none" />
-        </svg>
-    );
-}
+import TopBarNotifications from './TopBarNotifications';
 
 function initials(name = '') {
     return name
@@ -33,26 +15,23 @@ function initials(name = '') {
         .join('') || 'U';
 }
 
-function roleLabel(user) {
-    if (user?.is_admin) {
-        return 'Admin';
-    }
-    if (user?.is_staff) {
-        return 'Staff';
-    }
-    return user?.roles?.[0] || 'User';
-}
-
-export default function TopBar({ onMenuClick }) {
-    const { auth, activeCompany, appearance } = usePage().props;
+export default function TopBar() {
+    const { auth, activeCompany, appearance, workspaceShell } = usePage().props;
     const user = auth?.user;
-    const [open, setOpen] = useState(false);
+    const notifications = workspaceShell?.notifications ?? [];
+    const hasUnread = notifications.length > 0;
+
+    const [profileOpen, setProfileOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const menuRef = useRef(null);
+    const profileRef = useRef(null);
+    const bellRef = useRef(null);
+    const searchRef = useRef(null);
+
     useEffect(() => {
         function onClick(event) {
-            if (!menuRef.current?.contains(event.target)) {
-                setOpen(false);
+            if (!profileRef.current?.contains(event.target)) {
+                setProfileOpen(false);
             }
         }
 
@@ -60,152 +39,183 @@ export default function TopBar({ onMenuClick }) {
         return () => document.removeEventListener('mousedown', onClick);
     }, []);
 
-    return (
-        <header className="flex items-center justify-between gap-4 border-b border-[rgba(14,18,80,0.08)] bg-[#E7EDFB] px-4 py-3 lg:rounded-tr-[32px] lg:px-8">
-            <button
-                type="button"
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[rgba(14,18,80,0.08)] bg-white text-[#48537F] lg:hidden"
-                aria-label="Menu"
-                onClick={onMenuClick}
-            >
-                <Icon name="menu" className="h-5 w-5" />
-            </button>
-            <form
-                className="relative min-w-0 flex-1 max-w-xl"
-                onSubmit={(event) => {
-                    event.preventDefault();
-                    if (!searchQuery.trim()) return;
-                    router.get('/search', { q: searchQuery.trim() });
-                }}
-            >
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                    <SearchIcon />
-                </span>
-                <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder={t('topbar.search')}
-                    className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-                />
-            </form>
+    useEffect(() => {
+        const onKey = (event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+                event.preventDefault();
+                searchRef.current?.focus();
+            }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, []);
 
-            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-                <TimeTrackerWidget />
-                {activeCompany && !auth?.user?.is_admin && (
-                    activeCompany.subscription_plan ? (
-                        <Link
-                            href="/upgrade"
-                            className="hidden rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100 sm:inline"
-                        >
-                            {t(`upgrade.plans.${activeCompany.subscription_plan}.name`)}
-                        </Link>
-                    ) : activeCompany.trial_expired ? (
-                        <Link
-                            href="/upgrade"
-                            className="hidden rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100 sm:inline"
-                        >
-                            {t('topbar.trial_ended')} · {t('layout.upgrade_now')}
-                        </Link>
-                    ) : (
-                        <Link
-                            href="/upgrade"
-                            className="hidden rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 sm:inline"
-                        >
-                            {t('topbar.trial_left', { days: activeCompany.trial_days_left ?? 0 })}
-                        </Link>
-                    )
-                )}
-                <button
-                    type="button"
-                    onClick={() => {
-                        const next = appearance === 'dark' ? 'light' : 'dark';
-                        document.documentElement.classList.toggle('dark', next === 'dark');
-                        router.post('/theme', { theme: next }, { preserveScroll: true, preserveState: true });
-                    }}
-                    className="rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
-                    aria-label={appearance === 'dark' ? t('theme.to_light') : t('theme.to_dark')}
-                    title={appearance === 'dark' ? t('theme.light') : t('theme.dark')}
-                >
-                    <Icon name={appearance === 'dark' ? 'sun' : 'moon'} className="h-5 w-5" />
-                </button>
-                <LocaleSelect />
-                <Link
-                    href="/support"
-                    className="rounded-full p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
-                    aria-label={t('topbar.help')}
-                >
-                    <HelpIcon />
+    const trialBadge = (() => {
+        if (!activeCompany || auth?.user?.is_admin) return null;
+        if (activeCompany.subscription_plan) {
+            return (
+                <Link href="/upgrade" className="offacto-topbar-trial hidden sm:inline">
+                    {t(`upgrade.plans.${activeCompany.subscription_plan}.name`)}
                 </Link>
+            );
+        }
+        if (activeCompany.trial_expired) {
+            return (
+                <Link href="/upgrade" className="offacto-topbar-trial hidden sm:inline">
+                    {t('topbar.trial_ended')}
+                </Link>
+            );
+        }
+        return (
+            <Link href="/upgrade" className="offacto-topbar-trial hidden sm:inline">
+                {t('topbar.trial_short', { days: activeCompany.trial_days_left ?? 0 })}
+            </Link>
+        );
+    })();
 
-                <span className="mx-2 hidden h-8 w-px bg-slate-200 sm:block" />
+    return (
+        <div className="offacto-topbar-shell">
+            <header className="offacto-topbar">
+                <form
+                    className="offacto-topbar-search"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        if (!searchQuery.trim()) return;
+                        router.get('/search', { q: searchQuery.trim() });
+                    }}
+                >
+                    <Icon name="search" />
+                    <input
+                        ref={searchRef}
+                        type="search"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder={t('topbar.search')}
+                        aria-label={t('topbar.search')}
+                    />
+                    <span className="offacto-topbar-kbd hidden md:inline">⌘K</span>
+                </form>
 
-                <div className="relative" ref={menuRef}>
+                <div className="offacto-topbar-spacer" aria-hidden="true" />
+
+                <div className="offacto-topbar-actions">
+                    <div className="hidden md:flex">
+                        <TimeTrackerWidget variant="topbar" />
+                    </div>
+                    {trialBadge}
+                    <LocaleSelect variant="topbar" />
                     <button
                         type="button"
-                        onClick={() => setOpen((value) => !value)}
-                        className="flex items-center gap-3 rounded-full py-1 pl-2 pr-1 transition hover:bg-slate-50"
+                        className="offacto-topbar-icobtn"
+                        onClick={() => {
+                            const next = appearance === 'dark' ? 'light' : 'dark';
+                            document.documentElement.classList.toggle('dark', next === 'dark');
+                            router.post('/theme', { theme: next }, { preserveScroll: true, preserveState: true });
+                        }}
+                        aria-label={appearance === 'dark' ? t('theme.to_light') : t('theme.to_dark')}
+                        title={appearance === 'dark' ? t('theme.light') : t('theme.dark')}
                     >
-                        <span className="hidden text-right sm:block">
-                            <span className="block text-sm font-semibold text-slate-900">{user?.name}</span>
-                            <span className="block text-xs capitalize text-slate-400">{roleLabel(user)}</span>
-                        </span>
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
-                            {initials(user?.name)}
-                        </span>
+                        <Icon name={appearance === 'dark' ? 'sun' : 'moon'} />
                     </button>
 
-                    {open && (
-                        <div className="absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                            <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
-                                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
-                                    {initials(user?.name)}
-                                </span>
-                                <div className="min-w-0">
-                                    <div className="truncate text-sm font-semibold text-slate-900">{user?.name}</div>
-                                    <div className="truncate text-xs text-slate-400">{user?.email}</div>
+                    <div className="offacto-topbar-notifications-wrap">
+                        <button
+                            ref={bellRef}
+                            type="button"
+                            className="offacto-topbar-icobtn"
+                            aria-label={t('topbar.notifications')}
+                            aria-expanded={notificationsOpen}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                setNotificationsOpen((open) => !open);
+                                setProfileOpen(false);
+                            }}
+                        >
+                            <Icon name="bell" />
+                            {hasUnread ? <span className="offacto-topbar-dot" aria-hidden="true" /> : null}
+                        </button>
+                        <TopBarNotifications
+                            open={notificationsOpen}
+                            onClose={() => setNotificationsOpen(false)}
+                            anchorRef={bellRef}
+                        />
+                    </div>
+
+                    <div className="relative" ref={profileRef}>
+                        <button
+                            type="button"
+                            className="offacto-topbar-me-avatar"
+                            aria-label={user?.name || t('topbar.profile')}
+                            aria-expanded={profileOpen}
+                            title={user?.name}
+                            onClick={() => {
+                                setProfileOpen((open) => !open);
+                                setNotificationsOpen(false);
+                            }}
+                        >
+                            {initials(user?.name)}
+                        </button>
+
+                        {profileOpen && (
+                            <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-[rgba(14,18,80,0.08)] bg-white text-[#0E1250] shadow-xl">
+                                <div className="flex items-center gap-3 border-b border-[rgba(14,18,80,0.08)] px-4 py-3">
+                                    <span className="offacto-topbar-me-avatar">{initials(user?.name)}</span>
+                                    <div className="min-w-0">
+                                        <div className="truncate text-sm font-semibold text-[#0E1250]">{user?.name}</div>
+                                        <div className="truncate text-xs text-[#48537F]">{user?.email}</div>
+                                    </div>
+                                </div>
+                                <div className="p-1.5">
+                                    <Link
+                                        href="/profile"
+                                        onClick={() => setProfileOpen(false)}
+                                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#0E1250] hover:bg-[#EEEAFE]"
+                                    >
+                                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEEAFE] text-[#6B59DC]">
+                                            <Icon name="user" className="h-4 w-4" />
+                                        </span>
+                                        {t('topbar.profile')}
+                                    </Link>
+                                    <Link
+                                        href="/company/settings"
+                                        onClick={() => setProfileOpen(false)}
+                                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#0E1250] hover:bg-[#EEEAFE]"
+                                    >
+                                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEEAFE] text-[#6B59DC]">
+                                            <Icon name="building" className="h-4 w-4" />
+                                        </span>
+                                        {t('topbar.company_settings')}
+                                    </Link>
+                                    <Link
+                                        href="/support"
+                                        onClick={() => setProfileOpen(false)}
+                                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#0E1250] hover:bg-[#EEEAFE]"
+                                    >
+                                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEEAFE] text-[#6B59DC]">
+                                            <Icon name="help" className="h-4 w-4" />
+                                        </span>
+                                        {t('topbar.help')}
+                                    </Link>
+                                </div>
+                                <div className="border-t border-[rgba(14,18,80,0.08)] p-1.5">
+                                    <Link
+                                        href="/logout"
+                                        method="post"
+                                        as="button"
+                                        onClick={() => setProfileOpen(false)}
+                                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[#F27D8C] hover:bg-[#F27D8C]/10"
+                                    >
+                                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#F27D8C]/15 text-[#F27D8C]">
+                                            <Icon name="logout" className="h-4 w-4" />
+                                        </span>
+                                        {t('topbar.logout')}
+                                    </Link>
                                 </div>
                             </div>
-                            <div className="p-1.5">
-                                <Link
-                                    href="/profile"
-                                    onClick={() => setOpen(false)}
-                                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
-                                >
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                                        <Icon name="user" className="h-4 w-4" />
-                                    </span>
-                                    {t('topbar.profile')}
-                                </Link>
-                                <Link
-                                    href="/company/settings"
-                                    onClick={() => setOpen(false)}
-                                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
-                                >
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                                        <Icon name="building" className="h-4 w-4" />
-                                    </span>
-                                    {t('topbar.company_settings')}
-                                </Link>
-                            </div>
-                            <div className="border-t border-slate-100 p-1.5">
-                                <Link
-                                    href="/logout"
-                                    method="post"
-                                    as="button"
-                                    onClick={() => setOpen(false)}
-                                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50"
-                                >
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
-                                        <Icon name="logout" className="h-4 w-4" />
-                                    </span>
-                                    {t('topbar.logout')}
-                                </Link>
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-            </div>
-        </header>
+            </header>
+        </div>
     );
 }

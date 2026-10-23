@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Service;
 use App\Models\TimeEntry;
 use App\Support\AdminShellInsights;
+use App\Support\WorkspaceShellInsights;
 use App\Support\PublicStorage;
 use App\Support\ServiceBilling;
 use App\Support\SubscriptionReminder;
@@ -108,6 +109,11 @@ class HandleInertiaRequests extends Middleware
                 ? [
                     'notifications' => AdminShellInsights::notifications($user),
                     'environmentBanner' => AdminShellInsights::environmentBanner(),
+                ]
+                : null,
+            'workspaceShell' => $user
+                ? [
+                    'notifications' => WorkspaceShellInsights::notifications($user, $active),
                 ]
                 : null,
             'timeTracking' => $this->timeTrackingShare($user, $active),

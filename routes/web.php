@@ -106,6 +106,10 @@ Route::get('/search', SearchController::class)
     ->middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])
     ->name('search');
 
+Route::post('/notifications/read-all', [\App\Http\Controllers\WorkspaceNotificationController::class, 'markAllRead'])
+    ->middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])
+    ->name('notifications.read-all');
+
 Route::middleware(['auth', 'verified.email'])->group(function () {
     Route::prefix('two-factor')->name('two-factor.')->group(function () {
         Route::get('/', [TwoFactorController::class, 'challenge'])->name('challenge');
