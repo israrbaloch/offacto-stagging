@@ -14,6 +14,8 @@ class BriefingQuestion extends Model
     public const TYPE_MULTIPLE_CHOICE = 'multiple_choice';
     public const TYPE_QUANTITY = 'quantity';
     public const TYPE_FILE_UPLOAD = 'file_upload';
+    public const TYPE_DATE = 'date';
+    public const TYPE_VOICE = 'voice';
 
     protected $fillable = [
         'briefing_id',
@@ -57,6 +59,8 @@ class BriefingQuestion extends Model
             self::TYPE_MULTIPLE_CHOICE => 'Multiple choice',
             self::TYPE_QUANTITY => 'Quantity',
             self::TYPE_FILE_UPLOAD => 'File upload',
+            self::TYPE_DATE => 'Date',
+            self::TYPE_VOICE => 'Voice',
         ];
     }
 }

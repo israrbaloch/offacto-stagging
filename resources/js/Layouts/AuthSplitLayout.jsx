@@ -200,9 +200,9 @@ export default function AuthSplitLayout({ title, children, showFormLogo = false,
                                 <li key={item} className="flex items-center gap-2.5">
                                     <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-lg bg-[#6B59DC]">
                                         <CheckIcon />
-                                    </span>
-                                    {t(item)}
-                                </li>
+                                        </span>
+                                        {t(item)}
+                                    </li>
                             ))}
                         </ul>
                     </div>

@@ -132,8 +132,8 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 }
 
 .offacto-sidebar-brand img {
-    width: 30px;
-    height: 30px;
+    width: 20px;
+    height: 20px;
     object-fit: contain;
     filter: brightness(0) invert(1);
 }
@@ -1410,6 +1410,1372 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 
 .offacto-dash-card.lift:hover .offacto-dash-link {
     color: #fff;
+}
+
+.offacto-dash-card.lift:hover :is(.offacto-dash-badge, .offacto-dash-badge.ok) {
+    background: rgb(255 255 255 / 0.16);
+    color: #fff !important;
+}
+
+/* Briefings index (offacto-app-demo.html briefings()) */
+.offacto-brief-public-page {
+    min-height: 100vh;
+    padding: 24px 16px 40px;
+    background: #c9d7f2;
+}
+
+.offacto-brief-public-phone-wrap {
+    width: 100%;
+    max-width: 330px;
+    margin: 0 auto;
+}
+
+.offacto-brief-public-web-wrap {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.offacto-brief-web {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
+}
+
+.offacto-brief-public-thanks {
+    text-align: center;
+}
+
+.offacto-brief-form-surface .offacto-brief-public-thanks h2 {
+    margin: 0 0 8px;
+    font-family: var(--dash-display);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--phone-text);
+}
+
+.offacto-brief-form-surface .offacto-brief-public-thanks p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--phone-muted);
+}
+
+.offacto-brief-field-error {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #c23a4b;
+}
+
+.offacto-brief-preview-only {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #a45f00;
+    text-align: center;
+}
+
+.offacto-brief-drop-interactive {
+    cursor: pointer;
+}
+
+.offacto-brief-voice-interactive {
+    cursor: pointer;
+    flex-wrap: wrap;
+}
+
+.offacto-briefings {
+    --dash-navy: #0e1250;
+    --dash-primary: #6b59dc;
+    --dash-mid: #9d8df1;
+    --dash-pale: #cec6fb;
+    --dash-card: #e7edfb;
+    --dash-muted: #48537f;
+    --dash-soft: #d8e2f7;
+    --dash-ok: #14794a;
+    --dash-link: #5a48c8;
+    --dash-display: Urbanist, system-ui, sans-serif;
+    --dash-body: Figtree, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: var(--dash-body);
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--dash-navy);
+}
+
+.offacto-briefings :is(h1, h2, h3, .offacto-brief-kpi-val) {
+    font-family: var(--dash-display);
+    letter-spacing: -0.01em;
+}
+
+.offacto-btn-p {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 18px 6px 6px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--dash-primary) !important;
+    font-family: var(--dash-body);
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #fff !important;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.offacto-btn-p:hover {
+    background: #5a48c8 !important;
+    transform: translateY(-1px);
+    color: #fff !important;
+}
+
+.offacto-btn-p svg {
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    border-radius: 50%;
+    background: var(--dash-navy);
+    color: #fff;
+    stroke: currentColor;
+}
+
+.offacto-brief-hero {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 22px;
+    padding: 32px;
+    border-radius: 32px;
+    background: var(--dash-navy);
+    color: #fff;
+}
+
+.offacto-brief-hero h1 {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: #fff !important;
+}
+
+.offacto-brief-hero p {
+    margin-top: 8px;
+    max-width: 640px;
+    font-size: 14.5px;
+    color: #c8cef0;
+}
+
+.offacto-brief-hero .offacto-dash-hero-blob-a {
+    position: absolute;
+    right: -80px;
+    top: -160px;
+    width: 340px;
+    height: 340px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(107 89 220 / 0.45) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.offacto-brief-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+    .offacto-brief-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 520px) {
+    .offacto-brief-hero {
+        padding: 20px;
+    }
+
+    .offacto-brief-hero h1 {
+        font-size: 22px;
+    }
+}
+
+.offacto-brief-kpi {
+    container-type: inline-size;
+    display: flex;
+    min-height: 168px;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px;
+    border-radius: 24px;
+    background: var(--dash-card);
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.25s, box-shadow 0.25s, background 0.25s, color 0.25s;
+}
+
+.offacto-brief-kpi:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
+    background: var(--dash-primary);
+    color: #fff;
+}
+
+.offacto-brief-kpi:hover :is(.offacto-brief-kpi-lbl, .offacto-brief-kpi-hint, .offacto-brief-kpi-val span) {
+    color: rgb(255 255 255 / 0.85) !important;
+}
+
+.offacto-brief-kpi:hover .offacto-brief-kpi-val,
+.offacto-brief-kpi:hover .offacto-brief-kpi-title {
+    color: #fff !important;
+}
+
+.offacto-brief-kpi:hover :is(.offacto-status-badge, .offacto-status-badge.ok, .offacto-status-badge.grey) {
+    background: rgb(255 255 255 / 0.16) !important;
+    color: #fff !important;
+}
+
+.offacto-brief-kpi:hover .offacto-status-badge::before {
+    background: #fff;
+}
+
+.offacto-brief-kpi:hover .offacto-brief-kpi-ic {
+    background: var(--dash-navy);
+    color: #fff;
+}
+
+.offacto-brief-kpi:hover .offacto-brief-kpi-ic svg {
+    color: #fff;
+}
+
+.offacto-brief-kpi-corner {
+    position: absolute;
+    right: -26px;
+    top: -26px;
+    width: 90px;
+    height: 90px;
+    transform: rotate(45deg);
+    border: 12px solid color-mix(in srgb, var(--dash-pale) 28%, transparent);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+.offacto-brief-kpi-ic {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    background: #fff;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-kpi-ic svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.offacto-brief-kpi-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.offacto-brief-kpi-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-kpi-val {
+    margin-top: 10px;
+    font-size: clamp(18px, 10.5cqi, 22px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-kpi-val span {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--dash-muted);
+}
+
+.offacto-brief-kpi-lbl {
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--dash-muted);
+}
+
+.offacto-brief-kpi-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--dash-muted);
+}
+
+.offacto-brief-kpi-hint svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+.offacto-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: rgb(107 89 220 / 0.12);
+    color: var(--dash-link);
+}
+
+.offacto-status-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.offacto-status-badge.ok {
+    background: #e3f6f0;
+    color: var(--dash-ok);
+}
+
+.offacto-status-badge.grey {
+    background: rgb(14 18 80 / 0.06);
+    color: var(--dash-muted);
+}
+
+.offacto-status-badge.ai {
+    background: linear-gradient(90deg, rgb(91 75 214 / 0.12), rgb(107 125 196 / 0.12));
+    color: #5b4bd6;
+}
+
+.offacto-status-badge.nd::before {
+    display: none;
+}
+
+.offacto-status-badge.ai svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+}
+
+.offacto-brief-table-card {
+    margin-top: 18px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: var(--dash-card);
+}
+
+.offacto-brief-table-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgb(14 18 80 / 0.07);
+}
+
+.offacto-brief-table-head h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-table-wrap {
+    overflow-x: auto;
+}
+
+.offacto-brief-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+}
+
+.offacto-brief-table th {
+    padding: 12px 20px;
+    border-bottom: 1px solid rgb(14 18 80 / 0.08);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--dash-muted);
+    white-space: nowrap;
+}
+
+.offacto-brief-table td {
+    padding: 13px 20px;
+    border-bottom: 1px solid rgb(14 18 80 / 0.06);
+    vertical-align: middle;
+    font-size: 14.5px;
+}
+
+.offacto-brief-table tr:last-child td {
+    border-bottom: 0;
+}
+
+.offacto-brief-table .num {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.offacto-brief-who {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.offacto-brief-who b {
+    display: block;
+    font-weight: 600;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-av {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--dash-navy);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.offacto-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background: #fff;
+    font-family: var(--dash-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--dash-navy);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.offacto-btn-sm:hover {
+    border-color: var(--dash-primary);
+    color: var(--dash-primary);
+}
+
+.offacto-brief-empty {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--dash-muted);
+}
+
+.offacto-briefings .offacto-brief-pagination {
+    padding: 16px 20px;
+}
+
+/* Briefing builder (offacto-app-demo.html briefBuilder) */
+.offacto-brief-edit-ph {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.offacto-brief-edit-crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: var(--dash-muted);
+    text-decoration: none;
+}
+
+.offacto-brief-edit-crumb svg {
+    width: 14px;
+    height: 14px;
+}
+
+.offacto-brief-edit-ph h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-edit-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.offacto-brief-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background: #fff;
+    font-family: var(--dash-body);
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--dash-navy);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.offacto-brief-btn:hover {
+    border-color: var(--dash-primary);
+    color: var(--dash-primary);
+}
+
+.offacto-brief-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.offacto-btn-p.block {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+}
+
+.offacto-brief-edit-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .offacto-brief-edit-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .offacto-brief-edit-sticky {
+        position: static !important;
+    }
+}
+
+.offacto-brief-edit-card {
+    overflow: hidden;
+    border-radius: 24px;
+    background: var(--dash-card);
+}
+
+.offacto-brief-edit-card-h {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgb(14 18 80 / 0.07);
+}
+
+.offacto-brief-edit-card-h h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-edit-card-b {
+    padding: 20px;
+}
+
+.offacto-brief-edit-fg {
+    display: grid;
+    gap: 16px;
+}
+
+.offacto-brief-edit-fg2 {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+    .offacto-brief-edit-fg2 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.offacto-brief-edit-lbl {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-inp {
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 16px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    border-radius: 14px;
+    background: #fff;
+    font-family: var(--dash-body);
+    font-size: 14.5px;
+    color: var(--dash-navy);
+    outline: none;
+}
+
+.offacto-brief-inp:focus {
+    border-color: var(--dash-mid);
+    box-shadow: 0 0 0 3px rgb(157 141 241 / 0.35);
+}
+
+textarea.offacto-brief-inp {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.offacto-brief-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14.5px;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-toggle {
+    position: relative;
+    width: 44px;
+    height: 26px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(14 18 80 / 0.15);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.offacto-brief-toggle::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.15s;
+}
+
+.offacto-brief-toggle.on {
+    background: var(--dash-primary);
+}
+
+.offacto-brief-toggle.on::after {
+    transform: translateX(18px);
+}
+
+.offacto-brief-price--full {
+    width: 100%;
+}
+
+.offacto-brief-inp-compact {
+    flex: 1;
+    min-width: 140px;
+    min-height: 40px;
+    padding: 8px 12px;
+}
+
+.offacto-brief-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 46px;
+    padding: 0 12px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    border-radius: 14px;
+    background: #fff;
+    font-size: 14.5px;
+    color: var(--dash-muted);
+}
+
+.offacto-brief-price input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-qitem {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 14px;
+    border-radius: 18px;
+    background: #fff;
+}
+
+.offacto-brief-qitem .grip {
+    margin-top: 10px;
+    color: var(--dash-muted);
+    opacity: 0.5;
+}
+
+.offacto-brief-qitem .grip svg {
+    width: 18px;
+    height: 18px;
+}
+
+.offacto-brief-qitem-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.offacto-brief-qitem-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.offacto-brief-qitem-head .offacto-brief-inp {
+    flex: 1;
+    min-width: 160px;
+    min-height: 40px;
+    background: var(--dash-card);
+}
+
+.offacto-brief-qitem .x {
+    border: 0;
+    background: none;
+    padding: 8px;
+    color: var(--dash-muted);
+    cursor: pointer;
+}
+
+.offacto-brief-qitem .x:hover {
+    color: #c23a4b;
+}
+
+.offacto-brief-qitem .x svg {
+    width: 18px;
+    height: 18px;
+}
+
+.offacto-brief-opt {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.offacto-brief-opt .offacto-brief-inp {
+    flex: 1;
+    min-width: 120px;
+    min-height: 40px;
+}
+
+.offacto-brief-opt .offacto-brief-price {
+    min-height: 40px;
+    min-width: 120px;
+}
+
+.offacto-brief-opt-remove {
+    border: 0;
+    background: none;
+    padding: 6px;
+    color: var(--dash-muted);
+    cursor: pointer;
+}
+
+.offacto-brief-opt-remove:hover {
+    color: #c23a4b;
+}
+
+.offacto-brief-opt-remove svg {
+    width: 16px;
+    height: 16px;
+}
+
+.offacto-brief-date-rule {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.offacto-brief-date-rule svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    stroke: var(--dash-primary);
+}
+
+.offacto-brief-phone-voice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--phone-soft);
+    color: var(--phone-primary);
+}
+
+.offacto-brief-phone-voice svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.offacto-brief-phone-wave {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 2px;
+    height: 28px;
+}
+
+.offacto-brief-phone-wave i {
+    display: block;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--phone-primary);
+    opacity: 0.85;
+}
+
+.offacto-brief-add-opt {
+    display: inline-block;
+    margin-top: 8px;
+    border: 0;
+    background: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dash-link);
+    cursor: pointer;
+}
+
+.offacto-brief-edit-sticky {
+    position: sticky;
+    top: 84px;
+    width: 100%;
+    max-width: 330px;
+    margin-inline: auto;
+}
+
+.offacto-brief-edit-preview-label {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.offacto-brief-edit-preview-label .offacto-status-badge {
+    background: rgb(107 89 220 / 0.12);
+    color: #5a48c8;
+}
+
+.offacto-brief-edit-preview-label .offacto-status-badge svg {
+    width: 14px;
+    height: 14px;
+    stroke: #6b59dc;
+}
+
+/* Live preview + public form — shared tokens (offacto-app-demo.html v6) */
+.offacto-brief-phone,
+.offacto-brief-web {
+    --phone-navy: #0e1250;
+    --phone-primary: #6b59dc;
+    --phone-primary-hover: #5a48c8;
+    --phone-text: #0e1250;
+    --phone-muted: #48537f;
+    --phone-soft: #eef1ff;
+    --phone-input-bg: #f5f7ff;
+    --phone-input-border: #e4e9f7;
+
+    color: var(--phone-text);
+    font-family: var(--dash-body);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.offacto-brief-phone {
+    width: 310px;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 34px;
+    border: 10px solid #141a3a;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
+    background: #fff;
+}
+
+.offacto-brief-phone-h {
+    padding: 22px 18px 18px;
+    background: var(--phone-navy);
+    color: #fff;
+}
+
+.offacto-brief-phone-url {
+    display: inline-block;
+    max-width: 100%;
+    margin-bottom: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgb(255 255 255 / 0.15);
+    font-size: 10.5px;
+    line-height: 1.35;
+    color: #fff;
+    word-break: break-all;
+}
+
+.offacto-brief-phone-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--dash-body);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.offacto-brief-phone-logo {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.offacto-brief-phone-title {
+    margin-top: 10px;
+    font-family: var(--dash-display);
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #fff;
+}
+
+.offacto-brief-phone-h .offacto-brief-phone-brand b {
+    color: #fff;
+}
+
+.offacto-brief-phone-b {
+    display: grid;
+    gap: 12px;
+    padding: 16px 18px;
+    background: #fff;
+    font-size: 13px;
+}
+
+.offacto-brief-form-surface .offacto-brief-inp,
+.offacto-brief-phone-b .offacto-brief-inp {
+    width: 100%;
+    min-height: 40px;
+    padding: 10px 14px;
+    border: 1px solid var(--phone-input-border);
+    border-radius: 14px;
+    border-color: var(--phone-input-border);
+    background: var(--phone-input-bg);
+    color: var(--phone-text);
+    font-family: var(--dash-body);
+    font-size: 13px;
+    outline: none;
+}
+
+.offacto-brief-form-surface .offacto-brief-inp:focus,
+.offacto-brief-phone-b .offacto-brief-inp:focus {
+    border-color: var(--dash-mid);
+    box-shadow: 0 0 0 3px rgb(157 141 241 / 0.35);
+}
+
+.offacto-brief-phone-intro {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--dash-muted);
+}
+
+.offacto-brief-phone-q b {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--phone-text);
+}
+
+.offacto-brief-phone-hint {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--dash-muted);
+}
+
+.offacto-brief-phone-q-h {
+    margin: 0;
+    font-family: var(--dash-display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--phone-text);
+}
+
+.offacto-brief-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.offacto-brief-form-surface .offacto-brief-chip,
+.offacto-brief-phone-b .offacto-brief-chip {
+    border: 1px solid var(--phone-input-border);
+    border-radius: 50px;
+    padding: 6px 11px;
+    background: #fff;
+    font-family: var(--dash-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--phone-text);
+    cursor: pointer;
+}
+
+.offacto-brief-form-surface .offacto-brief-chip.on,
+.offacto-brief-phone-b .offacto-brief-chip.on {
+    border-color: var(--phone-primary);
+    background: var(--phone-primary);
+    color: #fff;
+}
+
+.offacto-brief-form-surface .offacto-brief-drop,
+.offacto-brief-phone-b .offacto-brief-drop {
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    border: 2px dashed #cec6fb;
+    border-radius: 12px;
+    background: var(--phone-soft);
+    color: var(--phone-primary);
+}
+
+.offacto-brief-form-surface .offacto-brief-drop svg,
+.offacto-brief-phone-b .offacto-brief-drop svg {
+    width: 22px;
+    height: 22px;
+}
+
+.offacto-brief-phone-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--phone-soft);
+    font-size: 14px;
+    color: var(--phone-muted);
+}
+
+.offacto-brief-phone-total b {
+    font-size: 17px;
+    color: var(--phone-navy);
+}
+
+.offacto-brief-form-surface .offacto-brief-phone-submit,
+.offacto-brief-phone-submit {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--phone-primary);
+    font-family: var(--dash-body);
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #fff;
+    cursor: not-allowed;
+    opacity: 0.95;
+}
+
+.offacto-brief-form-surface .offacto-brief-phone-submit svg,
+.offacto-brief-phone-submit svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.offacto-brief-phone-submit:not(:disabled) {
+    cursor: pointer;
+    opacity: 1;
+}
+
+.offacto-brief-phone-submit:not(:disabled):hover {
+    background: var(--phone-primary-hover);
+}
+
+.offacto-brief-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    border: 0;
+    background: rgb(15 19 48 / 0.42);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.offacto-brief-scrim.on {
+    opacity: 1;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.offacto-brief-modal {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    z-index: 51;
+    display: flex;
+    width: min(560px, calc(100% - 32px));
+    max-height: calc(100vh - 40px);
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 24px;
+    background: var(--dash-card);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -46%) scale(0.97);
+    transition: opacity 0.22s, transform 0.22s;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
+}
+
+.offacto-brief-modal.on {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.offacto-brief-modal .offacto-brief-edit-card-h {
+    flex-shrink: 0;
+}
+
+.offacto-brief-modal-close {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 0;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--dash-muted);
+    cursor: pointer;
+}
+
+.offacto-brief-modal-close:hover {
+    color: var(--dash-primary);
+}
+
+.offacto-brief-modal-close svg {
+    width: 18px;
+    height: 18px;
+}
+
+.offacto-brief-modal-b {
+    display: grid;
+    gap: 16px;
+    padding: 20px;
+    overflow: auto;
+}
+
+.offacto-brief-share-inrow {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.offacto-brief-share-inrow .offacto-brief-inp {
+    flex: 1;
+    min-width: 0;
+}
+
+.offacto-brief-share-copy {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    place-items: center;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    border-radius: 14px;
+    background: #fff;
+    color: var(--dash-muted);
+    cursor: pointer;
+}
+
+.offacto-brief-share-copy:hover {
+    border-color: var(--dash-primary);
+    color: var(--dash-primary);
+}
+
+.offacto-brief-share-copy svg {
+    width: 18px;
+    height: 18px;
+}
+
+.offacto-brief-share-field {
+    display: block;
+}
+
+.offacto-brief-email-chips {
+    display: flex;
+    min-height: 46px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    border-radius: 14px;
+    background: #fff;
+    cursor: text;
+}
+
+.offacto-brief-email-chips:focus-within {
+    border-color: var(--dash-mid);
+    box-shadow: 0 0 0 3px rgb(157 141 241 / 0.35);
+}
+
+.offacto-brief-email-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px 4px 10px;
+    border-radius: 999px;
+    background: rgb(107 89 220 / 0.12);
+    font-size: 13px;
+    font-weight: 600;
+    color: #5a48c8;
+}
+
+.offacto-brief-email-chip button {
+    border: 0;
+    background: none;
+    padding: 0 2px;
+    font-size: 16px;
+    line-height: 1;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.75;
+}
+
+.offacto-brief-email-chip button:hover {
+    opacity: 1;
+}
+
+.offacto-brief-email-chip-input {
+    flex: 1;
+    min-width: 140px;
+    border: 0;
+    outline: none;
+    background: transparent;
+    font-family: var(--dash-body);
+    font-size: 14.5px;
+    color: var(--dash-navy);
+}
+
+.offacto-brief-share-send {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px !important;
+}
+
+.offacto-brief-share-send svg {
+    width: 18px !important;
+    height: 18px !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+.offacto-brief-edit-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.offacto-brief-edit-foot a {
+    color: var(--dash-link);
+    text-decoration: none;
+}
+
+.offacto-brief-edit-foot button {
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    color: #c23a4b;
+    cursor: pointer;
+}
+
+.offacto-brief-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--dash-navy);
+    cursor: pointer;
+}
+
+.offacto-brief-btn-sm svg {
+    width: 14px;
+    height: 14px;
+}
+
+.offacto-brief-meta {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--dash-muted);
 }
 
 .register-orb {

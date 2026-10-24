@@ -8,10 +8,16 @@ import { t } from '../../lib/i18n';
 export default function Responses({ briefing, responses = [], autoGenerateOffer = true }) {
     const [expandedId, setExpandedId] = useState(null);
 
-    const generateQuote = (responseId) => {
-        router.post(`/briefings/${briefing.id}/responses/${responseId}/generate-quote`, {}, {
-            preserveScroll: true,
-        });
+    const sendQuote = (response) => {
+        if (response.quote_action === 'edit' && response.offer?.id) {
+            router.visit(`/offers/${response.offer.id}/edit?from=briefing`);
+            return;
+        }
+        if (response.quote_action === 'generate') {
+            router.post(`/briefings/${briefing.id}/responses/${response.id}/generate-quote`, {}, {
+                preserveScroll: true,
+            });
+        }
     };
 
     return (
@@ -68,21 +74,21 @@ export default function Responses({ briefing, responses = [], autoGenerateOffer 
                                     <td className="px-5 py-4">
                                         <div className="flex flex-wrap items-center gap-2">
                                             {response.offer ? (
-                                                <Link href={`/offers/${response.offer.id}/edit`} className="font-medium text-indigo-600">
+                                                <span className="font-medium text-slate-700">
                                                     {response.offer.offer_number} · {response.offer.status_relation?.name || 'Draft'}
-                                                </Link>
+                                                </span>
                                             ) : (
-                                                <>
-                                                    <span className="text-slate-400">{t('briefings.no_draft')}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => generateQuote(response.id)}
-                                                        className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
-                                                    >
-                                                        {t('briefings.generate_quote')}
-                                                    </button>
-                                                </>
+                                                <span className="text-slate-400">{t('briefings.no_draft')}</span>
                                             )}
+                                            {response.quote_action === 'generate' || response.quote_action === 'edit' ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => sendQuote(response)}
+                                                    className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
+                                                >
+                                                    {t('briefings.send_quote')}
+                                                </button>
+                                            ) : null}
                                             <button
                                                 type="button"
                                                 onClick={() => setExpandedId(expandedId === response.id ? null : response.id)}

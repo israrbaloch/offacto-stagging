@@ -78,7 +78,7 @@ class PublicBriefingController extends Controller
                 continue;
             }
 
-            if ($question->type === BriefingQuestion::TYPE_FILE_UPLOAD) {
+            if (in_array($question->type, [BriefingQuestion::TYPE_FILE_UPLOAD, BriefingQuestion::TYPE_VOICE], true)) {
                 $this->storeFileAnswer($response, $question, $answerFiles[$question->id] ?? null);
 
                 continue;
@@ -103,8 +103,12 @@ class PublicBriefingController extends Controller
 
     private function answered(BriefingQuestion $question, mixed $raw, mixed $file = null): bool
     {
-        if ($question->type === BriefingQuestion::TYPE_FILE_UPLOAD) {
+        if (in_array($question->type, [BriefingQuestion::TYPE_FILE_UPLOAD, BriefingQuestion::TYPE_VOICE], true)) {
             return $file instanceof UploadedFile;
+        }
+
+        if ($question->type === BriefingQuestion::TYPE_DATE) {
+            return is_array($raw) && filled($raw['date'] ?? null);
         }
 
         if ($raw === null || $raw === '') {
@@ -186,6 +190,7 @@ class PublicBriefingController extends Controller
             'id' => $briefing->id,
             'title' => $briefing->title,
             'intro' => $briefing->intro,
+            'base_price' => $briefing->base_price,
             'status' => $briefing->status,
             'company' => [
                 'name' => $briefing->company?->company_name,

@@ -15,10 +15,14 @@ class Briefing extends Model
         'company_id',
         'customer_id',
         'title',
+        'base_price',
         'intro',
         'status',
         'auto_generate_offer',
+        'ai_writes_intro',
+        'require_nda_before_start',
         'valid_until_days',
+        'form_locale',
         'share_token',
     ];
 
@@ -26,7 +30,10 @@ class Briefing extends Model
     {
         return [
             'auto_generate_offer' => 'boolean',
+            'ai_writes_intro' => 'boolean',
+            'require_nda_before_start' => 'boolean',
             'valid_until_days' => 'integer',
+            'base_price' => 'decimal:2',
         ];
     }
 

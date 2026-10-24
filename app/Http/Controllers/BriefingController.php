@@ -11,6 +11,7 @@ use App\Models\BriefingResponse;
 use App\Mail\BriefingShareMail;
 use App\Services\BriefingQuoteGenerator;
 use App\Support\CompanyAccess;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -31,10 +32,46 @@ class BriefingController extends Controller
             ->withCount(['questions', 'responses'])
             ->withMax('responses', 'submitted_at')
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->through(fn (Briefing $briefing) => [
+                'id' => $briefing->id,
+                'title' => $briefing->title,
+                'status' => $briefing->status,
+                'responses_count' => $briefing->responses_count,
+                'responses_max_submitted_at' => $this->carbonize($briefing->responses_max_submitted_at)?->toIso8601String(),
+                'public_link' => $this->briefingPublicLink($briefing),
+                'card_subtitle' => $this->briefingCardSubtitle($briefing),
+            ]);
+
+        $recentResponses = BriefingResponse::query()
+            ->whereHas('briefing', fn ($query) => $query->where('company_id', $company->id))
+            ->with(['briefing', 'customer', 'offer.statusRelation'])
+            ->latest('submitted_at')
+            ->take(10)
+            ->get()
+            ->map(function (BriefingResponse $response) {
+                $customer = $this->customerDisplayLabel($response->customer, $response->respondent_name);
+                $quoteStatus = $this->responseQuoteStatus($response);
+
+                return [
+                    'id' => $response->id,
+                    'briefing_id' => $response->briefing_id,
+                    'briefing_title' => $response->briefing?->title,
+                    'submitted_at' => $response->submitted_at?->toIso8601String(),
+                    'customer_name' => $customer['name'],
+                    'customer_initials' => $customer['initials'],
+                    'estimate' => $response->offer?->total,
+                    'offer_id' => $response->offer_id,
+                    'quote_status' => $quoteStatus,
+                    'quote_action' => $this->responseQuoteAction($quoteStatus),
+                    'draft_quote_ready' => $response->offer_id
+                        && $quoteStatus['key'] === 'draft',
+                ];
+            });
 
         return Inertia::render('Briefings/Index', [
             'briefings' => $briefings,
+            'recentResponses' => $recentResponses,
         ]);
     }
 
@@ -67,26 +104,10 @@ class BriefingController extends Controller
             abort(403);
         }
 
-        $briefing->load(['questions.service', 'customer']);
-
-        $customers = Customer::where('company_id', $company->id)
-            ->orderBy('first_name')
-            ->get()
-            ->mapWithKeys(fn ($customer) => [
-                $customer->id => trim($customer->first_name.' '.$customer->surname).($customer->org_name ? ' ('.$customer->org_name.')' : ''),
-            ]);
-
-        $services = Service::where('company_id', $company->id)
-            ->orderBy('name')
-            ->get(['id', 'name', 'price']);
+        $briefing->load(['questions.service', 'customer', 'company']);
 
         return Inertia::render('Briefings/Edit', [
             'briefing' => $briefing,
-            'customers' => $customers,
-            'services' => $services,
-            'questionTypes' => collect(BriefingQuestion::types())->mapWithKeys(
-                fn (string $label, string $key) => [$key => __('briefings.question_type.'.$key)]
-            ),
             'shareUrl' => $briefing->publicUrl(),
         ]);
     }
@@ -143,15 +164,17 @@ class BriefingController extends Controller
         }
 
         $data = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
+            'emails' => ['required', 'array', 'min:1', 'max:25'],
+            'emails.*' => ['required', 'email', 'max:255'],
             'message' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        Mail::to($data['email'])->send(new BriefingShareMail(
-            $briefing,
-            $briefing->publicUrl(),
-            $data['message'] ?? null,
-        ));
+        $shareUrl = $briefing->publicUrl();
+        $message = $data['message'] ?? null;
+
+        foreach (array_unique($data['emails']) as $email) {
+            Mail::to($email)->send(new BriefingShareMail($briefing, $shareUrl, $message));
+        }
 
         return back()->with('status', 'briefing-shared');
     }
@@ -166,9 +189,11 @@ class BriefingController extends Controller
         $data = $request->validated();
         $briefing->update([
             'title' => $data['title'] ?? $briefing->title,
-            'intro' => $data['intro'] ?? null,
-            'customer_id' => $data['customer_id'] ?? null,
+            'base_price' => $data['base_price'] ?? $briefing->base_price,
+            'form_locale' => $data['form_locale'] ?? $briefing->form_locale,
             'auto_generate_offer' => $data['auto_generate_offer'] ?? $briefing->auto_generate_offer,
+            'ai_writes_intro' => $data['ai_writes_intro'] ?? $briefing->ai_writes_intro,
+            'require_nda_before_start' => $data['require_nda_before_start'] ?? $briefing->require_nda_before_start,
             'valid_until_days' => $data['valid_until_days'] ?? $briefing->valid_until_days,
             'status' => $data['status'] ?? $briefing->status,
         ]);
@@ -179,11 +204,17 @@ class BriefingController extends Controller
                 'sort_order' => $index,
                 'type' => $row['type'],
                 'label' => $row['label'],
-                'help_text' => $row['help_text'] ?? null,
+                'help_text' => null,
                 'required' => (bool) ($row['required'] ?? false),
-                'service_id' => $row['service_id'] ?? null,
+                'service_id' => null,
                 'price_override' => $row['price_override'] ?? null,
-                'options' => $row['options'] ?? [],
+                'options' => collect($row['options'] ?? [])
+                    ->map(fn ($option) => [
+                        'label' => $option['label'] ?? '',
+                        'price' => $option['price'] ?? null,
+                    ])
+                    ->values()
+                    ->all(),
             ];
 
             if (! empty($row['id'])) {
@@ -228,28 +259,33 @@ class BriefingController extends Controller
             ->with(['offer.statusRelation', 'customer', 'answers.question'])
             ->latest('submitted_at')
             ->get()
-            ->map(fn (BriefingResponse $response) => [
-                'id' => $response->id,
-                'respondent_name' => $response->respondent_name,
-                'respondent_email' => $response->respondent_email,
-                'submitted_at' => $response->submitted_at?->toIso8601String(),
-                'customer' => $response->customer,
-                'offer' => $response->offer ? [
-                    'id' => $response->offer->id,
-                    'offer_number' => $response->offer->offer_number,
-                    'status_relation' => $response->offer->statusRelation ? [
-                        'name' => $response->offer->statusRelation->name,
+            ->map(function (BriefingResponse $response) {
+                $quoteStatus = $this->responseQuoteStatus($response);
+
+                return [
+                    'id' => $response->id,
+                    'respondent_name' => $response->respondent_name,
+                    'respondent_email' => $response->respondent_email,
+                    'submitted_at' => $response->submitted_at?->toIso8601String(),
+                    'customer' => $response->customer,
+                    'offer' => $response->offer ? [
+                        'id' => $response->offer->id,
+                        'offer_number' => $response->offer->offer_number,
+                        'status_relation' => $response->offer->statusRelation ? [
+                            'name' => $response->offer->statusRelation->name,
+                        ] : null,
                     ] : null,
-                ] : null,
-                'answers' => $response->answers->map(fn ($answer) => [
-                    'id' => $answer->id,
-                    'question_label' => $answer->question?->label,
-                    'question_type' => $answer->question?->type,
-                    'display' => app(BriefingQuoteGenerator::class)->formatAnswerForDisplay($answer),
-                    'file_name' => $answer->value['original_name'] ?? null,
-                ]),
-                'quote_status' => $this->responseQuoteStatus($response),
-            ]);
+                    'answers' => $response->answers->map(fn ($answer) => [
+                        'id' => $answer->id,
+                        'question_label' => $answer->question?->label,
+                        'question_type' => $answer->question?->type,
+                        'display' => app(BriefingQuoteGenerator::class)->formatAnswerForDisplay($answer),
+                        'file_name' => $answer->value['original_name'] ?? null,
+                    ]),
+                    'quote_status' => $quoteStatus,
+                    'quote_action' => $this->responseQuoteAction($quoteStatus),
+                ];
+            });
 
         return Inertia::render('Briefings/Responses', [
             'briefing' => $briefing,
@@ -286,6 +322,119 @@ class BriefingController extends Controller
 
         return redirect()->route('offers.edit', $offer)
             ->with('status', 'briefing-quote-generated');
+    }
+
+    private function carbonize(mixed $value): ?Carbon
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($value instanceof Carbon) {
+            return $value;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::instance($value);
+        }
+
+        if (is_string($value)) {
+            return Carbon::parse($value);
+        }
+
+        return null;
+    }
+
+    private function briefingPublicLink(Briefing $briefing): ?string
+    {
+        if ($briefing->status !== Briefing::STATUS_ACTIVE) {
+            return null;
+        }
+
+        $host = parse_url(config('app.url'), PHP_URL_HOST) ?: config('app.url');
+
+        return $host.'/b/'.$briefing->share_token;
+    }
+
+    private function briefingCardSubtitle(Briefing $briefing): string
+    {
+        if ($briefing->status === Briefing::STATUS_DRAFT) {
+            return __('briefings.card_not_shared');
+        }
+
+        if ($lastResponseLabel = $this->briefingLastResponseLabel($briefing)) {
+            return $lastResponseLabel;
+        }
+
+        return __('briefings.card_awaiting_responses');
+    }
+
+    private function briefingLastResponseLabel(Briefing $briefing): ?string
+    {
+        $lastResponseAt = $this->carbonize($briefing->responses_max_submitted_at);
+        if (! $lastResponseAt) {
+            return null;
+        }
+
+        if ($lastResponseAt->isToday()) {
+            return __('briefings.card_last_response_today');
+        }
+
+        $days = (int) $lastResponseAt->diffInDays(Carbon::now());
+
+        if ($days <= 1) {
+            return __('briefings.card_last_response_one_day');
+        }
+
+        return __('briefings.card_last_response_days', ['count' => $days]);
+    }
+
+    /**
+     * @return array{name: string, initials: string}
+     */
+    private function customerDisplayLabel(?Customer $customer, ?string $respondentName): array
+    {
+        if ($customer) {
+            $name = $customer->org_name
+                ?: trim($customer->first_name.' '.$customer->surname)
+                ?: '—';
+
+            return [
+                'name' => $name,
+                'initials' => $this->initialsFromName($name),
+            ];
+        }
+
+        if ($respondentName) {
+            return [
+                'name' => $respondentName,
+                'initials' => $this->initialsFromName($respondentName),
+            ];
+        }
+
+        return ['name' => '—', 'initials' => '?'];
+    }
+
+    private function initialsFromName(string $name): string
+    {
+        $parts = preg_split('/\s+/u', trim($name)) ?: [];
+        $first = mb_substr($parts[0] ?? '?', 0, 1);
+        $second = mb_substr($parts[1] ?? '', 0, 1);
+
+        return strtoupper($first.$second);
+    }
+
+    /**
+     * @param  array{key: string, label: string}  $quoteStatus
+     * @return 'generate'|'edit'|null
+     */
+    private function responseQuoteAction(array $quoteStatus): ?string
+    {
+        return match ($quoteStatus['key']) {
+            'pending' => 'generate',
+            'draft' => 'edit',
+            default => null,
+        };
     }
 
     /**
