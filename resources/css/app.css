@@ -1932,6 +1932,223 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     color: var(--dash-navy);
 }
 
+.offacto-brief-edit-ph p {
+    margin-top: 4px;
+    max-width: 52ch;
+    color: var(--dash-muted);
+}
+
+/* Quotes index KPIs — offacto-app-demo.html .card.lift.kpi (offertes) */
+.offacto-quotes-kpi-grid {
+    margin-bottom: 18px;
+}
+
+.offacto-quotes-page .offacto-brief-edit-ph h1 {
+    font-size: 30px;
+    font-weight: 800;
+}
+
+.offacto-quotes-page .offacto-dash-kpi-corner {
+    border-color: rgba(157, 141, 241, 0.18);
+}
+
+.offacto-quotes-page .offacto-quotes-kpi .offacto-demo-badge {
+    align-self: flex-start;
+}
+
+.offacto-quotes-page .offacto-quotes-kpi .offacto-dash-kpi-val {
+    margin-top: 10px;
+}
+
+.offacto-quotes-page .offacto-quotes-kpi.offacto-dash-card.lift:hover {
+    background: #6b59dc;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
+}
+
+.offacto-quotes-page .offacto-quotes-kpi.offacto-dash-card.lift:hover .offacto-dash-kpi-corner {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.offacto-quotes-page .offacto-quotes-kpi.offacto-dash-card.lift:hover .offacto-demo-badge,
+.offacto-quotes-page .offacto-quotes-kpi.offacto-dash-card.lift:hover .offacto-demo-badge.ok,
+.offacto-quotes-page .offacto-quotes-kpi.offacto-dash-card.lift:hover .offacto-demo-badge.grey,
+.offacto-quotes-page .offacto-quotes-kpi.offacto-dash-card.lift:hover .offacto-demo-badge.bad {
+    background: rgb(255 255 255 / 0.16) !important;
+    color: #fff !important;
+}
+
+.offacto-quotes-page .offacto-quotes-kpi.offacto-dash-card.lift:hover .offacto-demo-badge::before {
+    background: #fff;
+}
+
+/* Demo v6 .badge — quotes list card */
+.offacto-quotes-page .offacto-demo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    background: rgb(107 89 220 / 0.12);
+    color: #5a48c8;
+}
+
+.offacto-quotes-page .offacto-demo-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.offacto-quotes-page .offacto-demo-badge.nd::before {
+    display: none;
+}
+
+.offacto-quotes-page .offacto-demo-badge.ok {
+    background: #e3f6f0;
+    color: #14866d;
+}
+
+.offacto-quotes-page .offacto-demo-badge.grey {
+    background: rgb(14 18 80 / 0.06);
+    color: var(--dash-muted);
+}
+
+.offacto-quotes-page .offacto-demo-badge.bad {
+    background: #fdecee;
+    color: #c23a4b;
+}
+
+.offacto-quotes-page .offacto-demo-badge.warn {
+    background: #fff3dd;
+    color: #a45f00;
+}
+
+.offacto-quotes-page .offacto-demo-badge.ai {
+    background: linear-gradient(90deg, rgb(91 75 214 / 0.12), rgb(107 125 196 / 0.12));
+    color: #5b4bd6;
+}
+
+.offacto-quotes-page .offacto-demo-badge.ai svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+.offacto-quotes-page .offacto-brief-table-card.offacto-dash-card {
+    border: 0;
+    box-shadow: none;
+}
+
+/* Demo v6: tbody.click tr:hover — single row highlight, left accent only */
+.offacto-quotes-page tbody.offacto-brief-table-click tr {
+    transition: background 0.12s, box-shadow 0.12s;
+}
+
+.offacto-quotes-page tbody.offacto-brief-table-click tr:hover {
+    background: rgb(255 255 255 / 0.55);
+    box-shadow: inset 3px 0 0 #6b59dc;
+}
+
+.offacto-quotes-page tbody.offacto-brief-table-click tr:hover td {
+    background: transparent;
+    box-shadow: none;
+}
+
+.offacto-quotes-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgb(14 18 80 / 0.07);
+}
+
+.offacto-quotes-toolbar-r {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* Demo v6 .btn.sm — quotes toolbar export */
+.offacto-quotes-page .offacto-brief-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background: #fff;
+    font-family: var(--dash-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--dash-navy);
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.18s, color 0.18s;
+    flex-shrink: 0;
+}
+
+.offacto-quotes-page .offacto-brief-btn-sm:hover {
+    border-color: var(--dash-primary);
+    color: var(--dash-primary);
+}
+
+.offacto-quotes-page .offacto-brief-btn-sm svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+.offacto-quotes-filter-inp {
+    width: 220px;
+    max-width: 100%;
+}
+
+.offacto-brief-table-click tr {
+    cursor: pointer;
+    transition: background 0.12s, box-shadow 0.12s;
+}
+
+.offacto-brief-table-click tr:hover {
+    background: rgb(14 18 80 / 0.03);
+}
+
+.offacto-quote-signed {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #14866d;
+}
+
+.offacto-quote-num-sub {
+    margin-top: 4px;
+}
+
+.offacto-brief-table .inline-flex svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.offacto-btn-sm svg {
+    width: 14px;
+    height: 14px;
+}
+
 .offacto-brief-edit-acts {
     display: flex;
     flex-wrap: wrap;

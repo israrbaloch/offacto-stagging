@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+import CountUpMoney from '../Components/CountUpMoney';
 import Icon from '../Components/Icon';
 import { useUi } from '../context/UiContext';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
@@ -22,7 +23,7 @@ function periodLabel(period) {
     return `${period} ${year}`;
 }
 
-function DashboardKpi({ hero, icon, label, value, trend, trendMuted }) {
+function DashboardKpi({ hero, icon, label, amount, trend, trendMuted }) {
     return (
         <div className={`offacto-dash-card lift offacto-dash-kpi ${hero ? 'offacto-dash-kpi-hero' : ''}`}>
             <span className="offacto-dash-kpi-corner" aria-hidden="true" />
@@ -30,7 +31,9 @@ function DashboardKpi({ hero, icon, label, value, trend, trendMuted }) {
                 <Icon name={icon} />
             </div>
             <div className="offacto-dash-kpi-lbl">{label}</div>
-            <div className="offacto-dash-kpi-val">{value}</div>
+            <div className="offacto-dash-kpi-val">
+                <CountUpMoney value={amount} />
+            </div>
             {trend ? (
                 <div className={`offacto-dash-kpi-tr ${trendMuted ? 'offacto-dash-kpi-tr--muted' : ''}`}>{trend}</div>
             ) : null}
@@ -210,26 +213,26 @@ export default function Dashboard({
                     hero
                     icon="euro"
                     label={t('dashboard.revenue')}
-                    value={money(stats.revenue)}
+                    amount={stats.revenue}
                     trend={stats.revenue > 0 ? `▲ ${t('dashboard.vs_last_year')}` : '—'}
                 />
                 <DashboardKpi
                     icon="inbox"
                     label={t('dashboard.expenses')}
-                    value={money(stats.expenses)}
+                    amount={stats.expenses}
                     trend={t('dashboard.from_incoming')}
                     trendMuted
                 />
                 <DashboardKpi
                     icon="spark"
                     label={t('dashboard.net_result')}
-                    value={money(stats.netResult)}
+                    amount={stats.netResult}
                     trend={stats.revenue > 0 ? `${marginPct}% ${t('dashboard.margin')}` : '—'}
                 />
                 <DashboardKpi
                     icon="file"
                     label={t('dashboard.vat_payable')}
-                    value={money(0)}
+                    amount={0}
                     trend={
                         period === 'Y'
                             ? t('dashboard.vat_not_available')

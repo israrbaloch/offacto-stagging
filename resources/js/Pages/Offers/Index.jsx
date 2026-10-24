@@ -1,308 +1,326 @@
 import { Link, router } from '@inertiajs/react';
-import { useState } from 'react';
-import CopyLinkButton from '../../Components/CopyLinkButton';
+import { useEffect, useRef, useState } from 'react';
+import CountUpMoney from '../../Components/CountUpMoney';
 import Icon from '../../Components/Icon';
 import Pagination from '../../Components/Pagination';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { localeTag, t } from '../../lib/i18n';
 import { customerName, money } from '../../lib/utils';
 
-function prettyDate(value) {
-    if (!value) return '—';
+function prettyDateShort(value) {
+    if (!value) {
+        return '—';
+    }
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString(localeTag(), { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function initials(customer) {
-    const source = customer?.org_name || [customer?.first_name, customer?.surname].filter(Boolean).join(' ');
-    if (!source) return '—';
-    return source
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0].toUpperCase())
-        .join('');
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleDateString(localeTag(), { day: 'numeric', month: 'numeric', year: 'numeric' });
 }
 
 function displayName(customer) {
-    if (!customer) return '—';
+    if (!customer) {
+        return '—';
+    }
     return customer.org_name || customerName(customer);
 }
 
-function statusMeta(offer) {
-    const name = String(offer.status_relation?.name || 'Draft');
-    const key = name.toLowerCase();
-    const expired =
-        offer.valid_until &&
-        new Date(offer.valid_until) < new Date() &&
-        ['draft', 'sent', 'pending', 'open'].includes(key);
-
-    if (expired) return { label: t('offers.expired'), tone: 'overdue' };
-    if (key === 'accepted') return { label: t('offers.accepted'), tone: 'paid' };
-    if (key === 'invoiced') return { label: t('offers.invoiced'), tone: 'sent' };
-    if (key === 'sent' || key === 'pending') return { label: name, tone: 'sent' };
-    if (key === 'rejected' || key === 'declined') return { label: name, tone: 'overdue' };
-    return { label: name, tone: 'draft' };
+function stripHtml(text) {
+    return String(text)
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
-function StatusPill({ tone, children }) {
-    const styles = {
-        paid: 'bg-emerald-50 text-emerald-700',
-        overdue: 'bg-rose-50 text-rose-700',
-        sent: 'bg-indigo-50 text-indigo-700',
-        draft: 'bg-slate-100 text-slate-600',
+function offerSubject(offer) {
+    if (offer.desc) {
+        const plain = stripHtml(offer.desc);
+        if (plain) {
+            return plain.length > 140 ? `${plain.slice(0, 137)}…` : plain;
+        }
+    }
+    if (offer.intro) {
+        const plain = stripHtml(offer.intro);
+        if (plain) {
+            return plain.length > 140 ? `${plain.slice(0, 137)}…` : plain;
+        }
+    }
+    return t('offers.untitled');
+}
+
+function statusKey(offer) {
+    const name = String(offer.status_relation?.name || 'draft').toLowerCase();
+    if (name === 'viewed') {
+        return 'sent';
+    }
+    if (name === 'rejected') {
+        return 'declined';
+    }
+    return name;
+}
+
+function statusBadgeClass(key) {
+    if (key === 'accepted') {
+        return 'ok';
+    }
+    if (key === 'declined') {
+        return 'bad';
+    }
+    if (key === 'draft') {
+        return 'grey';
+    }
+    return '';
+}
+
+function statusLabel(key) {
+    const map = {
+        draft: 'offers.kpi_draft',
+        sent: 'offers.kpi_sent',
+        accepted: 'offers.accepted',
+        declined: 'offers.kpi_declined',
+        pending: 'offers.status_pending',
+        open: 'offers.status_open',
+        invoiced: 'offers.invoiced',
     };
-    const dots = {
-        paid: 'bg-emerald-500',
-        overdue: 'bg-rose-500',
-        sent: 'bg-indigo-500',
-        draft: 'bg-slate-400',
+    const translationKey = map[key];
+    if (translationKey) {
+        return t(translationKey);
+    }
+    return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function offerHref(offer) {
+    const key = String(offer.status_relation?.name || 'draft').toLowerCase();
+    if (key === 'draft') {
+        return `/offers/${offer.id}/edit`;
+    }
+    return `/offers/${offer.id}`;
+}
+
+function queryParams(filters, overrides = {}) {
+    const next = {
+        search: filters.search || undefined,
+        status_tab: filters.status_tab && filters.status_tab !== 'all' ? filters.status_tab : undefined,
+        ...overrides,
     };
+    Object.keys(next).forEach((key) => {
+        if (next[key] === undefined || next[key] === '') {
+            delete next[key];
+        }
+    });
+    return next;
+}
+
+function kpiBadgeClass(key) {
+    return statusBadgeClass(key);
+}
+
+function KpiCard({ kpiKey, label, value }) {
+    const badgeMod = kpiBadgeClass(kpiKey);
 
     return (
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${styles[tone] || styles.draft}`}>
-            {dots[tone] && <span className={`h-1.5 w-1.5 rounded-full ${dots[tone]}`} />}
-            {children}
-        </span>
+        <div className="offacto-dash-card lift offacto-dash-kpi offacto-quotes-kpi">
+            <span className="offacto-dash-kpi-corner" aria-hidden="true" />
+            <span className={`offacto-demo-badge ${badgeMod}`.trim()}>{label}</span>
+            <div className="offacto-dash-kpi-val">
+                <CountUpMoney value={value} />
+            </div>
+        </div>
     );
 }
 
-function StatIcon({ name }) {
-    const common = { className: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: '1.7' };
-    if (name === 'doc') {
-        return (
-            <svg {...common}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-            </svg>
-        );
-    }
-    if (name === 'alert') {
-        return (
-            <svg {...common}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.3 4.7 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.7a2 2 0 0 0-3.4 0z" />
-            </svg>
-        );
-    }
-    if (name === 'check') {
-        return (
-            <svg {...common}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
-            </svg>
-        );
-    }
-    return (
-        <svg {...common}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 2h16v20l-2-1-2 1-2-1-2 1-2-1-2 1-2-1-2 1z" />
-            <path d="M8 8h8M8 12h8M8 16h5" />
-        </svg>
-    );
-}
-
-export default function Index({ offers, stats = {} }) {
+export default function Index({ offers, stats = {}, filters = {} }) {
     const rows = offers?.data || [];
-    const total = offers?.total ?? rows.length;
-    const [filtersOpen, setFiltersOpen] = useState(false);
+    const statusTab = filters.status_tab || 'all';
+    const [search, setSearch] = useState(filters.search ?? '');
+    const skipSearchDebounce = useRef(true);
+
+    useEffect(() => {
+        setSearch(filters.search ?? '');
+    }, [filters.search]);
+
+    useEffect(() => {
+        if (skipSearchDebounce.current) {
+            skipSearchDebounce.current = false;
+            return undefined;
+        }
+        const id = window.setTimeout(() => {
+            router.get('/offers', queryParams(filters, { search: search || undefined }), {
+                preserveState: true,
+                replace: true,
+            });
+        }, 350);
+        return () => window.clearTimeout(id);
+    }, [search]);
+
+    function setStatusTab(tab) {
+        router.get('/offers', queryParams(filters, { status_tab: tab === 'all' ? undefined : tab }), {
+            preserveState: true,
+        });
+    }
+
+    const tabs = [
+        { id: 'all', label: t('offers.tab_all') },
+        { id: 'open', label: t('offers.tab_open') },
+        { id: 'accepted', label: t('offers.tab_accepted') },
+    ];
+
+    const kpis = [
+        { key: 'draft', label: t('offers.kpi_draft') },
+        { key: 'sent', label: t('offers.kpi_sent') },
+        { key: 'accepted', label: t('offers.accepted') },
+        { key: 'declined', label: t('offers.kpi_declined') },
+    ];
 
     return (
         <AuthenticatedLayout title={t('offers.title')}>
-            <div className="space-y-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="offacto-briefings offacto-dash offacto-quotes-page">
+                <header className="offacto-brief-edit-ph">
                     <div>
-                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{t('offers.title')}</h1>
-                        <p className="mt-1 text-sm text-slate-500">{t('offers.subtitle')}</p>
+                        <h1>{t('offers.title')}</h1>
+                        <p>{t('offers.subtitle')}</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                window.location.href = `/offers/export-zip${window.location.search}`;
-                            }}
-                            className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
-                        >
-                            {t('offers.export')}
-                        </button>
-                        <Link
-                            href="/offers/create"
-                            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
-                        >
-                            <Icon name="plus" className="h-4 w-4" />
-                            {t('offers.new')}
-                        </Link>
-                    </div>
+                    <Link href="/offers/create" className="offacto-btn-p">
+                        <Icon name="plus" />
+                        {t('offers.new')}
+                    </Link>
+                </header>
+
+                <div className="offacto-dash-grid-4 offacto-quotes-kpi-grid">
+                    {kpis.map((kpi) => (
+                        <KpiCard kpiKey={kpi.key} label={kpi.label} value={stats[kpi.key] ?? 0} />
+                    ))}
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <StatIcon name="doc" />
-                        </span>
-                        <div className="mt-4 text-sm text-slate-500">{t('offers.open')}</div>
-                        <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.open)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-5">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-rose-500">
-                            <StatIcon name="alert" />
-                        </span>
-                        <div className="mt-4 text-sm font-medium text-rose-600">{t('offers.expired')}</div>
-                        <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.expired)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <StatIcon name="check" />
-                        </span>
-                        <div className="mt-4 text-sm text-slate-500">{t('offers.accepted')}</div>
-                        <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.accepted)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <StatIcon name="invoice" />
-                        </span>
-                        <div className="mt-4 text-sm text-slate-500">{t('offers.invoiced')}</div>
-                        <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.invoiced)}</div>
-                    </div>
-                </div>
-
-                <section className="rounded-3xl border border-slate-200 bg-white">
-                    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-semibold text-slate-900">{t('offers.recent')}</h2>
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{t('common.total_count', { count: total })}</span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setFiltersOpen((value) => !value)}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                        >
-                            {t('common.filter')}
-                        </button>
-                    </div>
-
-                    {filtersOpen && (
-                        <div className="flex flex-wrap gap-2 border-t border-slate-100 px-5 py-3 sm:px-6">
-                            {[
-                                { label: t('common.all'), params: {} },
-                                { label: t('offers.this_year'), params: { date_filter: 'current_year' } },
-                                { label: t('offers.this_month'), params: { date_filter: 'current_month' } },
-                            ].map((item) => (
+                <div className="offacto-brief-table-card offacto-dash-card">
+                    <div className="offacto-quotes-toolbar">
+                        <div className="offacto-dash-tabs" role="tablist" aria-label={t('offers.title')}>
+                            {tabs.map((tab) => (
                                 <button
-                                    key={item.label}
+                                    key={tab.id}
                                     type="button"
-                                    onClick={() => router.get('/offers', item.params, { preserveState: true })}
-                                    className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                                    role="tab"
+                                    aria-selected={statusTab === tab.id}
+                                    className={statusTab === tab.id ? 'on' : ''}
+                                    onClick={() => setStatusTab(tab.id)}
                                 >
-                                    {item.label}
+                                    {tab.label}
                                 </button>
                             ))}
                         </div>
-                    )}
-
-                    <div className="space-y-3 border-t border-slate-100 p-4 md:hidden">
-                        {rows.map((offer) => {
-                            const status = statusMeta(offer);
-                            return (
-                                <div key={offer.id} className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
-                                    <Link href={`/offers/${offer.id}/edit`} className="font-semibold text-indigo-600">
-                                        {offer.offer_number}
-                                    </Link>
-                                    <div className="mt-1 text-sm text-slate-600">{offer.customer ? displayName(offer.customer) : t('offers.untitled')}</div>
-                                    <div className="mt-2 flex items-center justify-between">
-                                        <StatusPill tone={status.tone}>{status.label}</StatusPill>
-                                        <span className="font-serif text-slate-900">{money(offer.total)}</span>
-                                    </div>
-                                    <CopyLinkButton
-                                        url={offer.public_url}
-                                        labelKey="offers.copy_public_link"
-                                        className="mt-3 text-xs font-medium text-indigo-600"
-                                    />
-                                </div>
-                            );
-                        })}
+                        <div className="offacto-quotes-toolbar-r">
+                            <input
+                                type="search"
+                                className="offacto-brief-inp offacto-quotes-filter-inp"
+                                placeholder={t('offers.filter_customer')}
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                            />
+                            <button
+                                type="button"
+                                className="offacto-brief-btn-sm"
+                                onClick={() => {
+                                    window.location.href = `/offers/export-zip${window.location.search}`;
+                                }}
+                            >
+                                <Icon name="down" />
+                                {t('offers.export_zip')}
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="hidden overflow-x-auto md:block">
-                        <table className="w-full min-w-[820px] text-left text-sm">
+                    <div className="offacto-brief-table-wrap">
+                        <table className="offacto-brief-table">
                             <thead>
-                                <tr className="border-y border-slate-100 text-[11px] uppercase tracking-wide text-slate-400">
-                                    <th className="px-5 py-3 font-medium sm:px-6">{t('offers.number')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('dashboard.customer')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('offers.issue_date')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('offers.valid_until')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('common.type')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('common.status')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('common.actions')}</th>
-                                    <th className="px-5 py-3 text-right font-medium sm:px-6">{t('offers.amount')}</th>
+                                <tr>
+                                    <th>{t('offers.number')}</th>
+                                    <th>{t('offers.subject')}</th>
+                                    <th>{t('dashboard.customer')}</th>
+                                    <th>{t('offers.issue_date')}</th>
+                                    <th>{t('offers.views')}</th>
+                                    <th className="num">{t('offers.amount')}</th>
+                                    <th>{t('common.status')}</th>
+                                    <th className="num" aria-hidden="true" />
                                 </tr>
                             </thead>
-                            <tbody>
-                                {rows.length === 0 && (
+                            <tbody className="offacto-brief-table-click">
+                                {rows.length === 0 ? (
                                     <tr>
-                                        <td colSpan="8" className="px-6 py-10 text-center text-slate-400">
+                                        <td colSpan={8} className="offacto-brief-empty">
                                             {t('offers.empty')}
                                         </td>
                                     </tr>
-                                )}
-                                {rows.map((offer) => {
-                                    const status = statusMeta(offer);
-                                    const expiredValid = status.tone === 'overdue' && status.label === 'Expired';
-                                    return (
-                                        <tr key={offer.id} className="border-b border-slate-50 last:border-0">
-                                            <td className="px-5 py-4 sm:px-6">
-                                                <Link
-                                                    href={String(offer.status_relation?.name || 'draft').toLowerCase() === 'draft' ? `/offers/${offer.id}/edit` : `/offers/${offer.id}`}
-                                                    className="font-medium text-indigo-600 hover:text-indigo-700"
-                                                >
-                                                    {offer.offer_number}
-                                                </Link>
-                                            </td>
-                                            <td className="px-3 py-4">
-                                                <div className="flex items-center gap-2.5">
-                                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
-                                                        {initials(offer.customer)}
-                                                    </span>
-                                                    <span className="truncate font-medium text-slate-800">
-                                                        {offer.customer ? displayName(offer.customer) : t('offers.untitled')}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-4 text-slate-500">{prettyDate(offer.offer_date)}</td>
-                                            <td className={`px-3 py-4 ${expiredValid ? 'font-medium text-rose-600' : 'text-slate-500'}`}>
-                                                {prettyDate(offer.valid_until)}
-                                            </td>
-                                            <td className="px-3 py-4">
-                                                <StatusPill tone="draft">{t('offers.standard')}</StatusPill>
-                                            </td>
-                                            <td className="px-3 py-4">
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    <StatusPill tone={status.tone}>{status.label}</StatusPill>
-                                                    {offer.has_acceptance_artifact && (
-                                                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
-                                                            {t('offers.has_signature_badge')}
+                                ) : (
+                                    rows.map((offer) => {
+                                        const key = statusKey(offer);
+                                        const href = offerHref(offer);
+                                        const signed =
+                                            offer.has_acceptance_artifact ||
+                                            offer.accepted_at ||
+                                            offer.has_signature;
+
+                                        return (
+                                            <tr key={offer.id} onClick={() => router.visit(href)}>
+                                                <td>
+                                                    <b>{offer.offer_number}</b>
+                                                    {offer.from_briefing ? (
+                                                        <div className="offacto-quote-num-sub">
+                                                            <span className="offacto-demo-badge ai nd">
+                                                                <Icon name="brief" />
+                                                                {t('offers.from_briefing')}
+                                                            </span>
+                                                        </div>
+                                                    ) : null}
+                                                </td>
+                                                <td>{offerSubject(offer)}</td>
+                                                <td>{displayName(offer.customer)}</td>
+                                                <td>{prettyDateShort(offer.offer_date)}</td>
+                                                <td>
+                                                    {offer.view_count ? (
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <Icon name="eye" />
+                                                            {t('offers.views_count', { count: offer.view_count })}
                                                         </span>
+                                                    ) : (
+                                                        '—'
                                                     )}
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-4">
-                                                <CopyLinkButton
-                                                    url={offer.public_url}
-                                                    labelKey="offers.copy_public_link"
-                                                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
-                                                />
-                                            </td>
-                                            <td className="px-5 py-4 text-right font-serif text-slate-900 sm:px-6">
-                                                {money(offer.total)}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                                </td>
+                                                <td className="num">
+                                                    <b>{money(offer.total)}</b>
+                                                </td>
+                                                <td>
+                                                    <span className={`offacto-demo-badge ${statusBadgeClass(key)}`.trim()}>
+                                                        {statusLabel(key)}
+                                                    </span>
+                                                    {signed ? (
+                                                        <span className="offacto-quote-signed">✍ {t('offers.has_signature_badge')}</span>
+                                                    ) : null}
+                                                </td>
+                                                <td className="num">
+                                                    {key === 'accepted' ? (
+                                                        <Link
+                                                            href={`/invoices/from-offer/${offer.id}`}
+                                                            className="offacto-brief-btn-sm"
+                                                            onClick={(event) => event.stopPropagation()}
+                                                        >
+                                                            → {t('offers.to_invoice')}
+                                                        </Link>
+                                                    ) : null}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
                             </tbody>
                         </table>
                     </div>
-                    <div className="px-5 py-4 sm:px-6">
-                        <Pagination links={offers?.links || []} />
-                    </div>
-                </section>
+
+                    {offers?.last_page > 1 ? (
+                        <div className="offacto-brief-pagination">
+                            <Pagination links={offers.links} />
+                        </div>
+                    ) : null}
+                </div>
             </div>
         </AuthenticatedLayout>
     );

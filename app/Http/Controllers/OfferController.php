@@ -108,32 +108,21 @@ class OfferController extends Controller
             ->with(['statusRelation', 'items'])
             ->get();
 
-        // Calculate statistics from all offers
         $stats = [
-            'open' => $allOffers->filter(function($offer) {
-                return $offer->statusRelation && in_array(strtolower($offer->statusRelation->name), ['draft', 'sent', 'pending']);
-            })->sum(function($offer) {
-                return $offer->total;
-            }),
-            'accepted' => $allOffers->filter(function($offer) {
-                return $offer->statusRelation && strtolower($offer->statusRelation->name) === 'accepted';
-            })->sum(function($offer) {
-                return $offer->total;
-            }),
-            'invoiced' => $allOffers->filter(function($offer) {
-                return $offer->statusRelation && strtolower($offer->statusRelation->name) === 'invoiced';
-            })->sum(function($offer) {
-                return $offer->total;
-            }),
-            'expired' => $allOffers->filter(function ($offer) {
-                $name = strtolower((string) $offer->statusRelation?->name);
-                return $offer->valid_until
-                    && $offer->valid_until->isPast()
-                    && in_array($name, ['draft', 'sent', 'pending', 'open'], true);
-            })->sum(function ($offer) {
-                return $offer->total;
-            }),
+            'draft' => $this->sumOfferTotals($allOffers, ['draft']),
+            'sent' => $this->sumOfferTotals($allOffers, ['sent', 'pending', 'open', 'viewed']),
+            'accepted' => $this->sumOfferTotals($allOffers, ['accepted']),
+            'declined' => $this->sumOfferTotals($allOffers, ['declined', 'rejected']),
         ];
+
+        if ($request->filled('status_tab') && $request->status_tab !== 'all') {
+            $tab = $request->status_tab;
+            if ($tab === 'open') {
+                $query->whereHas('statusRelation', fn ($q) => $this->whereStatusNames($q, ['draft', 'sent', 'pending', 'open', 'viewed']));
+            } elseif ($tab === 'accepted') {
+                $query->whereHas('statusRelation', fn ($q) => $this->whereStatusNames($q, ['accepted']));
+            }
+        }
 
         $statuses = Status::forTable('offers')->pluck('name', 'id');
 
@@ -141,6 +130,7 @@ class OfferController extends Controller
         $offers = $query->latest()->paginate(15)->withQueryString();
         $offers->getCollection()->transform(function (Offer $offer) {
             $offer->setAttribute('public_url', $offer->publicUrl());
+            $offer->setAttribute('from_briefing', filled($offer->briefing_response_id));
 
             return OfferPresentation::forStaffList($offer);
         });
@@ -149,6 +139,10 @@ class OfferController extends Controller
             'offers' => $offers,
             'statuses' => $statuses,
             'stats' => $stats,
+            'filters' => [
+                'search' => $request->search,
+                'status_tab' => $request->get('status_tab', 'all'),
+            ],
         ]);
     }
 
@@ -908,5 +902,31 @@ class OfferController extends Controller
     private function generateOfferNumber(int $companyId): string
     {
         return app(NumberingSeriesService::class)->nextForCompany($companyId, 'offers');
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, Offer>  $offers
+     */
+    private function sumOfferTotals($offers, array $names): float
+    {
+        $names = array_map('strtolower', $names);
+
+        return (float) $offers->filter(function ($offer) use ($names) {
+            $name = strtolower((string) $offer->statusRelation?->name);
+            if ($name === 'viewed' && in_array('sent', $names, true)) {
+                return true;
+            }
+
+            return in_array($name, $names, true);
+        })->sum('total');
+    }
+
+    private function whereStatusNames($query, array $names): void
+    {
+        $query->where(function ($q) use ($names) {
+            foreach ($names as $name) {
+                $q->orWhereRaw('LOWER(name) = ?', [strtolower($name)]);
+            }
+        });
     }
 }
