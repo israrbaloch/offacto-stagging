@@ -41,7 +41,7 @@ function PlatformInfoBlock({ bodyKey }) {
         <div className="offacto-integration-platform-note">
             <Icon name="globe" />
             <p>{t(bodyKey)}</p>
-        </div>
+            </div>
     );
 }
 
@@ -118,13 +118,13 @@ function IntegrationDetailContent({
                     <div className="offacto-integration-drawer-links">
                         {links.postbode_tokens ? (
                             <a href={links.postbode_tokens} target="_blank" rel="noreferrer">
-                                {t('integrations.postbode_create_token')}
-                            </a>
+                                    {t('integrations.postbode_create_token')}
+                                </a>
                         ) : null}
                         {links.postbode_docs ? (
                             <a href={links.postbode_docs} target="_blank" rel="noreferrer">
-                                {t('integrations.postbode_api_docs')}
-                            </a>
+                                    {t('integrations.postbode_api_docs')}
+                                </a>
                         ) : null}
                     </div>
                     <div className="offacto-drawer-inrow">

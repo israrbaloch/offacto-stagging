@@ -88,6 +88,39 @@ export default function LineItemsEditor({
         setItems(items.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
     };
 
+    const linePrimaryLabel = (item) => {
+        const desc = String(item.description || '').trim();
+        if (desc) {
+            return desc;
+        }
+        return item.service_name || '';
+    };
+
+    const updateLinePrimaryLabel = (index, value) => {
+        if (readOnly) {
+            return;
+        }
+        const service = services.find((s) => {
+            const name = String(s.name || '');
+            return name && (name.includes(value) || value.includes(name));
+        });
+        setItems(
+            items.map((item, i) => {
+                if (i !== index) {
+                    return item;
+                }
+                const next = { ...item, description: value };
+                if (service) {
+                    next.service_id = service.id;
+                    next.service_name = service.name;
+                    next.price = Number(service.price || 0);
+                    return attachServiceFields(next, service);
+                }
+                return next;
+            }),
+        );
+    };
+
     const changeService = (index, serviceId) => {
         if (readOnly) {
             return;
@@ -120,8 +153,13 @@ export default function LineItemsEditor({
     const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
     const vat = subtotal * (Number(vatRate) / 100);
     const total = subtotal + vat;
-    const qtyHeader = quantityColumnLabel(items, services);
-    const priceHeader = priceColumnLabel(items, services);
+    const qtyHeaderLong = quantityColumnLabel(items, services);
+    const priceHeaderLong = priceColumnLabel(items, services);
+    const pricedLines = items.filter((item) => item.kind !== 'text');
+    const allHourly =
+        pricedLines.length > 0 && pricedLines.every((item) => lineIsHourly(item, services));
+    const qtyHeader = builder ? (allHourly ? 'Hours' : 'Qty') : qtyHeaderLong;
+    const priceHeader = builder ? 'Price' : priceHeaderLong;
 
     const addButtons = (
         <>
@@ -165,8 +203,16 @@ export default function LineItemsEditor({
         </>
     );
 
+    const toolbar =
+        !suppressToolbar && !readOnly ? (
+            <div className={builder ? 'offacto-quote-line-actions' : 'mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
+                <div className="flex flex-wrap gap-2">{addButtons}</div>
+            </div>
+        ) : null;
+
     return (
         <div className={builder ? 'offacto-quote-lines-editor' : undefined}>
+            {builder ? toolbar : null}
             <div className={builder ? 'offacto-quote-lines-scroll' : 'overflow-visible'}>
                 <table className={builder ? 'offacto-quote-lines' : 'w-full min-w-[720px] text-left text-sm'}>
                     <thead>
@@ -196,13 +242,13 @@ export default function LineItemsEditor({
                             const line = Number(item.quantity || 0) * Number(item.price || 0);
                             const isText = item.kind === 'text';
                             return (
-                                <tr key={index} className={builder ? undefined : 'border-b border-slate-100'}>
-                                    <td>
-                                        {!isText && !invoiceLines && (
-                                            <div className={builder ? 'offacto-quote-line-svc' : 'mb-2'}>
+                                <tr key={index} className={builder ? 'offacto-quote-line-row' : 'border-b border-slate-100'}>
+                                    <td {...(builder ? { 'data-label': 'Description' } : {})}>
+                                        {!isText && !invoiceLines && !builder && (
+                                            <div className="mb-2">
                                                 <SelectMenu
                                                     className={selectClass}
-                                                    variant={builder ? 'demo' : 'default'}
+                                                    variant="default"
                                                     value={item.service_id}
                                                     onChange={(e) => changeService(index, e.target.value)}
                                                     placeholder="Select a service"
@@ -212,14 +258,29 @@ export default function LineItemsEditor({
                                         )}
                                         <input
                                             className={inpClass}
-                                            list={invoiceLines && !isText && !readOnly ? 'offacto-invoice-svc-list' : undefined}
+                                            list={
+                                                !isText && !readOnly
+                                                    ? builder
+                                                        ? 'offacto-quote-svc-list'
+                                                        : invoiceLines
+                                                          ? 'offacto-invoice-svc-list'
+                                                          : undefined
+                                                    : undefined
+                                            }
                                             placeholder={isText ? 'Add a note for the client' : 'Describe this line'}
-                                            value={item.description || ''}
-                                            onChange={(e) => update(index, 'description', e.target.value)}
+                                            value={builder && !isText ? linePrimaryLabel(item) : item.description || ''}
+                                            onChange={(e) =>
+                                                builder && !isText
+                                                    ? updateLinePrimaryLabel(index, e.target.value)
+                                                    : update(index, 'description', e.target.value)
+                                            }
                                             readOnly={readOnly}
                                         />
                                     </td>
-                                    <td className={builder ? 'num' : 'py-3 pr-3 align-top'}>
+                                    <td
+                                        className={builder ? 'num' : 'py-3 pr-3 align-top'}
+                                        {...(builder ? { 'data-label': qtyHeader } : {})}
+                                    >
                                         {!isText && (
                                             <input
                                                 type="number"
@@ -233,7 +294,10 @@ export default function LineItemsEditor({
                                             />
                                         )}
                                     </td>
-                                    <td className={builder ? 'num' : 'py-3 pr-3 align-top'}>
+                                    <td
+                                        className={builder ? 'num' : 'py-3 pr-3 align-top'}
+                                        {...(builder ? { 'data-label': priceHeader } : {})}
+                                    >
                                         {!isText && (
                                             <input
                                                 type="number"
@@ -264,7 +328,10 @@ export default function LineItemsEditor({
                                             )}
                                         </td>
                                     ) : null}
-                                    <td className={builder ? 'num' : 'py-3 pr-3 align-top font-medium text-slate-800'}>
+                                    <td
+                                        className={builder ? 'num' : 'py-3 pr-3 align-top font-medium text-slate-800'}
+                                        {...(builder ? { 'data-label': 'Total' } : {})}
+                                    >
                                         {isText ? '—' : <b>{money(line)}</b>}
                                     </td>
                                     <td className={builder ? 'offacto-quote-lines-act' : 'py-3 align-top'}>
@@ -286,6 +353,14 @@ export default function LineItemsEditor({
                 </table>
             </div>
 
+            {builder && !readOnly ? (
+                <datalist id="offacto-quote-svc-list">
+                    {services.map((service) => (
+                        <option key={service.id} value={service.name} />
+                    ))}
+                </datalist>
+            ) : null}
+
             {invoiceLines ? (
                 <datalist id="offacto-invoice-svc-list">
                     {services.map((service) => (
@@ -294,11 +369,7 @@ export default function LineItemsEditor({
                 </datalist>
             ) : null}
 
-            {!suppressToolbar && !readOnly ? (
-                <div className={builder ? 'offacto-quote-line-actions' : 'mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
-                    <div className="flex flex-wrap gap-2">{addButtons}</div>
-                </div>
-            ) : null}
+            {!builder ? toolbar : null}
 
             {error && <p className={builder ? 'offacto-quote-hint' : 'mt-2 text-xs text-rose-600'}>{error}</p>}
 

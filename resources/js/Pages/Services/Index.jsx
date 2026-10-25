@@ -148,8 +148,8 @@ export default function Index({ services = [], filters = {}, statuses = {}, defa
                                         </div>
                                     </div>
                                 </button>
-                            );
-                        })}
+                                    );
+                                })}
                     </div>
                 )}
 

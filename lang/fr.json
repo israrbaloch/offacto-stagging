@@ -72,6 +72,7 @@
     "locale.nl": "Néerlandais",
     "locale.label": "Langue",
 
+    "topbar.menu": "Ouvrir le menu",
     "topbar.search": "Rechercher des factures, clients ou devis...",
     "topbar.notifications": "Notifications",
     "topbar.unread": ":count non lues",

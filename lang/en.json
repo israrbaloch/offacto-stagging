@@ -221,6 +221,7 @@
     "locale.nl": "Dutch",
     "locale.label": "Language",
 
+    "topbar.menu": "Open menu",
     "topbar.search": "Search invoices, customers, quotes…",
     "topbar.notifications": "Notifications",
     "topbar.unread": ":count unread",

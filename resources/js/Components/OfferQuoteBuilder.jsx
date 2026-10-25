@@ -1,5 +1,6 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { AuthDiamond } from '../Layouts/AuthSplitLayout';
 import CopyLinkButton from './CopyLinkButton';
@@ -177,6 +178,18 @@ export default function OfferQuoteBuilder({
         const timer = setTimeout(() => setAutosaveReady(true), 600);
         return () => clearTimeout(timer);
     }, [offer?.id]);
+
+    useEffect(() => {
+        if (!previewOpen) {
+            document.body.style.removeProperty('overflow');
+            return undefined;
+        }
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    }, [previewOpen]);
 
     useEffect(() => {
         if (!offer?.id || !autosaveReady) {
@@ -768,44 +781,64 @@ export default function OfferQuoteBuilder({
                     </div>
                 </div>
 
-                {previewOpen ? (
-                    <>
-                        <button type="button" className="offacto-brief-scrim on" aria-label={t('common.close')} onClick={() => setPreviewOpen(false)} />
-                        <div className="offacto-brief-modal offacto-quote-preview-modal on" role="dialog">
-                            <div className="offacto-brief-edit-card-h">
-                                <h3>{t('offers.preview_customer')}</h3>
-                                <button type="button" className="offacto-brief-btn-sm" onClick={() => setPreviewOpen(false)}>
-                                    <Icon name="x" />
-                                </button>
-                            </div>
-                            <div className="offacto-brief-edit-card-b">
-                                <div className="offacto-quote-preview-sheet">
-                                <div className="offacto-quote-preview-bar" style={{ background: brand }} />
-                                {blocks
-                                    .filter((b) => b.type === 'text')
-                                    .map((b) => (
-                                        <div key={b.clientKey} className="mb-4">
-                                            {b.content?.heading ? <h2 className="offacto-quote-preview-h">{b.content.heading}</h2> : null}
-                                            <p className="offacto-quote-hint">{b.content?.body}</p>
-                                        </div>
-                                    ))}
-                                <OfferDocumentPreview
-                                    template={normalizeInvoiceTemplate(activeCompany?.invoice_template)}
-                                    number={offer?.offer_number || nextOfferNumber}
-                                    date={form.data.offer_date}
-                                    validUntil={form.data.valid_until}
-                                    from={{ name: activeCompany?.company_name }}
-                                    to={{ name: selectedCustomer?.org_name || '' }}
-                                    items={items}
-                                    vatRate={vatRate}
-                                    theme={activeCompany?.theme}
-                                    logoUrl={activeCompany?.invoice_logo_url}
-                                />
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                ) : null}
+                {previewOpen && typeof document !== 'undefined'
+                    ? createPortal(
+                          <>
+                              <button
+                                  type="button"
+                                  className="offacto-brief-scrim on"
+                                  aria-label={t('common.close')}
+                                  onClick={() => setPreviewOpen(false)}
+                              />
+                              <div
+                                  className="offacto-brief-modal offacto-quote-preview-modal on"
+                                  role="dialog"
+                                  aria-modal="true"
+                                  aria-label={t('offers.preview_customer')}
+                              >
+                                  <div className="offacto-brief-edit-card-h">
+                                      <h3>{t('offers.preview_customer')}</h3>
+                                      <button
+                                          type="button"
+                                          className="offacto-brief-modal-close"
+                                          onClick={() => setPreviewOpen(false)}
+                                          aria-label={t('common.close')}
+                                      >
+                                          <Icon name="x" />
+                                      </button>
+                                  </div>
+                                  <div className="offacto-brief-modal-b offacto-quote-preview-modal-b">
+                                      <div className="offacto-quote-preview-sheet">
+                                          <div className="offacto-quote-preview-bar" style={{ background: brand }} />
+                                          {blocks
+                                              .filter((b) => b.type === 'text')
+                                              .map((b) => (
+                                                  <div key={b.clientKey} className="mb-4">
+                                                      {b.content?.heading ? (
+                                                          <h2 className="offacto-quote-preview-h">{b.content.heading}</h2>
+                                                      ) : null}
+                                                      <p className="offacto-quote-hint">{b.content?.body}</p>
+                                                  </div>
+                                              ))}
+                                          <OfferDocumentPreview
+                                              template={normalizeInvoiceTemplate(activeCompany?.invoice_template)}
+                                              number={offer?.offer_number || nextOfferNumber}
+                                              date={form.data.offer_date}
+                                              validUntil={form.data.valid_until}
+                                              from={{ name: activeCompany?.company_name }}
+                                              to={{ name: selectedCustomer?.org_name || '' }}
+                                              items={items}
+                                              vatRate={vatRate}
+                                              theme={activeCompany?.theme}
+                                              logoUrl={activeCompany?.invoice_logo_url}
+                                          />
+                                      </div>
+                                  </div>
+                              </div>
+                          </>,
+                          document.body,
+                      )
+                    : null}
 
                 <SendOfferModal
                     open={sendOpen}

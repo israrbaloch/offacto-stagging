@@ -41,7 +41,7 @@ export default function Public({ briefing, token, submitted = false, canSubmit =
             <Head title={briefing.title || 'Briefing'} />
             <FlashToaster />
 
-            {done ? (
+                {done ? (
                 <BriefingPhoneShell
                     layout="web"
                     companyName={briefing.company?.name}
@@ -108,16 +108,16 @@ export default function Public({ briefing, token, submitted = false, canSubmit =
                             <p className="offacto-brief-preview-only">{t('briefings.preview_only')}</p>
                         ) : null}
 
-                        <button
-                            type="submit"
+                            <button
+                                type="submit"
                             className="offacto-brief-phone-submit"
-                            disabled={!canSubmit || form.processing}
-                        >
-                            {form.processing ? t('briefings.submitting') : t('briefings.submit')}
-                        </button>
+                                disabled={!canSubmit || form.processing}
+                            >
+                                {form.processing ? t('briefings.submitting') : t('briefings.submit')}
+                            </button>
                     </BriefingPhoneShell>
-                </form>
-            )}
+                    </form>
+                )}
         </div>
     );
 }

@@ -40,5 +40,6 @@
             </div>
         @endif
         @inertia
+        <div id="offacto-toast-root" aria-live="polite"></div>
     </body>
 </html>

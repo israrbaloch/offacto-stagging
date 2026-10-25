@@ -36,21 +36,31 @@ function ToastIcon({ variant }) {
 
 const TOAST_ANIM_MS = 250;
 
+function toastLayoutClass(message) {
+    const text = String(message || '').trim();
+    if (text.length > 72 || text.includes('\n')) {
+        return ' offacto-toast--multiline';
+    }
+    return '';
+}
+
 function ToastStack({ item, visible }) {
     if (!item || typeof document === 'undefined') {
         return null;
     }
 
+    const host = document.getElementById('offacto-toast-root') || document.body;
+
     return createPortal(
         <div
-            className={`offacto-toast${visible ? ' is-visible' : ''}`}
+            className={`offacto-toast${toastLayoutClass(item.message)}${visible ? ' is-visible' : ''}`}
             style={{ backgroundColor: TOAST_BG }}
             role={item.variant === 'error' ? 'alert' : 'status'}
         >
             <ToastIcon variant={item.variant} />
             <span className="offacto-toast__message">{item.message}</span>
         </div>,
-        document.body,
+        host,
     );
 }
 
@@ -119,6 +129,8 @@ export function UiProvider({ children }) {
             if (!message) {
                 return;
             }
+            const text = String(message).trim();
+            const showMs = duration > 0 && duration !== 2400 ? duration : text.length > 72 ? 5200 : 2400;
             const id = ++toastSeq;
             if (toastTimerRef.current) {
                 clearTimeout(toastTimerRef.current);
@@ -144,10 +156,10 @@ export function UiProvider({ children }) {
                 toastVisibleRef.current = true;
             }
 
-            if (duration > 0) {
+            if (showMs > 0) {
                 toastTimerRef.current = setTimeout(() => {
                     dismissToast(id);
-                }, duration);
+                }, showMs);
             }
         },
         [dismissToast],

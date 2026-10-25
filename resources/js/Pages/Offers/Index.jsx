@@ -182,8 +182,8 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                     </div>
                     <Link href="/offers/create" className="offacto-btn-p">
                         <Icon name="plus" />
-                        {t('offers.new')}
-                    </Link>
+                            {t('offers.new')}
+                        </Link>
                 </header>
 
                 <div className="offacto-dash-grid-4 offacto-quotes-kpi-grid">
@@ -226,7 +226,7 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                                 <Icon name="down" />
                                 {t('offers.export_zip')}
                             </button>
-                        </div>
+                                </div>
                     </div>
 
                     <div className="offacto-brief-table-wrap">
@@ -259,7 +259,7 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                                             offer.accepted_at ||
                                             offer.has_signature;
 
-                                        return (
+                                    return (
                                             <tr key={offer.id} onClick={() => router.visit(href)}>
                                                 <td>
                                                     <b>{offer.offer_number}</b>
@@ -268,10 +268,10 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                                                             <span className="offacto-demo-badge ai nd">
                                                                 <Icon name="brief" />
                                                                 {t('offers.from_briefing')}
-                                                            </span>
-                                                        </div>
+                                                    </span>
+                                                </div>
                                                     ) : null}
-                                                </td>
+                                            </td>
                                                 <td>{offerSubject(offer)}</td>
                                                 <td>{displayName(offer.customer)}</td>
                                                 <td>{prettyDateShort(offer.offer_date)}</td>
@@ -287,7 +287,7 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                                                 </td>
                                                 <td className="num">
                                                     <b>{money(offer.total)}</b>
-                                                </td>
+                                            </td>
                                                 <td>
                                                     <span className={`offacto-demo-badge ${statusBadgeClass(key)}`.trim()}>
                                                         {statusLabel(key)}
@@ -295,7 +295,7 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                                                     {signed ? (
                                                         <span className="offacto-quote-signed">✍ {t('offers.has_signature_badge')}</span>
                                                     ) : null}
-                                                </td>
+                                            </td>
                                                 <td className="num">
                                                     {key === 'accepted' ? (
                                                         <Link
@@ -306,9 +306,9 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                                                             → {t('offers.to_invoice')}
                                                         </Link>
                                                     ) : null}
-                                                </td>
-                                            </tr>
-                                        );
+                                            </td>
+                                        </tr>
+                                    );
                                     })
                                 )}
                             </tbody>
@@ -320,7 +320,7 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                             <Pagination links={offers.links} />
                         </div>
                     ) : null}
-                </div>
+                    </div>
             </div>
         </AuthenticatedLayout>
     );

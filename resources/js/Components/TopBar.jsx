@@ -1,9 +1,10 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { t } from '../lib/i18n';
 import Icon from './Icon';
 import LocaleSelect from './LocaleSelect';
 import TopBarNotifications from './TopBarNotifications';
+import TopBarSearchOverlay from './TopBarSearchOverlay';
 import { applyTheme } from '../lib/applyTheme';
 import { COMPANY_PLAN_SETTINGS_PATH } from '../lib/companyPlanSettingsPath';
 
@@ -16,7 +17,7 @@ function initials(name = '') {
         .join('') || 'U';
 }
 
-export default function TopBar() {
+export default function TopBar({ onMenuClick }) {
     const { auth, activeCompany, appearance, workspaceShell } = usePage().props;
     const user = auth?.user;
     const notifications = workspaceShell?.notifications ?? [];
@@ -25,9 +26,25 @@ export default function TopBar() {
     const [profileOpen, setProfileOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
     const profileRef = useRef(null);
     const bellRef = useRef(null);
     const searchRef = useRef(null);
+
+    const openSearch = useCallback(() => {
+        setProfileOpen(false);
+        setNotificationsOpen(false);
+        setSearchOverlayOpen(true);
+    }, []);
+
+    const submitSearch = (event) => {
+        event.preventDefault();
+        if (!searchQuery.trim()) {
+            return;
+        }
+        setSearchOverlayOpen(false);
+        router.get('/search', { q: searchQuery.trim() });
+    };
 
     useEffect(() => {
         function onClick(event) {
@@ -44,12 +61,16 @@ export default function TopBar() {
         const onKey = (event) => {
             if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
                 event.preventDefault();
-                searchRef.current?.focus();
+                if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
+                    openSearch();
+                } else {
+                    searchRef.current?.focus();
+                }
             }
         };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
-    }, []);
+    }, [openSearch]);
 
     const trialBadge = (() => {
         if (!activeCompany || auth?.user?.is_admin) return null;
@@ -77,14 +98,26 @@ export default function TopBar() {
     return (
         <div className="offacto-topbar-shell">
             <header className="offacto-topbar">
-                <form
-                    className="offacto-topbar-search"
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        if (!searchQuery.trim()) return;
-                        router.get('/search', { q: searchQuery.trim() });
+                <button
+                    type="button"
+                    className="offacto-topbar-icobtn offacto-topbar-menu lg:hidden"
+                    aria-label={t('topbar.menu')}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onMenuClick?.();
                     }}
                 >
+                    <Icon name="menu" />
+                </button>
+                <button
+                    type="button"
+                    className="offacto-topbar-icobtn offacto-topbar-search-trigger"
+                    aria-label={t('topbar.search')}
+                    onClick={openSearch}
+                >
+                    <Icon name="search" />
+                </button>
+                <form className="offacto-topbar-search offacto-topbar-search-desktop" onSubmit={submitSearch}>
                     <Icon name="search" />
                     <input
                         ref={searchRef}
@@ -194,6 +227,12 @@ export default function TopBar() {
                     </div>
                 </div>
             </header>
+            <TopBarSearchOverlay
+                open={searchOverlayOpen}
+                query={searchQuery}
+                onQueryChange={setSearchQuery}
+                onClose={() => setSearchOverlayOpen(false)}
+            />
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from './Icon';
 import { SendChannelBadgeIcon } from './SendModalUi';
 import { t } from '../lib/i18n';
@@ -154,7 +155,7 @@ export default function SendOfferModal({
     const toEmail = defaultEmail || '—';
     const attachmentsLabel = t('offers.send_attachments_auto').replace(':count', String(attachmentCount));
 
-    return (
+    const modal = (
         <>
             <button type="button" className="offacto-brief-scrim on" aria-label={t('common.close')} onClick={onClose} />
             <div
@@ -223,4 +224,6 @@ export default function SendOfferModal({
             </div>
         </>
     );
+
+    return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal;
 }

@@ -1,5 +1,5 @@
-import { router, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { router, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 import Icon from '../../../Components/Icon';
 import CompanyIntegrationsPanel from '../../../Components/CompanyIntegrationsPanel';
 import CompanySettingsBrandingPanel from '../../../Components/CompanySettingsBrandingPanel';
@@ -120,7 +120,10 @@ export default function CompanySettingsIndex({
     plan = {},
     settingsBasePath = '/company/settings',
 }) {
-    const [section, setSection] = useState(initialSection);
+    const pageSection = usePage().props.section ?? initialSection ?? 'company';
+    const [pendingSection, setPendingSection] = useState(null);
+    const section = pendingSection ?? pageSection;
+    const setnavRef = useRef(null);
     const [logoPreview, setLogoPreview] = useState(invoiceLogoUrl || null);
     const [streetLine, setStreetLine] = useState(() => formatStreetLine(company?.street, company?.house));
     const [postalCityLine, setPostalCityLine] = useState(() => formatPostalCity(company?.postal_code, company?.city));
@@ -128,8 +131,13 @@ export default function CompanySettingsIndex({
     const { toast } = useUi();
 
     useEffect(() => {
-        setSection(initialSection);
-    }, [initialSection]);
+        setPendingSection(null);
+    }, [pageSection]);
+
+    useEffect(() => {
+        const active = setnavRef.current?.querySelector('button.on');
+        active?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }, [section]);
 
     useEffect(() => {
         if (invoiceLogoUrl) {
@@ -152,8 +160,15 @@ export default function CompanySettingsIndex({
     }, [company?.id, company?.street, company?.house, company?.postal_code, company?.city]);
 
     const goSection = (id) => {
-        setSection(id);
-        router.get('/company/settings', { section: id }, { preserveState: true, preserveScroll: true, replace: true });
+        setPendingSection(id);
+        router.get(
+            settingsBasePath,
+            { section: id },
+            {
+                preserveScroll: true,
+                replace: true,
+            },
+        );
     };
 
     const companyForm = useForm({
@@ -335,7 +350,7 @@ export default function CompanySettingsIndex({
                 </header>
 
                 <div className="offacto-settings-grid">
-                    <nav className="offacto-dash-card offacto-setnav" aria-label={t('company_settings.title')}>
+                    <nav ref={setnavRef} className="offacto-dash-card offacto-setnav" aria-label={t('company_settings.title')}>
                         {NAV.map((item) => (
                             <button
                                 key={item.id}
@@ -348,6 +363,7 @@ export default function CompanySettingsIndex({
                                     goSection(item.id);
                                 }}
                                 className={section === item.id ? 'on' : ''}
+                                aria-current={section === item.id ? 'page' : undefined}
                             >
                                 <Icon name={item.icon} />
                                 {t(item.labelKey)}

@@ -196,9 +196,9 @@ export default function Edit({ briefing, shareUrl }) {
                         >
                             <Icon name="spark" />
                             {t('briefings.simulate_response')}
-                        </button>
-                    </div>
+                    </button>
                 </div>
+            </div>
 
                 <BriefingShareModal
                     open={shareOpen}
@@ -222,13 +222,13 @@ export default function Edit({ briefing, shareUrl }) {
                                             value={form.data.title}
                                             onChange={(e) => form.setData('title', e.target.value)}
                                             onBlur={() => save()}
-                                        />
-                                    </label>
+                            />
+                        </label>
                                     <label>
                                         <span className="offacto-brief-edit-lbl">{t('briefings.base_price')}</span>
                                         <div className="offacto-brief-price offacto-brief-price--full">
                                             <span>€</span>
-                                            <input
+                            <input
                                                 type="number"
                                                 min="0"
                                                 step="0.01"
@@ -237,8 +237,8 @@ export default function Edit({ briefing, shareUrl }) {
                                                 onBlur={() => save()}
                                             />
                                         </div>
-                                    </label>
-                                </div>
+                        </label>
+                    </div>
                                 <div className="offacto-brief-edit-fg2">
                                     <label>
                                         <span className="offacto-brief-edit-lbl">{t('briefings.quote_valid_days')}</span>
@@ -304,12 +304,12 @@ export default function Edit({ briefing, shareUrl }) {
                                             persist({ require_nda_before_start });
                                         }}
                                     />
-                                </div>
+                        </div>
                                 {form.data.status !== 'active' && (
                                     <div className="offacto-brief-row">
                                         <span>{t('briefings.publish')}</span>
-                                        <button
-                                            type="button"
+                                <button
+                                    type="button"
                                             className="offacto-brief-btn-sm"
                                             onClick={() => save({ status: 'active' })}
                                         >
@@ -369,34 +369,34 @@ export default function Edit({ briefing, shareUrl }) {
                                                     />
                                                 </div>
                                             )}
-                                            {hasChoices(question.type) && (
+                                {hasChoices(question.type) && (
                                                 <div className="mt-2">
-                                                    {(question.options || []).map((option, optionIndex) => (
+                                        {(question.options || []).map((option, optionIndex) => (
                                                         <div key={optionIndex} className="offacto-brief-opt">
                                                             <span style={{ color: 'var(--dash-muted)' }}>○</span>
-                                                            <input
+                                                <input
                                                                 className="offacto-brief-inp"
-                                                                placeholder={t('briefings.choice_label')}
-                                                                value={option.label}
-                                                                onChange={(e) => {
-                                                                    const options = [...question.options];
-                                                                    options[optionIndex] = { ...options[optionIndex], label: e.target.value };
-                                                                    updateQuestion(index, 'options', options);
-                                                                }}
+                                                    placeholder={t('briefings.choice_label')}
+                                                    value={option.label}
+                                                    onChange={(e) => {
+                                                        const options = [...question.options];
+                                                        options[optionIndex] = { ...options[optionIndex], label: e.target.value };
+                                                        updateQuestion(index, 'options', options);
+                                                    }}
                                                                 onBlur={() => save()}
-                                                            />
+                                                />
                                                             <div className="offacto-brief-price">
                                                                 <span>+€</span>
-                                                                <input
-                                                                    type="number"
-                                                                    min="0"
-                                                                    step="0.01"
-                                                                    value={option.price}
-                                                                    onChange={(e) => {
-                                                                        const options = [...question.options];
-                                                                        options[optionIndex] = { ...options[optionIndex], price: e.target.value };
-                                                                        updateQuestion(index, 'options', options);
-                                                                    }}
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    value={option.price}
+                                                    onChange={(e) => {
+                                                        const options = [...question.options];
+                                                        options[optionIndex] = { ...options[optionIndex], price: e.target.value };
+                                                        updateQuestion(index, 'options', options);
+                                                    }}
                                                                     onBlur={() => save()}
                                                                 />
                                                             </div>
@@ -442,8 +442,8 @@ export default function Edit({ briefing, shareUrl }) {
                                                             value={question.price_override}
                                                             onChange={(e) => updateQuestion(index, 'price_override', e.target.value)}
                                                             onBlur={() => save()}
-                                                        />
-                                                    </div>
+                                                />
+                                            </div>
                                                 </div>
                                             )}
                                             {question.type === 'date' && (

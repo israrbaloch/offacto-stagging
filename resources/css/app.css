@@ -503,13 +503,8 @@ html.dark .offacto-settings-plan-val span {
     color: var(--offacto-muted);
 }
 
-html.dark .offacto-setnav button {
+html.dark .offacto-setnav button:not(.on) {
     color: #c8cef0;
-}
-
-html.dark .offacto-setnav button.on {
-    background: rgb(255 255 255 / 0.12);
-    color: #fff;
 }
 
 html.dark .offacto-assistant-msg.is-assistant {
@@ -1658,7 +1653,6 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 }
 
 .offacto-topbar-search {
-    display: flex;
     flex: 1;
     align-items: center;
     gap: 8px;
@@ -1668,6 +1662,24 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     border-radius: 999px;
     background: rgb(255 255 255 / 0.08);
     color: #c8cef0;
+}
+
+.offacto-topbar-search-desktop {
+    display: none;
+}
+
+.offacto-topbar-search-trigger {
+    display: grid;
+}
+
+@media (min-width: 1024px) {
+    .offacto-topbar-search-desktop {
+        display: flex;
+    }
+
+    .offacto-topbar-search-trigger {
+        display: none;
+    }
 }
 
 .offacto-topbar-search svg {
@@ -1973,6 +1985,28 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     color: #48537f;
 }
 
+.offacto-sidebar-scrim {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgb(14 18 80 / 0.45);
+    cursor: pointer;
+}
+
+.offacto-sidebar-scrim.on {
+    display: block;
+}
+
+@media (min-width: 1024px) {
+    .offacto-sidebar-scrim {
+        display: none !important;
+    }
+}
+
 @media (max-width: 1023px) {
     .offacto-topbar-shell {
         padding: 12px 12px 0;
@@ -1983,9 +2017,132 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
         padding: 10px 16px 28px;
     }
 
+    .offacto-demo-page-surface .offacto-page {
+        padding: 12px 16px 28px;
+        max-width: 100%;
+        overflow-x: clip;
+        box-sizing: border-box;
+    }
+
     .offacto-topbar-search .offacto-topbar-kbd {
         display: none;
     }
+
+    .offacto-sidebar {
+        box-shadow: 10px 0 40px rgb(0 0 0 / 0.22);
+    }
+
+    .offacto-topbar {
+        height: 56px;
+        padding: 0 8px 0 10px;
+        gap: 8px;
+    }
+
+    .offacto-topbar-actions {
+        gap: 6px;
+    }
+
+    .offacto-topbar-lang button {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+}
+
+/* Full-page search (mobile / tablet) */
+.offacto-search-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+}
+
+.offacto-search-layer-scrim {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgb(14 18 80 / 0.55);
+    cursor: pointer;
+}
+
+.offacto-search-layer-panel {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    padding: max(12px, env(safe-area-inset-top, 0px)) 16px 20px;
+    background: linear-gradient(180deg, #0e1250 0%, #1a2268 100%);
+    box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+}
+
+.offacto-search-layer-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px 10px 14px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.1);
+    border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.offacto-search-layer-icon {
+    display: grid;
+    place-items: center;
+    color: #c8cef0;
+    flex-shrink: 0;
+}
+
+.offacto-search-layer-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.offacto-search-layer-form input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 400;
+    color: #fff;
+}
+
+.offacto-search-layer-form input::placeholder {
+    color: #a1a9dd;
+}
+
+.offacto-search-layer-close {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.1);
+    color: #c8cef0;
+    cursor: pointer;
+}
+
+.offacto-search-layer-close:hover {
+    background: rgb(255 255 255 / 0.16);
+    color: #fff;
+}
+
+.offacto-search-layer-close svg {
+    width: 18px;
+    height: 18px;
+}
+
+html.dark .offacto-search-layer-scrim {
+    background: rgb(0 0 0 / 0.62);
+}
+
+html.dark .offacto-search-layer-panel {
+    background: linear-gradient(180deg, #0f1330 0%, #171c42 100%);
 }
 
 /* Dashboard (offacto-app-demo.html v6 dashboard) */
@@ -4515,6 +4672,79 @@ html.dark .auth-google-btn {
     transform: translate(-50%, 0);
 }
 
+.offacto-toast--multiline {
+    border-radius: 14px;
+    align-items: flex-start;
+}
+
+.offacto-toast--multiline .offacto-toast__icon {
+    margin-top: 2px;
+}
+
+.offacto-toast--multiline .offacto-toast__message {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+#offacto-toast-root {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    pointer-events: none;
+}
+
+#offacto-toast-root .offacto-toast {
+    z-index: 1;
+}
+
+@media (max-width: 860px) {
+    .offacto-toast {
+        bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        padding: 12px 14px;
+        font-size: 13.5px;
+        line-height: 1.4;
+    }
+
+    .offacto-toast:not(.offacto-toast--multiline) {
+        left: 50%;
+        right: auto;
+        width: max-content;
+        max-width: calc(100% - 24px);
+        transform: translate(-50%, 24px);
+        border-radius: 999px;
+        align-items: center;
+    }
+
+    .offacto-toast:not(.offacto-toast--multiline).is-visible {
+        transform: translate(-50%, 0);
+    }
+
+    .offacto-toast--multiline {
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-width: none;
+        transform: translateY(24px);
+        border-radius: 14px;
+        align-items: flex-start;
+    }
+
+    .offacto-toast--multiline.is-visible {
+        transform: translateY(0);
+    }
+
+    .offacto-toast--multiline .offacto-toast__icon {
+        margin-top: 2px;
+    }
+
+    .offacto-toast--multiline .offacto-toast__message {
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+    }
+}
+
 html.dark .offacto-toast {
     background: #0e1250;
     background-color: #0e1250 !important;
@@ -4816,6 +5046,7 @@ html.dark .auth-doc-note {
 .offacto-demo-page-surface {
     background: #c9d7f2 !important;
     color: #0e1250;
+    overflow-x: clip;
 }
 
 html.dark .offacto-demo-page-surface {
@@ -4834,9 +5065,13 @@ html.dark .offacto-demo-page-surface {
     --qb-aside: var(--qb-card);
     --qb-canvas: var(--qb-panel);
     width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
     background: var(--qb-bg);
     color: var(--qb-navy);
     padding-bottom: 48px;
+    container-type: inline-size;
+    container-name: quote-builder;
 }
 
 .offacto-quote-builder-page.offacto-briefings {
@@ -5031,13 +5266,216 @@ html.dark .offacto-demo-page-surface {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 860px) {
+    .offacto-quote-builder-page {
+        padding-bottom: 32px;
+    }
+
+    .offacto-quote-builder-page .offacto-brief-edit-ph {
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .offacto-quote-builder-page .offacto-brief-edit-ph h1 {
+        font-size: 22px;
+        line-height: 1.2;
+    }
+
+    .offacto-quote-builder-page .offacto-brief-edit-acts {
+        width: 100%;
+    }
+
     .offacto-quote-builder {
         grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .offacto-quote-bset {
+        grid-column: auto;
     }
 
     .offacto-quote-palette {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .offacto-quote-palette .offacto-quote-hint {
+        grid-column: 1 / -1;
+    }
+
+    .offacto-quote-canvas {
+        min-height: 320px;
+        padding: 16px 12px;
+    }
+
+    .offacto-quote-canvas-head,
+    .offacto-quote-canvas-head-demo {
+        padding-left: 0;
+    }
+
+    .offacto-quote-blk {
+        padding: 14px 12px 14px 36px;
+    }
+
+    .offacto-quote-blk .offacto-quote-blk-tools {
+        display: flex;
+    }
+
+    .offacto-quote-builder-page .offacto-brief-edit-card,
+    .offacto-quote-builder-page .offacto-quote-canvas-card,
+    .offacto-quote-builder-page .offacto-quote-canvas,
+    .offacto-quote-builder-page .offacto-quote-blk {
+        max-width: 100%;
+        overflow: visible;
+    }
+
+    .offacto-quote-lines-editor {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines-scroll {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: visible;
+        box-shadow: none;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines {
+        table-layout: fixed;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines th,
+    .offacto-quote-lines-editor .offacto-quote-lines td {
+        padding: 6px 4px;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines th:first-child,
+    .offacto-quote-lines-editor .offacto-quote-lines td:first-child {
+        width: 46%;
+        word-break: break-word;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines th.num,
+    .offacto-quote-lines-editor .offacto-quote-lines td.num {
+        width: 17%;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines-act {
+        width: 24px;
+        padding: 0 !important;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-line-inp {
+        padding: 6px 7px;
+        font-size: 12px;
+        border-radius: 10px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .offacto-quote-lines-editor td.num .offacto-quote-line-inp {
+        text-align: right;
+        padding-inline: 4px;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-line-x {
+        padding: 4px;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .offacto-quote-line-actions {
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+
+    .offacto-quote-line-add {
+        min-height: 40px;
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+
+    .offacto-quote-builder-page .offacto-brief-edit-acts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-start;
+    }
+
+    .offacto-quote-builder-page .offacto-brief-edit-acts .offacto-brief-btn {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0;
+        justify-content: center;
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .offacto-quote-builder-page .offacto-brief-edit-acts .offacto-btn-p {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
+
+    .offacto-quote-pal {
+        min-height: 44px;
+        align-items: center;
+    }
+
+    .offacto-quote-tot {
+        width: 100%;
+        max-width: min(320px, 100%);
+        margin-left: auto;
+        margin-right: 0;
+    }
+
+    .offacto-quote-cta-deco {
+        display: none;
+    }
+
+    .offacto-quote-ce-heading,
+    .offacto-quote-blk .offacto-brief-inp,
+    .offacto-quote-blk textarea.offacto-brief-inp {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .offacto-quote-dz-end {
+        margin-inline: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+@container quote-builder (max-width: 760px) {
+    .offacto-quote-builder-page .offacto-brief-edit-acts {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 520px) {
+    .offacto-quote-palette {
+        gap: 6px;
+        padding: 10px;
+    }
+
+    .offacto-quote-pal {
+        padding: 10px;
+        font-size: 12px;
+    }
+
+    .offacto-quote-preview-modal.offacto-brief-modal {
+        border-radius: 18px;
     }
 }
 
@@ -5200,6 +5638,11 @@ html.dark .offacto-demo-page-surface {
 .offacto-quote-blk-tools svg {
     width: 14px;
     height: 14px;
+}
+
+.offacto-quote-blk .offacto-brief-inp,
+.offacto-quote-blk textarea.offacto-brief-inp {
+    word-break: break-word;
 }
 
 .offacto-quote-blk-ttl {
@@ -5561,6 +6004,67 @@ html.dark .offacto-demo-page-surface {
     width: min(720px, calc(100% - 32px));
 }
 
+.offacto-quote-preview-modal-b {
+    padding: 16px 18px 20px;
+}
+
+.offacto-quote-preview-modal .offacto-quote-preview-sheet {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.offacto-quote-preview-modal .offacto-demo-paper,
+.offacto-quote-preview-modal .offacto-invoice-paper {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.offacto-quote-preview-modal .offacto-demo-paper {
+    padding: 16px;
+}
+
+.offacto-quote-preview-modal .offacto-demo-paper .row {
+    flex-wrap: wrap;
+}
+
+.offacto-quote-preview-modal .offacto-invoice-paper-inner {
+    max-height: none;
+    overflow: visible;
+}
+
+.offacto-brief-modal.offacto-quote-preview-modal,
+.offacto-brief-modal.offacto-send-modal {
+    z-index: 80;
+}
+
+.offacto-brief-scrim.on {
+    z-index: 79;
+}
+
+@media (max-width: 640px) {
+    .offacto-quote-preview-modal.offacto-brief-modal,
+    .offacto-quote-preview-modal.offacto-brief-modal.on {
+        left: 12px;
+        right: 12px;
+        top: max(10px, env(safe-area-inset-top, 0px));
+        bottom: max(10px, env(safe-area-inset-bottom, 0px));
+        width: auto;
+        max-height: none;
+        transform: none;
+    }
+
+    .offacto-send-modal.offacto-brief-modal,
+    .offacto-send-modal.offacto-brief-modal.on {
+        left: 12px;
+        right: 12px;
+        top: max(10px, env(safe-area-inset-top, 0px));
+        bottom: max(10px, env(safe-area-inset-bottom, 0px));
+        width: auto;
+        max-height: none;
+        transform: none;
+    }
+}
+
 .offacto-quote-preview-bar {
     height: 6px;
     border-radius: 6px;
@@ -5575,10 +6079,18 @@ html.dark .offacto-demo-page-surface {
 
 .offacto-quote-lines-editor {
     margin-top: 2px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.offacto-quote-lines-wrap {
+    max-width: 100%;
+    min-width: 0;
 }
 
 .offacto-quote-lines-scroll {
     overflow-x: auto;
+    max-width: 100%;
 }
 
 .offacto-quote-lines {
@@ -5666,6 +6178,7 @@ html.dark .offacto-demo-page-surface {
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 12px;
+    max-width: 100%;
 }
 
 .offacto-quote-line-add {
@@ -6482,6 +6995,78 @@ html.dark .offacto-demo-page-surface {
 }
 
 /* Customers index — offacto-app-demo.html klanten */
+/* Customers index — demo klanten() toolbar (tabs + Import CSV) */
+.offacto-customers-page .offacto-customers-toolbar {
+    align-items: center;
+}
+
+.offacto-customers-page .offacto-customers-toolbar-tabs {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.offacto-customers-page .offacto-customers-type-tabs {
+    max-width: 100%;
+}
+
+.offacto-customers-page .offacto-customers-toolbar-actions {
+    flex-shrink: 0;
+}
+
+.offacto-customers-page .offacto-customers-search-inp {
+    width: min(220px, 42vw);
+}
+
+@media (max-width: 860px) {
+    .offacto-customers-page .offacto-customers-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .offacto-customers-page .offacto-customers-toolbar-tabs {
+        width: 100%;
+    }
+
+    .offacto-customers-page .offacto-customers-type-tabs {
+        display: flex;
+        width: 100%;
+        flex-wrap: nowrap;
+        justify-content: stretch;
+        gap: 3px;
+        padding: 4px;
+        box-sizing: border-box;
+    }
+
+    .offacto-customers-page .offacto-customers-type-tabs button {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 7px 8px;
+        font-size: 12px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .offacto-customers-page .offacto-customers-toolbar-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .offacto-customers-page .offacto-customers-toolbar-actions .offacto-brief-btn-sm {
+        order: 1;
+        align-self: flex-start;
+    }
+
+    .offacto-customers-page .offacto-customers-search-inp {
+        order: 2;
+        width: 100%;
+    }
+}
+
 .offacto-customers-page .offacto-customers-kpi.offacto-dash-card.lift:hover {
     background: #6b59dc;
     box-shadow: 0 18px 40px rgb(14 18 80 / 0.15);
@@ -7855,6 +8440,34 @@ html.dark .offacto-demo-page-surface {
 @media (max-width: 900px) {
     .offacto-settings-grid {
         grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .offacto-settings-page .offacto-setnav {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 4px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        position: static;
+        top: auto;
+        padding: 8px 10px;
+        margin-inline: 0;
+    }
+
+    .offacto-settings-page .offacto-setnav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .offacto-settings-page .offacto-setnav button {
+        flex: 0 0 auto;
+        width: auto;
+        white-space: nowrap;
+        padding: 10px 14px;
     }
 }
 
@@ -7889,18 +8502,32 @@ html.dark .offacto-demo-page-surface {
     flex-shrink: 0;
 }
 
-.offacto-setnav button:hover {
+.offacto-setnav button:not(.on):hover {
     color: var(--dash-navy);
 }
 
-.offacto-setnav button.on {
-    background: #0e1250;
+html.dark .offacto-setnav button:not(.on):hover {
     color: #fff;
+}
+
+.offacto-setnav button.on,
+html.dark .offacto-setnav button.on {
+    background: #0e1250 !important;
+    color: #fff !important;
     font-weight: 600;
 }
 
-.offacto-setnav button.on svg {
-    color: #9d8df1;
+.offacto-setnav button.on:hover,
+.offacto-setnav button.on:focus-visible,
+html.dark .offacto-setnav button.on:hover,
+html.dark .offacto-setnav button.on:focus-visible {
+    background: #0e1250 !important;
+    color: #fff !important;
+}
+
+.offacto-setnav button.on svg,
+html.dark .offacto-setnav button.on svg {
+    color: #9d8df1 !important;
 }
 
 .offacto-settings-card .offacto-dash-card-head h3 {

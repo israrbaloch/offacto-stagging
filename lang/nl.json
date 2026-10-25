@@ -72,6 +72,7 @@
     "locale.nl": "Nederlands",
     "locale.label": "Taal",
 
+    "topbar.menu": "Menu openen",
     "topbar.search": "Zoek facturen, klanten of offertes...",
     "topbar.notifications": "Meldingen",
     "topbar.unread": ":count ongelezen",

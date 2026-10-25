@@ -235,49 +235,49 @@ export default function Register({ brandSwatches = ['#3A4AA0', '#0F766E', '#B423
                         <p className={authSubClass}>{t('auth.trial_hint')}</p>
 
                         <div className="auth-form-grid mt-6">
-                            <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-4 sm:grid-cols-2">
                                 <AuthField label={t('auth.first_name')}>
-                                    <input
+                                            <input
                                         className={authInputClass(errors.first_name)}
-                                        value={data.first_name}
-                                        onChange={(e) => setData('first_name', e.target.value)}
-                                    />
+                                                value={data.first_name}
+                                                onChange={(e) => setData('first_name', e.target.value)}
+                                            />
                                 </AuthField>
                                 <AuthField label={t('auth.last_name')}>
-                                    <input
+                                            <input
                                         className={authInputClass(errors.surname)}
-                                        value={data.surname}
-                                        onChange={(e) => setData('surname', e.target.value)}
-                                    />
+                                                value={data.surname}
+                                                onChange={(e) => setData('surname', e.target.value)}
+                                            />
                                 </AuthField>
-                            </div>
+                                    </div>
                             <AuthField label={t('auth.email_address')}>
-                                <input
-                                    type="email"
+                                        <input
+                                            type="email"
                                     autoComplete="email"
                                     className={authInputClass(errors.email)}
-                                    value={data.email}
-                                    onChange={(e) => setData('email', e.target.value)}
-                                />
+                                            value={data.email}
+                                            onChange={(e) => setData('email', e.target.value)}
+                                        />
                             </AuthField>
-                            <div>
+                                    <div>
                                 <span className={authLabelClass}>{t('auth.password')}</span>
-                                <div className="relative">
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? 'text' : 'password'}
                                         autoComplete="new-password"
                                         className={`${authInputClass(errors.password)} pr-16`}
-                                        value={data.password}
-                                        onChange={(e) => setData('password', e.target.value)}
-                                    />
-                                    <button
-                                        type="button"
+                                                value={data.password}
+                                                onChange={(e) => setData('password', e.target.value)}
+                                            />
+                                            <button
+                                                type="button"
                                         className="absolute inset-y-0 right-3 text-xs font-semibold text-[#48537F] hover:text-[#0E1250] dark:text-[#A1A9DD] dark:hover:text-white"
-                                        onClick={() => setShowPassword((v) => !v)}
-                                    >
-                                        {showPassword ? t('auth.hide') : t('auth.show')}
-                                    </button>
-                                </div>
+                                                onClick={() => setShowPassword((v) => !v)}
+                                            >
+                                                {showPassword ? t('auth.hide') : t('auth.show')}
+                                            </button>
+                                        </div>
                                 <p className="auth-hint mt-1.5">{t('auth.password_hint')}</p>
                             </div>
                             <label className="flex items-start gap-2 text-[13px] leading-snug">
@@ -293,7 +293,7 @@ export default function Register({ brandSwatches = ['#3A4AA0', '#0F766E', '#B423
                                     <span className="font-semibold text-[#0E1250] dark:text-white">{t('auth.privacy')}</span>.
                                 </span>
                             </label>
-                        </div>
+                                    </div>
                     </>
                 )}
 
@@ -370,7 +370,7 @@ export default function Register({ brandSwatches = ['#3A4AA0', '#0F766E', '#B423
                                 className="auth-drop cursor-pointer text-center"
                             >
                                 <Icon name="up" className="mx-auto mb-2 h-6 w-6 text-[#6B59DC]" />
-                                <input
+                                        <input
                                     ref={logoInputRef}
                                     type="file"
                                     accept="image/png,image/jpeg,image/svg+xml,image/webp"
@@ -437,13 +437,13 @@ export default function Register({ brandSwatches = ['#3A4AA0', '#0F766E', '#B423
                                 <Icon name="spark" className="auth-doc-note__spark h-[18px] w-[18px] shrink-0" aria-hidden="true" />
                                 <div>
                                     {t('auth.register_documents_contact_lead')}{' '}
-                                    <button
+                            <button
                                         type="button"
                                         className="auth-doc-note__link"
                                         onClick={() => toast.info(t('auth.register_contact_toast'))}
                                     >
                                         {t('auth.contact_us')}
-                                    </button>
+                            </button>
                                 </div>
                             </div>
                         </div>
@@ -453,7 +453,7 @@ export default function Register({ brandSwatches = ['#3A4AA0', '#0F766E', '#B423
                 <div className="auth-register-row mt-[22px] flex w-full items-center justify-between gap-3">
                     <div className="min-w-0">{footerLeft}</div>
                     <div className="shrink-0">{footerRight}</div>
-                </div>
+                    </div>
             </div>
         </AuthSplitLayout>
     );

@@ -203,7 +203,6 @@ export default function Index({
         { id: 'all', label: t('common.all') },
         { id: 'vzw', label: t('customers.type_vzw') },
         { id: 'company', label: t('customers.type_company') },
-        { id: 'gov', label: t('customers.type_gov') },
         { id: 'individual', label: t('customers.type_individual') },
     ];
 
@@ -229,24 +228,26 @@ export default function Index({
                 </div>
 
                 <div className="offacto-brief-table-card offacto-dash-card">
-                    <div className="offacto-quotes-toolbar">
-                        <div className="offacto-dash-tabs" role="tablist" aria-label={t('customers.title')}>
-                            {tabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={typeTab === tab.id}
-                                    className={typeTab === tab.id ? 'on' : ''}
-                                    onClick={() => setTypeTab(tab.id)}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
+                    <div className="offacto-quotes-toolbar offacto-customers-toolbar">
+                        <div className="offacto-customers-toolbar-tabs">
+                            <div className="offacto-dash-tabs offacto-customers-type-tabs" role="tablist" aria-label={t('customers.title')}>
+                                {tabs.map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={typeTab === tab.id}
+                                        className={typeTab === tab.id ? 'on' : ''}
+                                        onClick={() => setTypeTab(tab.id)}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <div className="offacto-quotes-toolbar-r">
+                        <div className="offacto-quotes-toolbar-r offacto-customers-toolbar-actions">
                             <input
-                                className="offacto-brief-inp offacto-quotes-filter-inp"
+                                className="offacto-brief-inp offacto-quotes-filter-inp offacto-customers-search-inp"
                                 placeholder={t('customers.search_placeholder')}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
@@ -281,8 +282,8 @@ export default function Index({
                                     </tr>
                                 ) : (
                                     customers.map((customer) => {
-                                        const status = customer.status_relation?.name || '—';
-                                        return (
+                                    const status = customer.status_relation?.name || '—';
+                                    return (
                                             <tr key={customer.id} onClick={() => openCustomerDrawer(customer)}>
                                                 <td>
                                                     <div className="offacto-table-who">
@@ -291,8 +292,8 @@ export default function Index({
                                                             <b>{displayName(customer)}</b>
                                                             <small>{customer.email || '—'}</small>
                                                         </div>
-                                                    </div>
-                                                </td>
+                                                </div>
+                                            </td>
                                                 <td>{customerTypeLabel(customer.type)}</td>
                                                 <td>
                                                     {customer.vat_number ? (
@@ -307,14 +308,14 @@ export default function Index({
                                                     ) : (
                                                         '—'
                                                     )}
-                                                </td>
+                                            </td>
                                                 <td>
                                                     {customer.peppol_eligible ? (
                                                         <span className="offacto-demo-badge nd">Peppol</span>
                                                     ) : (
                                                         <span className="offacto-demo-badge grey nd">{t('invoices.channel_email')}</span>
                                                     )}
-                                                </td>
+                                            </td>
                                                 <td>
                                                     {customer.creditsafe_rating ? (
                                                         <span
@@ -343,9 +344,9 @@ export default function Index({
                                                     <span className={`offacto-demo-badge ${statusBadgeClass(status)}`.trim()}>
                                                         {status}
                                                     </span>
-                                                </td>
-                                            </tr>
-                                        );
+                                            </td>
+                                        </tr>
+                                    );
                                     })
                                 )}
                             </tbody>

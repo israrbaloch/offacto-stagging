@@ -76,7 +76,7 @@ function flattenItems(groups) {
     return groups.flatMap((group) => group.items);
 }
 
-export default function Sidebar({ onNavigate }) {
+export default function Sidebar({ onNavigate, mobileOpen = false }) {
     const { url, props } = usePage();
     const { auth, activeCompany } = props;
     const isAdmin = Boolean(auth?.user?.is_admin);
@@ -125,7 +125,9 @@ export default function Sidebar({ onNavigate }) {
 
     return (
         <aside
-            className="offacto-sidebar sticky top-0 z-auto hidden h-full max-h-[100dvh] w-[256px] shrink-0 flex-col overflow-hidden md:flex"
+            className={`offacto-sidebar fixed inset-y-0 left-0 z-[45] flex h-[100dvh] max-h-[100dvh] w-[270px] shrink-0 flex-col overflow-hidden transition-transform duration-250 ease-out lg:static lg:z-auto lg:h-full lg:w-[256px] lg:translate-x-0 ${
+                mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            }`}
         >
             <AuthDiamond size={60} className="pointer-events-none absolute -right-3.5 top-[180px]" />
             <AuthDiamond size={28} delay="2s" className="pointer-events-none absolute right-2.5 bottom-[330px]" />
