@@ -3,12 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import AdminTopBar from '../Components/Admin/shared/AdminTopBar';
 import FlashToaster from '../Components/FlashToaster';
 import FormErrorsToaster from '../Components/FormErrorsToaster';
-import FloatingFavicons from '../Components/FloatingFavicons';
 import I18nSync from '../Components/I18nSync';
+import Icon from '../Components/Icon';
 import Logo from '../Components/Logo';
-import SidebarCollapseButton from '../Components/SidebarCollapseButton';
 import SidebarNavLink, { resolveSidebarActiveHref } from '../Components/SidebarNavLink';
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed';
+import { t } from '../lib/i18n';
 
 const navGroups = [
     {
@@ -89,7 +89,9 @@ export default function AdminLayout({ title = 'Admin', children }) {
         .map((group) => ({
             ...group,
             items: group.items.filter((item) => {
-                if (!item.permission) return true;
+                if (!item.permission) {
+                    return true;
+                }
                 if (isPlatformAdmin && granted.length === 0) {
                     return true;
                 }
@@ -106,74 +108,89 @@ export default function AdminLayout({ title = 'Admin', children }) {
     const sidebarExpanded = mobileNavOpen || !collapsed;
 
     useEffect(() => {
+        document.documentElement.style.setProperty('--company-primary', '#0e1250');
+        document.documentElement.style.setProperty('--company-secondary', '#64748b');
+        document.documentElement.classList.toggle('dark', appearance === 'dark');
+    }, [appearance]);
+
+    useEffect(() => {
+        setMobileNavOpen(false);
+    }, [url]);
+
+    useEffect(() => {
+        if (!mobileNavOpen) {
+            document.body.style.removeProperty('overflow');
+            return undefined;
+        }
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    }, [mobileNavOpen]);
+
+    useEffect(() => {
+        const onKey = (event) => {
+            if (event.key === 'Escape') {
+                setMobileNavOpen(false);
+            }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, []);
+
+    useEffect(() => {
         const container = sidebarNavRef.current;
         const link = container?.querySelector('[data-nav-active="true"]');
         if (!container || !link) {
-            return;
+            return undefined;
         }
 
         const frame = requestAnimationFrame(() => {
-            const linkRect = link.getBoundingClientRect();
-            const navRect = container.getBoundingClientRect();
-            const padding = 8;
-            const fullyVisible = linkRect.top >= navRect.top + padding && linkRect.bottom <= navRect.bottom - padding;
-
-            if (!fullyVisible) {
-                link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            }
+            link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         });
 
         return () => cancelAnimationFrame(frame);
     }, [activeHref, url]);
 
-    useEffect(() => {
-        document.documentElement.style.setProperty('--company-primary', '#0f172a');
-        document.documentElement.style.setProperty('--company-secondary', '#64748b');
-        document.documentElement.classList.toggle('dark', appearance === 'dark');
-    }, [appearance]);
-
     return (
-        <div className="h-screen overflow-hidden bg-slate-100">
+        <div className="offacto-admin-shell">
             <I18nSync />
             <Head title={title ? `${title} · Admin` : 'Admin'} />
             <FlashToaster />
             <FormErrorsToaster />
-            <div className="flex h-full">
+            <div className="offacto-admin-shell__frame">
+                <button
+                    type="button"
+                    className={`offacto-admin-sidebar-scrim${mobileNavOpen ? ' on' : ''}`}
+                    aria-label={t('common.close')}
+                    onClick={() => setMobileNavOpen(false)}
+                />
                 <aside
-                    className={`auth-aside-bg fixed inset-y-0 left-0 z-40 flex h-full shrink-0 flex-col overflow-hidden border-r border-white/40 transition-[width,transform] duration-200 ease-out lg:static lg:translate-x-0 ${
-                        mobileNavOpen ? 'translate-x-0 w-[240px]' : '-translate-x-full w-[240px]'
-                    } ${!mobileNavOpen && collapsed ? 'lg:w-[72px]' : 'lg:w-[240px]'}`}
+                    className={`offacto-admin-sidebar${mobileNavOpen ? ' is-open' : ''}${!mobileNavOpen && collapsed ? ' is-collapsed' : ''}`}
                 >
-                    {!collapsed && <FloatingFavicons count={5} minSize={20} maxSize={64} />}
-                    <div className={`relative z-10 pt-5 ${sidebarExpanded ? 'px-4' : 'px-2 lg:px-2'}`}>
-                        <Link href="/admin" className="flex items-center justify-center" title={collapsed ? 'Admin' : undefined}>
-                            <Logo
-                                variant={appearance === 'dark' ? 'white' : 'dark'}
-                                className={sidebarExpanded ? 'h-7 w-auto' : 'h-6 w-auto'}
-                            />
+                    <div className="offacto-admin-sidebar-brand">
+                        <Link href="/admin" title="Admin">
+                            <Logo variant="white" className="h-7 w-auto" />
                         </Link>
-                        {sidebarExpanded && (
-                            <p className="mt-3 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">Platform</p>
-                        )}
+                        {sidebarExpanded && <p className="offacto-admin-sidebar-eyebrow">Platform</p>}
                     </div>
                     <nav
                         ref={sidebarNavRef}
-                        className={`admin-sidebar-nav relative z-10 mt-2 min-h-0 flex-1 space-y-5 overflow-y-auto pb-2 ${
-                            sidebarExpanded ? 'px-3' : 'px-1.5 lg:px-1.5'
-                        }`}
+                        className="offacto-admin-sidebar-nav"
+                        aria-label="Admin navigation"
                     >
                         {visibleGroups.map((group) => (
-                            <div key={group.label}>
-                                {sidebarExpanded && (
-                                    <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400/90">{group.label}</p>
-                                )}
-                                <div className="space-y-0.5">
+                            <div key={group.label} className="offacto-admin-nav-group">
+                                {sidebarExpanded && <p className="offacto-admin-navlbl">{group.label}</p>}
+                                <div className="offacto-admin-nav">
                                     {group.items.map((item) => (
                                         <SidebarNavLink
                                             key={item.href}
                                             item={item}
                                             activeHref={activeHref}
                                             label={item.label}
+                                            variant="admin"
                                             collapsed={!sidebarExpanded}
                                             onNavigate={() => setMobileNavOpen(false)}
                                         />
@@ -182,20 +199,24 @@ export default function AdminLayout({ title = 'Admin', children }) {
                             </div>
                         ))}
                     </nav>
-                    <div
-                        className={`relative z-10 hidden shrink-0 border-t border-white/30 py-2 lg:block ${
-                            collapsed ? 'px-1.5' : 'px-3'
-                        }`}
-                    >
-                        <SidebarCollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
+                    <div className="offacto-admin-sidebar-foot">
+                        <button
+                            type="button"
+                            onClick={toggleCollapsed}
+                            aria-expanded={!collapsed}
+                            title={collapsed ? t('nav.expand_sidebar') : t('nav.collapse_sidebar')}
+                            className={`offacto-admin-nav-collapse${collapsed ? ' is-collapsed' : ''}`}
+                        >
+                            <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} />
+                            {!collapsed && <span>{t('nav.collapse_sidebar')}</span>}
+                        </button>
                     </div>
                 </aside>
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-white lg:rounded-l-none">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                     <AdminTopBar onOpenMobileNav={() => setMobileNavOpen(true)} />
-                    {mobileNavOpen && (
-                        <button type="button" className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />
-                    )}
-                    <div className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto">{children}</div>
+                    <div className="offacto-admin-scroll">
+                        <div className="offacto-admin-page">{children}</div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,0 +1,682 @@
+/**
+ * Platform admin shell — scoped to `.offacto-admin-shell` only.
+ * Does not affect customer `offacto-app-shell` or shared auth pages.
+ */
+
+html:has(.offacto-admin-shell),
+body:has(.offacto-admin-shell) {
+    height: 100%;
+    overflow: hidden;
+}
+
+#app:has(.offacto-admin-shell) {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.offacto-admin-shell {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    font-family: Figtree, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14.5px;
+    line-height: 1.45;
+    color: #0e1250;
+    -webkit-font-smoothing: antialiased;
+}
+
+.offacto-admin-shell__frame {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+}
+
+.offacto-admin-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #c9d7f2;
+}
+
+html.dark .offacto-admin-scroll {
+    background: #0f1330;
+}
+
+/* —— Sidebar —— */
+.offacto-admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    width: 270px;
+    height: 100%;
+    max-height: 100dvh;
+    padding: 18px 14px;
+    background: linear-gradient(180deg, #0e1250 0%, #1a2268 100%);
+    color: #c8cef0;
+    border-right: 1px solid rgb(255 255 255 / 0.06);
+    transform: translate3d(-100%, 0, 0);
+    transition: transform 0.25s ease;
+    overflow: hidden;
+}
+
+.offacto-admin-sidebar.is-open {
+    transform: translate3d(0, 0, 0);
+}
+
+@media (min-width: 1024px) {
+    .offacto-admin-sidebar {
+        position: sticky;
+        top: 0;
+        flex-shrink: 0;
+        transform: none;
+        transition: width 0.2s ease;
+    }
+
+    .offacto-admin-sidebar.is-collapsed {
+        width: 72px;
+        padding-inline: 10px;
+    }
+
+    .offacto-admin-sidebar:not(.is-collapsed) {
+        width: 270px;
+    }
+}
+
+.offacto-admin-sidebar-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 8px 12px;
+}
+
+.offacto-admin-sidebar-brand img,
+.offacto-admin-sidebar-brand svg {
+    height: 28px;
+    width: auto;
+}
+
+.offacto-admin-sidebar-eyebrow {
+    margin-top: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #a1a9dd;
+}
+
+.offacto-admin-sidebar-nav {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-top: 8px;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+}
+
+.offacto-admin-sidebar-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.offacto-admin-nav-group + .offacto-admin-nav-group {
+    margin-top: 18px;
+}
+
+.offacto-admin-navlbl {
+    padding: 0 10px 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a1a9dd;
+}
+
+.offacto-admin-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.offacto-admin-nav a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: #fff;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.offacto-admin-nav a:hover {
+    background: rgb(255 255 255 / 0.06);
+}
+
+.offacto-admin-nav a.on {
+    background: rgb(255 255 255 / 0.1);
+    font-weight: 600;
+}
+
+.offacto-admin-nav a.on svg {
+    color: #9d8df1;
+}
+
+.offacto-admin-nav a svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #fff;
+}
+
+.offacto-admin-nav a.is-collapsed {
+    justify-content: center;
+    padding-inline: 8px;
+}
+
+.offacto-admin-sidebar-foot {
+    flex-shrink: 0;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+    padding-top: 8px;
+}
+
+.offacto-admin-nav-collapse {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #c8cef0;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.offacto-admin-nav-collapse:hover {
+    background: rgb(255 255 255 / 0.06);
+    color: #fff;
+}
+
+.offacto-admin-nav-collapse.is-collapsed {
+    justify-content: center;
+    padding-inline: 8px;
+}
+
+.offacto-admin-nav-collapse svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 1023px) {
+    .offacto-admin-sidebar-foot {
+        display: none;
+    }
+}
+
+.offacto-admin-sidebar-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgb(14 18 80 / 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+}
+
+.offacto-admin-sidebar-scrim.on {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (min-width: 1024px) {
+    .offacto-admin-sidebar-scrim {
+        display: none;
+    }
+}
+
+/* —— Top bar —— */
+.offacto-admin-topbar-shell {
+    flex-shrink: 0;
+    z-index: 48;
+}
+
+.offacto-admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgb(14 18 80 / 0.08);
+    background: rgb(255 255 255 / 0.92);
+    backdrop-filter: blur(8px);
+}
+
+html.dark .offacto-admin-topbar {
+    background: rgb(23 28 66 / 0.92);
+    border-bottom-color: rgb(255 255 255 / 0.08);
+}
+
+@media (min-width: 1024px) {
+    .offacto-admin-topbar {
+        padding: 14px 24px;
+        gap: 12px;
+    }
+}
+
+.offacto-admin-topbar-icobtn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #48537f;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.offacto-admin-topbar-icobtn:hover {
+    background: rgb(14 18 80 / 0.06);
+    color: #0e1250;
+}
+
+html.dark .offacto-admin-topbar-icobtn {
+    color: #c8cef0;
+}
+
+html.dark .offacto-admin-topbar-icobtn:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: #fff;
+}
+
+.offacto-admin-topbar-icobtn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.offacto-admin-topbar-search-trigger {
+    display: grid;
+}
+
+@media (min-width: 1024px) {
+    .offacto-admin-topbar-search-trigger {
+        display: none;
+    }
+}
+
+.offacto-admin-topbar-search-desktop {
+    display: none;
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 420px;
+}
+
+@media (min-width: 1024px) {
+    .offacto-admin-topbar-search-desktop {
+        display: flex;
+        align-items: center;
+    }
+}
+
+.offacto-admin-topbar-search-desktop .offacto-admin-topbar-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #48537f;
+    pointer-events: none;
+}
+
+.offacto-admin-topbar-search-desktop .offacto-admin-topbar-search-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.offacto-admin-topbar-search-desktop input {
+    width: 100%;
+    padding: 10px 14px 10px 42px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    border-radius: 999px;
+    background: #f5f7ff;
+    font: inherit;
+    font-size: 14px;
+    color: #0e1250;
+    outline: none;
+}
+
+.offacto-admin-topbar-search-desktop input::placeholder {
+    color: #48537f;
+}
+
+.offacto-admin-topbar-search-desktop input:focus {
+    border-color: #6b59dc;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgb(107 89 220 / 0.15);
+}
+
+html.dark .offacto-admin-topbar-search-desktop input {
+    background: rgb(255 255 255 / 0.06);
+    border-color: rgb(255 255 255 / 0.1);
+    color: #e8ecff;
+}
+
+.offacto-admin-topbar-search-results {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 60;
+    max-height: 18rem;
+    overflow: auto;
+    margin: 0;
+    padding: 6px 0;
+    list-style: none;
+    border-radius: 16px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background: #fff;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.12);
+}
+
+html.dark .offacto-admin-topbar-search-results {
+    background: #171c42;
+    border-color: rgb(255 255 255 / 0.1);
+}
+
+.offacto-admin-topbar-search-results button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding: 10px 14px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.offacto-admin-topbar-search-results button:hover {
+    background: rgb(14 18 80 / 0.04);
+}
+
+.offacto-admin-topbar-search-results .label {
+    font-weight: 600;
+    color: #0e1250;
+}
+
+html.dark .offacto-admin-topbar-search-results .label {
+    color: #e8ecff;
+}
+
+.offacto-admin-topbar-search-results .meta {
+    font-size: 12px;
+    color: #48537f;
+}
+
+.offacto-admin-topbar-spacer {
+    flex: 1 1 auto;
+    min-width: 8px;
+}
+
+.offacto-admin-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.offacto-admin-topbar-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f27d8c;
+}
+
+.offacto-admin-topbar-me {
+    position: relative;
+}
+
+.offacto-admin-topbar-avatar {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: #0e1250;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+}
+
+.offacto-admin-topbar-me-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 70;
+    width: 14rem;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background: #fff;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.15);
+}
+
+html.dark .offacto-admin-topbar-me-menu {
+    background: #171c42;
+    border-color: rgb(255 255 255 / 0.1);
+}
+
+.offacto-admin-topbar-me-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgb(14 18 80 / 0.08);
+}
+
+html.dark .offacto-admin-topbar-me-head {
+    border-bottom-color: rgb(255 255 255 / 0.08);
+}
+
+.offacto-admin-topbar-me-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0e1250;
+}
+
+html.dark .offacto-admin-topbar-me-name {
+    color: #e8ecff;
+}
+
+.offacto-admin-topbar-me-email {
+    font-size: 12px;
+    color: #48537f;
+}
+
+.offacto-admin-topbar-me-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #0e1250;
+    text-decoration: none;
+}
+
+.offacto-admin-topbar-me-link:hover {
+    background: rgb(14 18 80 / 0.05);
+}
+
+.offacto-admin-topbar-me-link.is-danger {
+    color: #c23a4b;
+}
+
+.offacto-admin-env-banner {
+    padding: 6px 14px;
+    border-bottom: 1px solid #f0d49a;
+    background: #fff3dd;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #a45f00;
+}
+
+/* Mobile search overlay */
+.offacto-admin-search-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+}
+
+.offacto-admin-search-layer-scrim {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgb(14 18 80 / 0.55);
+    cursor: pointer;
+}
+
+.offacto-admin-search-layer-panel {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    padding: max(12px, env(safe-area-inset-top, 0px)) 16px 16px;
+    background: linear-gradient(180deg, #0e1250 0%, #1a2268 100%);
+    box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+}
+
+.offacto-admin-search-layer-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: rgb(255 255 255 / 0.1);
+}
+
+.offacto-admin-search-layer-form input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    color: #fff;
+}
+
+.offacto-admin-search-layer-form input::placeholder {
+    color: #a1a9dd;
+}
+
+.offacto-admin-search-layer-form svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: #c8cef0;
+}
+
+.offacto-admin-search-layer-close {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.1);
+    color: #c8cef0;
+    cursor: pointer;
+}
+
+.offacto-admin-search-layer-body {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 12px 16px 24px;
+    background: #f5f7ff;
+}
+
+html.dark .offacto-admin-search-layer-body {
+    background: #0f1330;
+}
+
+.offacto-admin-search-layer-body ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.offacto-admin-search-layer-body li + li {
+    margin-top: 4px;
+}
+
+.offacto-admin-search-layer-body button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 14px;
+    background: #fff;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgb(14 18 80 / 0.06);
+}
+
+html.dark .offacto-admin-search-layer-body button {
+    background: #171c42;
+}
+
+.offacto-admin-search-layer-hint {
+    padding: 16px;
+    font-size: 13px;
+    color: #48537f;
+    text-align: center;
+}
+
+.offacto-admin-page {
+    padding: 16px 16px 32px;
+}
+
+@media (min-width: 1024px) {
+    .offacto-admin-page {
+        padding: 20px 28px 40px;
+    }
+}

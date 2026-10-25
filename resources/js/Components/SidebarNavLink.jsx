@@ -66,6 +66,21 @@ export default function SidebarNavLink({
         );
     }
 
+    if (variant === 'admin') {
+        return (
+            <Link
+                href={item.href}
+                onClick={onNavigate}
+                title={collapsed ? label : undefined}
+                data-nav-active={active ? 'true' : undefined}
+                className={`${active ? 'on' : ''}${collapsed ? ' is-collapsed' : ''}`.trim() || undefined}
+            >
+                <Icon name={item.icon} />
+                {!collapsed && <span className="min-w-0 flex-1 truncate">{label}</span>}
+            </Link>
+        );
+    }
+
     if (variant === 'offacto') {
         return (
             <Link
