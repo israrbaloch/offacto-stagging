@@ -4751,6 +4751,40 @@ html.dark .auth-doc-note {
     margin-top: 14px;
 }
 
+.offacto-invoice-builder-page .offacto-invoice-type-cta {
+    display: grid;
+    gap: 12px;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-type-cta .offacto-btn-p {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.offacto-invoice-builder-page--readonly .offacto-invoice-toggle:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-payments-list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-payments-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgb(14 18 80 / 0.06);
+}
+
 .offacto-invoice-builder-page .offacto-invoice-fg {
     display: grid;
     gap: 16px;

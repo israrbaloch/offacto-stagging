@@ -39,8 +39,7 @@ function displayName(customer) {
 }
 
 function invoiceHref(invoice) {
-    const draft = String(invoice.status_relation?.name || 'draft').toLowerCase() === 'draft';
-    return draft ? `/invoices/${invoice.id}/edit` : `/invoices/${invoice.id}`;
+    return `/invoices/${invoice.id}/edit`;
 }
 
 function statusKey(invoice) {
@@ -209,15 +208,19 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
                         <button
                             type="button"
                             className="offacto-brief-btn"
-                            onClick={() => toast.info(t('invoices.credit_note_hint'))}
+                            onClick={() => toast.info(t('invoices.create_from_sent_hint'))}
                         >
                             <Icon name="invoice" />
                             {t('invoices.new_credit')}
                         </button>
-                        <Link href="/invoices/create?recurring=1" className="offacto-brief-btn">
+                        <button
+                            type="button"
+                            className="offacto-brief-btn"
+                            onClick={() => toast.info(t('invoices.create_from_sent_hint'))}
+                        >
                             <Icon name="repeat" />
                             {t('invoices.new_recurring')}
-                        </Link>
+                        </button>
                         <Link href="/invoices/create" className="offacto-btn-p">
                             <Icon name="plus" />
                             {t('invoices.new')}

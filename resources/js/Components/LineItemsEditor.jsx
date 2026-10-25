@@ -17,6 +17,7 @@ export default function LineItemsEditor({
     variant = 'default',
     invoiceStyle = false,
     suppressToolbar = false,
+    readOnly = false,
 }) {
     const builder = variant === 'builder';
     const invoiceLines = builder && invoiceStyle;
@@ -25,6 +26,9 @@ export default function LineItemsEditor({
         ? 'offacto-brief-inp offacto-quote-line-inp w-full'
         : 'w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm outline-none';
     const addService = (service) => {
+        if (readOnly) {
+            return;
+        }
         setItems([
             ...items,
             attachServiceFields(
@@ -42,6 +46,9 @@ export default function LineItemsEditor({
     };
 
     const addCustomLine = () => {
+        if (readOnly) {
+            return;
+        }
         const first = services[0];
         setItems([
             ...items,
@@ -57,6 +64,9 @@ export default function LineItemsEditor({
     };
 
     const addTextLine = () => {
+        if (readOnly) {
+            return;
+        }
         const first = services[0];
         setItems([
             ...items,
@@ -72,10 +82,16 @@ export default function LineItemsEditor({
     };
 
     const update = (index, key, value) => {
+        if (readOnly) {
+            return;
+        }
         setItems(items.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
     };
 
     const changeService = (index, serviceId) => {
+        if (readOnly) {
+            return;
+        }
         const service = services.find((item) => String(item.id) === String(serviceId));
         setItems(
             items.map((item, i) => {
@@ -94,7 +110,12 @@ export default function LineItemsEditor({
         );
     };
 
-    const remove = (index) => setItems(items.filter((_, i) => i !== index));
+    const remove = (index) => {
+        if (readOnly) {
+            return;
+        }
+        setItems(items.filter((_, i) => i !== index));
+    };
 
     const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
     const vat = subtotal * (Number(vatRate) / 100);
@@ -191,10 +212,11 @@ export default function LineItemsEditor({
                                         )}
                                         <input
                                             className={inpClass}
-                                            list={invoiceLines && !isText ? 'offacto-invoice-svc-list' : undefined}
+                                            list={invoiceLines && !isText && !readOnly ? 'offacto-invoice-svc-list' : undefined}
                                             placeholder={isText ? 'Add a note for the client' : 'Describe this line'}
                                             value={item.description || ''}
                                             onChange={(e) => update(index, 'description', e.target.value)}
+                                            readOnly={readOnly}
                                         />
                                     </td>
                                     <td className={builder ? 'num' : 'py-3 pr-3 align-top'}>
@@ -207,6 +229,7 @@ export default function LineItemsEditor({
                                                 value={item.quantity}
                                                 onChange={(e) => update(index, 'quantity', e.target.value)}
                                                 aria-label={lineIsHourly(item, services) ? 'Hours' : 'Quantity'}
+                                                readOnly={readOnly}
                                             />
                                         )}
                                     </td>
@@ -219,6 +242,7 @@ export default function LineItemsEditor({
                                                 className={inpClass}
                                                 value={item.price}
                                                 onChange={(e) => update(index, 'price', e.target.value)}
+                                                readOnly={readOnly}
                                             />
                                         )}
                                     </td>
@@ -230,6 +254,7 @@ export default function LineItemsEditor({
                                                     value={String(vatRate)}
                                                     aria-label="VAT"
                                                     onChange={() => {}}
+                                                    disabled={readOnly}
                                                 >
                                                     <option value="21">21%</option>
                                                     <option value="12">12%</option>
@@ -243,14 +268,16 @@ export default function LineItemsEditor({
                                         {isText ? '—' : <b>{money(line)}</b>}
                                     </td>
                                     <td className={builder ? 'offacto-quote-lines-act' : 'py-3 align-top'}>
-                                        <button
-                                            type="button"
-                                            onClick={() => remove(index)}
-                                            className={builder ? 'offacto-quote-line-x' : 'rounded-full p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600'}
-                                            aria-label="Remove line"
-                                        >
-                                            <Icon name="trash" className={builder ? undefined : 'h-4 w-4'} />
-                                        </button>
+                                        {!readOnly ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => remove(index)}
+                                                className={builder ? 'offacto-quote-line-x' : 'rounded-full p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600'}
+                                                aria-label="Remove line"
+                                            >
+                                                <Icon name="trash" className={builder ? undefined : 'h-4 w-4'} />
+                                            </button>
+                                        ) : null}
                                     </td>
                                 </tr>
                             );
@@ -267,7 +294,7 @@ export default function LineItemsEditor({
                 </datalist>
             ) : null}
 
-            {!suppressToolbar ? (
+            {!suppressToolbar && !readOnly ? (
                 <div className={builder ? 'offacto-quote-line-actions' : 'mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
                     <div className="flex flex-wrap gap-2">{addButtons}</div>
                 </div>

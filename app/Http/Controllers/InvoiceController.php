@@ -469,17 +469,7 @@ class InvoiceController extends Controller
             'public_url' => $invoice->publicUrl(),
         ]);
 
-        return Inertia::render('Invoices/Show', [
-            'invoice' => $invoicePayload,
-            'defaultReminderMessage' => InvoiceReminderMessage::resolve($invoice)['body'],
-            'ipTransferTypes' => Invoice::getIpTransferTypes(),
-            'paymentMethods' => Invoice::getPaymentMethods(),
-            'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),
-            'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
-            'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
-            'whatsappConfigured' => CompanyIntegrations::whatsappConfigured($activeCompany, $user),
-            'whatsappShareUrl' => WhatsAppShare::shareUrlForInvoice($invoice) ?? '',
-        ]);
+        return redirect()->route('invoices.edit', $invoice);
     }
 
     /**
@@ -496,11 +486,17 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
-            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'attachments', 'blocks', 'parentInvoice.items'])
+            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'attachments', 'blocks', 'parentInvoice.items', 'payments'])
             ->firstOrFail();
 
-        if (! $invoice->isDraft()) {
-            return redirect()->route('invoices.show', $invoice);
+        if ($invoice->mollie_payment_id && ! $invoice->isPaid()) {
+            app(MolliePaymentService::class)->syncInvoicePayment($invoice->mollie_payment_id);
+            $invoice->refresh();
+            $invoice->load(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'attachments', 'blocks', 'parentInvoice.items', 'payments']);
+        }
+
+        if ($invoice->customer_acknowledged_at) {
+            $invoice->makeVisible(['signature_data']);
         }
 
         $customers = Customer::where('company_id', $activeCompany->id)
@@ -546,6 +542,7 @@ class InvoiceController extends Controller
 
         return Inertia::render('Invoices/Create', [
             'invoice' => $invoice->loadMissing('offer'),
+            'defaultReminderMessage' => InvoiceReminderMessage::resolve($invoice)['body'],
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
             'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),

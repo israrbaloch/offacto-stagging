@@ -3,12 +3,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './Icon';
 import InvoiceDocumentPreview, { invoiceTemplateLabel, normalizeInvoiceTemplate } from './InvoiceDocumentPreview';
 import LineItemsEditor from './LineItemsEditor';
+import InvoiceAcknowledgmentPanel from './InvoiceAcknowledgmentPanel';
+import InvoiceReminderModal from './InvoiceReminderModal';
 import SendInvoiceModal from './SendInvoiceModal';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useUi } from '../context/UiContext';
 import { attachServiceFields } from '../lib/serviceBilling';
 import { t } from '../lib/i18n';
-import { customerName, money, optionsFromMap } from '../lib/utils';
+import { customerName, formatDate, money, optionsFromMap } from '../lib/utils';
 
 function dateValue(value) {
     if (!value) {
@@ -53,24 +55,36 @@ function dueFromTerm(invoiceDate, term) {
     return dateValue(base);
 }
 
-function resolveDocType(invoice) {
+function resolveHeadingDocType(invoice) {
     if (invoice?.parent_invoice_id) {
         return 'credit';
     }
-    if (invoice?.is_recurring) {
+    return 'inv';
+}
+
+function initialTypeTab(invoice, isDraft) {
+    if (invoice?.parent_invoice_id) {
+        return 'credit';
+    }
+    if (isDraft && invoice?.is_recurring) {
         return 'rec';
     }
     return 'inv';
 }
 
-function DemoToggle({ on, onToggle, ariaLabel }) {
+function DemoToggle({ on, onToggle, ariaLabel, disabled = false }) {
     return (
         <button
             type="button"
             className={`offacto-invoice-toggle${on ? ' on' : ''}`}
             aria-pressed={on}
             aria-label={ariaLabel}
-            onClick={() => onToggle(!on)}
+            disabled={disabled}
+            onClick={() => {
+                if (!disabled) {
+                    onToggle(!on);
+                }
+            }}
         />
     );
 }
@@ -91,15 +105,19 @@ export default function InvoiceEditor({
     mollieConfigured = false,
     whatsappConfigured = false,
     whatsappShareUrl = '',
+    defaultReminderMessage = '',
 }) {
-    const { activeCompany } = usePage().props;
+    const { activeCompany, defaultReminderMessage: pageReminderMessage = '' } = usePage().props;
+    const reminderDefault = defaultReminderMessage || pageReminderMessage || '';
     const { toast, confirm } = useUi();
     const parsed = parseIntro(invoice?.intro || '');
     const parsedNotes = parseNotes(invoice?.notes || '');
     const ready = useRef(false);
 
     const [items, setItems] = useState(existingItems);
-    const [docType, setDocType] = useState(() => resolveDocType(invoice));
+    const isDraft = String(invoice?.status_relation?.name || 'draft').toLowerCase() === 'draft';
+    const readOnly = !isDraft;
+    const [typeTab, setTypeTab] = useState(() => initialTypeTab(invoice, isDraft));
     const [paymentTerm, setPaymentTerm] = useState('30');
     const [customerRef, setCustomerRef] = useState('');
     const [creditReason, setCreditReason] = useState('');
@@ -109,6 +127,7 @@ export default function InvoiceEditor({
     const [reminderToggle, setReminderToggle] = useState(Boolean(invoice?.reminder_enabled));
     const [accountantToggle, setAccountantToggle] = useState(true);
     const [sendOpen, setSendOpen] = useState(false);
+    const [reminderOpen, setReminderOpen] = useState(false);
     const [emailMessage] = useState(
         invoice?.email_message ||
             'Hi #CLIENTNAME#,\n\nPlease find invoice #INVOICENUMBER# from #COMPANY# attached.\n\nPay online: #PAYLINK#\n\nThank you,\n#COMPANY#',
@@ -121,8 +140,9 @@ export default function InvoiceEditor({
     const [title] = useState(parsed.title);
     const [conditions] = useState(parsedNotes.conditions);
 
-    const isDraft = String(invoice?.status_relation?.name || 'draft').toLowerCase() === 'draft';
-    const isSent = !isDraft;
+    const isSent = readOnly;
+    const canCreateFromSource = readOnly && !invoice?.parent_invoice_id;
+    const isPaid = String(invoice?.payment_status || '').toLowerCase() === 'paid';
 
     const form = useForm({
         customer_id: invoice?.customer_id || '',
@@ -168,7 +188,7 @@ export default function InvoiceEditor({
     }, []);
 
     useEffect(() => {
-        if (items.length > 0 || !servicesData?.length) {
+        if (readOnly || items.length > 0 || !servicesData?.length) {
             return;
         }
         const first = servicesData[0];
@@ -218,6 +238,7 @@ export default function InvoiceEditor({
 
     const customerOptions = optionsFromMap(customers);
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
+    const canRemind = readOnly && !isPaid && Boolean(selectedCustomer?.email);
     const issueDate = isDraft ? todayISO() : dateValue(form.data.invoice_date);
     const copyrightLabel = ipTransferTypes[form.data.ip_transfer_type] || '';
     const brand = activeCompany?.theme?.primary || '#6B59DC';
@@ -291,7 +312,40 @@ export default function InvoiceEditor({
         });
     };
 
+    const createCreditFromInvoice = async () => {
+        if (!invoice?.id || !canCreateFromSource) {
+            return;
+        }
+        if (
+            !(await confirm({
+                message: t('invoices.credit_note_confirm'),
+                confirmLabel: t('common.confirm'),
+            }))
+        ) {
+            return;
+        }
+        router.post(`/invoices/${invoice.id}/credit-note`);
+    };
+
+    const createRecurringFromInvoice = async () => {
+        if (!invoice?.id || !canCreateFromSource) {
+            return;
+        }
+        if (
+            !(await confirm({
+                message: t('invoices.recurring_from_sent_confirm'),
+                confirmLabel: t('common.confirm'),
+            }))
+        ) {
+            return;
+        }
+        router.post(`/invoices/${invoice.id}/recurring-from`);
+    };
+
     const addLine = () => {
+        if (readOnly) {
+            return;
+        }
         const first = servicesData[0];
         setItems([
             ...items,
@@ -326,20 +380,53 @@ export default function InvoiceEditor({
             })
           : t('invoices.draft_created');
 
+    const headingDoc = resolveHeadingDocType(invoice);
     const docTitle =
-        docType === 'credit'
+        headingDoc === 'credit'
             ? t('invoices.doc_credit')
-            : docType === 'rec'
-              ? t('invoices.doc_recurring')
-              : t('invoices.doc_standard');
+            : t('invoices.doc_standard');
 
     const heading = invoice?.invoice_number
         ? `${docTitle} ${invoice.invoice_number}`
-        : t('invoices.new_heading', { type: docTitle.toLowerCase() });
+        : t('invoices.new_heading', {
+              type:
+                  typeTab === 'credit'
+                      ? t('invoices.doc_credit').toLowerCase()
+                      : typeTab === 'rec'
+                        ? t('invoices.doc_recurring').toLowerCase()
+                        : t('invoices.doc_standard').toLowerCase(),
+          });
+
+    const previewDocumentType =
+        invoice?.parent_invoice_id || typeTab === 'credit'
+            ? 'credit'
+            : typeTab === 'rec'
+              ? 'recurring'
+              : 'invoice';
+
+    const metaLine = readOnly
+        ? [
+              customerName(selectedCustomer),
+              issueDate ? formatDate(issueDate) : '',
+              invoice?.status_relation?.name,
+              invoice?.payment_status,
+          ]
+              .filter(Boolean)
+              .join(' · ')
+        : savedLabel;
 
     return (
         <AuthenticatedLayout title={heading}>
-            <form onSubmit={submit} className="offacto-briefings offacto-quote-builder-page offacto-invoice-builder-page">
+            <form
+                onSubmit={submit}
+                className={`offacto-briefings offacto-quote-builder-page offacto-invoice-builder-page${readOnly ? ' offacto-invoice-builder-page--readonly' : ''}`}
+            >
+                {readOnly ? (
+                    <div className="offacto-invoice-note mb-4">
+                        <Icon name="lock" />
+                        <div>{t('invoices.sent_locked_banner')}</div>
+                    </div>
+                ) : null}
                 {invoice?.needs_resend ? (
                     <div className="offacto-invoice-note warn mb-4">
                         <Icon name="alert" />
@@ -354,7 +441,12 @@ export default function InvoiceEditor({
                             {t('invoices.title')}
                         </Link>
                         <h1>{heading}</h1>
-                        <p className="offacto-invoice-saved-hint">{savedLabel}</p>
+                        <p className="offacto-invoice-saved-hint">{metaLine}</p>
+                        {readOnly && invoice?.amount_due != null ? (
+                            <p className="offacto-invoice-hint">
+                                {t('invoices.amount_due_label')}: <b>{money(invoice.amount_due)}</b>
+                            </p>
+                        ) : null}
                     </div>
                     <div className="offacto-brief-edit-acts">
                         {isDraft ? (
@@ -363,9 +455,11 @@ export default function InvoiceEditor({
                                 {t('common.delete')}
                             </button>
                         ) : null}
-                        <button type="submit" className="offacto-brief-btn" disabled={form.processing}>
-                            {t('invoices.save_draft')}
-                        </button>
+                        {isDraft ? (
+                            <button type="submit" className="offacto-brief-btn" disabled={form.processing}>
+                                {t('invoices.save_draft')}
+                            </button>
+                        ) : null}
                         <button
                             type="button"
                             className="offacto-brief-btn"
@@ -380,7 +474,13 @@ export default function InvoiceEditor({
                             <Icon name="down" />
                             PDF
                         </button>
-                        {invoice?.id ? (
+                        {canRemind ? (
+                            <button type="button" className="offacto-brief-btn" onClick={() => setReminderOpen(true)}>
+                                <Icon name="bell" />
+                                {t('invoices.reminder_send')}
+                            </button>
+                        ) : null}
+                        {invoice?.id && isDraft ? (
                             <button
                                 type="button"
                                 className="offacto-btn-p"
@@ -391,8 +491,21 @@ export default function InvoiceEditor({
                                 {t('invoices.send_action')}
                             </button>
                         ) : null}
+                        {invoice?.id && readOnly ? (
+                            <button
+                                type="button"
+                                className="offacto-btn-p"
+                                disabled={activeCompany?.trial_expired || activeCompany?.pending_approval}
+                                onClick={() => setSendOpen(true)}
+                            >
+                                <Icon name="send" />
+                                {t('invoices.send_action')}
+                            </button>
+                        ) : null}
                     </div>
                 </header>
+
+                {readOnly && invoice ? <InvoiceAcknowledgmentPanel invoice={invoice} /> : null}
 
                 <div className="offacto-invoice-ed">
                     <div className="offacto-invoice-ed-main">
@@ -407,15 +520,15 @@ export default function InvoiceEditor({
                                         <button
                                             key={tab.id}
                                             type="button"
-                                            className={docType === tab.id ? 'on' : ''}
-                                            onClick={() => setDocType(tab.id)}
+                                            className={typeTab === tab.id ? 'on' : ''}
+                                            onClick={() => setTypeTab(tab.id)}
                                         >
                                             {tab.label}
                                         </button>
                                     ))}
                                 </div>
 
-                                {docType === 'credit' ? (
+                                {typeTab === 'credit' ? (
                                     <div className="offacto-invoice-type-extra">
                                         {invoice?.parent_invoice ? (
                                             <div className="offacto-brief-edit-fg2">
@@ -434,49 +547,74 @@ export default function InvoiceEditor({
                                                         value={creditReason}
                                                         onChange={(e) => setCreditReason(e.target.value)}
                                                         placeholder={t('invoices.credit_reason_placeholder')}
+                                                        readOnly={readOnly}
                                                     />
                                                 </label>
+                                            </div>
+                                        ) : canCreateFromSource ? (
+                                            <div className="offacto-invoice-type-cta">
+                                                <p className="offacto-invoice-hint">{t('invoices.credit_from_invoice_hint')}</p>
+                                                <button type="button" className="offacto-btn-p" onClick={createCreditFromInvoice}>
+                                                    <Icon name="invoice" />
+                                                    {t('invoices.credit_note')}
+                                                </button>
                                             </div>
                                         ) : (
                                             <p className="offacto-invoice-hint">{t('invoices.credit_note_hint')}</p>
                                         )}
-                                        <div className="offacto-invoice-note warn">
-                                            <Icon name="alert" />
-                                            <div>{t('invoices.credit_note_policy')}</div>
-                                        </div>
+                                        {!readOnly ? (
+                                            <div className="offacto-invoice-note warn">
+                                                <Icon name="alert" />
+                                                <div>{t('invoices.credit_note_policy')}</div>
+                                            </div>
+                                        ) : null}
                                     </div>
                                 ) : null}
 
-                                {docType === 'rec' ? (
+                                {typeTab === 'rec' ? (
                                     <div className="offacto-invoice-type-extra">
-                                        <div className="offacto-brief-edit-fg2">
-                                            <label className="block">
-                                                <span className="offacto-brief-edit-lbl">{t('invoices.recurring_frequency')}</span>
-                                                <select
-                                                    className="offacto-brief-inp"
-                                                    value={recurringInterval}
-                                                    onChange={(e) => setRecurringInterval(e.target.value)}
-                                                >
-                                                    <option value="monthly">{t('invoices.recurring_monthly')}</option>
-                                                    <option value="yearly">{t('invoices.recurring_yearly')}</option>
-                                                </select>
-                                            </label>
-                                            <label className="block">
-                                                <span className="offacto-brief-edit-lbl">{t('invoices.recurring_end')}</span>
-                                                <select className="offacto-brief-inp" defaultValue="never">
-                                                    <option value="12">{t('invoices.recurring_after_12')}</option>
-                                                    <option value="never">{t('invoices.recurring_never')}</option>
-                                                </select>
-                                            </label>
-                                        </div>
-                                        <div className="offacto-invoice-toggle-row">
-                                            <span>{t('invoices.mollie_direct_debit')}</span>
-                                            <DemoToggle
-                                                on={mollieDirectDebitToggle}
-                                                onToggle={setMollieDirectDebitToggle}
-                                                ariaLabel={t('invoices.mollie_direct_debit')}
-                                            />
-                                        </div>
+                                        {canCreateFromSource ? (
+                                            <div className="offacto-invoice-type-cta">
+                                                <p className="offacto-invoice-hint">{t('invoices.recurring_from_invoice_hint')}</p>
+                                                <button type="button" className="offacto-btn-p" onClick={createRecurringFromInvoice}>
+                                                    <Icon name="repeat" />
+                                                    {t('invoices.recurring_from_sent')}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="offacto-brief-edit-fg2">
+                                                    <label className="block">
+                                                        <span className="offacto-brief-edit-lbl">{t('invoices.recurring_frequency')}</span>
+                                                        <select
+                                                            className="offacto-brief-inp"
+                                                            value={recurringInterval}
+                                                            onChange={(e) => setRecurringInterval(e.target.value)}
+                                                            disabled={readOnly}
+                                                        >
+                                                            <option value="monthly">{t('invoices.recurring_monthly')}</option>
+                                                            <option value="yearly">{t('invoices.recurring_yearly')}</option>
+                                                        </select>
+                                                    </label>
+                                                    <label className="block">
+                                                        <span className="offacto-brief-edit-lbl">{t('invoices.recurring_end')}</span>
+                                                        <select className="offacto-brief-inp" defaultValue="never" disabled={readOnly}>
+                                                            <option value="12">{t('invoices.recurring_after_12')}</option>
+                                                            <option value="never">{t('invoices.recurring_never')}</option>
+                                                        </select>
+                                                    </label>
+                                                </div>
+                                                <div className="offacto-invoice-toggle-row">
+                                                    <span>{t('invoices.mollie_direct_debit')}</span>
+                                                    <DemoToggle
+                                                        on={mollieDirectDebitToggle}
+                                                        onToggle={setMollieDirectDebitToggle}
+                                                        ariaLabel={t('invoices.mollie_direct_debit')}
+                                                        disabled={readOnly}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 ) : null}
                             </div>
@@ -504,6 +642,7 @@ export default function InvoiceEditor({
                                         value={form.data.customer_id}
                                         onChange={(e) => form.setData('customer_id', e.target.value)}
                                         aria-invalid={Boolean(form.errors.customer_id)}
+                                        disabled={readOnly}
                                     >
                                         <option value="">{t('invoices.select_customer')}</option>
                                         {customerOptions.map((opt) => (
@@ -541,6 +680,7 @@ export default function InvoiceEditor({
                                             className="offacto-brief-inp"
                                             value={paymentTerm}
                                             onChange={(e) => onPaymentTermChange(e.target.value)}
+                                            disabled={readOnly}
                                         >
                                             <option value="30">{t('invoices.term_30')}</option>
                                             <option value="14">{t('invoices.term_14')}</option>
@@ -556,6 +696,7 @@ export default function InvoiceEditor({
                                             value={customerRef}
                                             onChange={(e) => setCustomerRef(e.target.value)}
                                             placeholder="PO-2026-118"
+                                            readOnly={readOnly}
                                         />
                                     </label>
                                     <label className="block">
@@ -575,20 +716,22 @@ export default function InvoiceEditor({
                         <div className="offacto-brief-edit-card">
                             <div className="offacto-brief-edit-card-h">
                                 <h3>{t('invoices.section_lines')}</h3>
-                                <div className="offacto-invoice-card-acts">
-                                    <button
-                                        type="button"
-                                        className="offacto-brief-btn-sm"
-                                        onClick={() => toast.info(t('invoices.import_hours_toast'))}
-                                    >
-                                        <Icon name="clock" />
-                                        {t('invoices.import_hours')}
-                                    </button>
-                                    <button type="button" className="offacto-brief-btn-sm" onClick={addLine}>
-                                        <Icon name="plus" />
-                                        {t('invoices.add_line')}
-                                    </button>
-                                </div>
+                                {!readOnly ? (
+                                    <div className="offacto-invoice-card-acts">
+                                        <button
+                                            type="button"
+                                            className="offacto-brief-btn-sm"
+                                            onClick={() => toast.info(t('invoices.import_hours_toast'))}
+                                        >
+                                            <Icon name="clock" />
+                                            {t('invoices.import_hours')}
+                                        </button>
+                                        <button type="button" className="offacto-brief-btn-sm" onClick={addLine}>
+                                            <Icon name="plus" />
+                                            {t('invoices.add_line')}
+                                        </button>
+                                    </div>
+                                ) : null}
                             </div>
                             <div className="offacto-brief-edit-card-b">
                                 <LineItemsEditor
@@ -600,6 +743,7 @@ export default function InvoiceEditor({
                                     variant="builder"
                                     invoiceStyle
                                     suppressToolbar
+                                    readOnly={readOnly}
                                 />
                             </div>
                         </div>
@@ -609,7 +753,7 @@ export default function InvoiceEditor({
                                 <h3>{t('invoices.payment_reminders_attachments')}</h3>
                             </div>
                             <div className="offacto-brief-edit-card-b offacto-invoice-fg">
-                                {docType !== 'credit' ? (
+                                {typeTab !== 'credit' ? (
                                     <>
                                         <div className="offacto-invoice-toggle-row">
                                             <div>
@@ -620,6 +764,7 @@ export default function InvoiceEditor({
                                                 on={molliePaymentToggle && mollieConfigured}
                                                 onToggle={setMolliePaymentToggle}
                                                 ariaLabel={t('invoices.mollie_payment_link')}
+                                                disabled={readOnly}
                                             />
                                         </div>
                                         <div className="offacto-invoice-toggle-row">
@@ -631,6 +776,7 @@ export default function InvoiceEditor({
                                                 on={reminderToggle}
                                                 onToggle={setReminderToggle}
                                                 ariaLabel={t('invoices.auto_reminders')}
+                                                disabled={readOnly}
                                             />
                                         </div>
                                     </>
@@ -644,6 +790,7 @@ export default function InvoiceEditor({
                                         on={accountantToggle}
                                         onToggle={setAccountantToggle}
                                         ariaLabel={t('invoices.copy_accountant')}
+                                        disabled={readOnly}
                                     />
                                 </div>
                                 <div className="offacto-invoice-sep" />
@@ -665,6 +812,26 @@ export default function InvoiceEditor({
                                 </div>
                             </div>
                         </div>
+
+                        {readOnly && (invoice?.payments || []).length > 0 ? (
+                            <div className="offacto-brief-edit-card">
+                                <div className="offacto-brief-edit-card-h">
+                                    <h3>{t('invoices.section_payments')}</h3>
+                                </div>
+                                <div className="offacto-brief-edit-card-b">
+                                    <ul className="offacto-invoice-payments-list">
+                                        {invoice.payments.map((payment) => (
+                                            <li key={payment.id}>
+                                                <span>
+                                                    {formatDate(payment.payment_date)} · {payment.payment_method}
+                                                </span>
+                                                <span>{money(payment.amount)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
 
                     <aside className="offacto-invoice-sticky">
@@ -691,7 +858,7 @@ export default function InvoiceEditor({
                                     date={issueDate}
                                     dueDate={form.data.due_date}
                                     offerNumber={invoice?.offer?.offer_number}
-                                    documentType={docType === 'credit' ? 'credit' : docType === 'rec' ? 'recurring' : 'invoice'}
+                                    documentType={previewDocumentType}
                                     intraEu={intraEu}
                                     attachments={previewAttachments}
                                     showMollieLink={molliePaymentToggle && mollieConfigured}
@@ -741,14 +908,21 @@ export default function InvoiceEditor({
                 invoiceId={invoice?.id}
                 documentNumber={invoice?.invoice_number || nextInvoiceNumber}
                 defaultEmail={selectedCustomer?.email || ''}
-                defaultMessage={emailMessage}
+                defaultMessage={invoice?.email_message || emailMessage}
                 legalDocumentIds={selectedLegal}
                 postbodeConfigured={postbodeConfigured}
                 peppolConfigured={peppolConfigured}
-                mollieConfigured={mollieConfigured}
+                mollieConfigured={mollieConfigured && !isPaid}
                 whatsappConfigured={whatsappConfigured}
                 whatsappShareUrl={whatsappShareUrl || ''}
-                onBeforeSend={(runSend) => saveThen(runSend)}
+                onBeforeSend={isDraft ? (runSend) => saveThen(runSend) : undefined}
+            />
+            <InvoiceReminderModal
+                open={reminderOpen}
+                onClose={() => setReminderOpen(false)}
+                invoiceId={invoice?.id}
+                defaultEmail={selectedCustomer?.email || ''}
+                defaultMessage={reminderDefault}
             />
         </AuthenticatedLayout>
     );
