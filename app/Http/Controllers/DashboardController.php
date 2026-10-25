@@ -7,6 +7,7 @@ use App\Models\BriefingResponse;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Offer;
+use App\Services\PurchaseFinanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -182,13 +183,19 @@ class DashboardController extends Controller
         $overdueInvoices = $invoices->filter(fn (Invoice $invoice) => $invoice->isOverdue());
         $overdueTotal = round($overdueInvoices->sum(fn (Invoice $invoice) => (float) $invoice->amount_due), 2);
 
-        $expenses = 0;
-        $netResult = $revenue - $expenses;
+        $finance = app(PurchaseFinanceService::class);
+        $expenses = $finance->expensesExclBetween($companyId, $startOfYear->copy(), now());
+        $inputVat = $finance->inputVatBetween($companyId, $startOfYear->copy(), now());
+        $outputVat = round($invoicesYtd->sum(fn (Invoice $invoice) => (float) $invoice->tax_amount), 2);
+        $netResult = round($revenue - $expenses, 2);
 
         return [
             'revenue' => $revenue,
             'expenses' => $expenses,
-            'expensesTracked' => false,
+            'expensesTracked' => true,
+            'inputVat' => $inputVat,
+            'outputVat' => $outputVat,
+            'vatPayable' => round($outputVat - $inputVat, 2),
             'netResult' => $netResult,
             'openOffersTotal' => $openOffersTotal,
             'openOffersCount' => $openOffersCount,
@@ -208,7 +215,10 @@ class DashboardController extends Controller
         return [
             'revenue' => 0,
             'expenses' => 0,
-            'expensesTracked' => false,
+            'expensesTracked' => true,
+            'inputVat' => 0,
+            'outputVat' => 0,
+            'vatPayable' => 0,
             'netResult' => 0,
             'openOffersTotal' => 0,
             'openOffersCount' => 0,
@@ -230,6 +240,11 @@ class DashboardController extends Controller
         $paidSeries = [];
         $outstandingSeries = [];
         $expensesSeries = [];
+        $paidPurchases = app(PurchaseFinanceService::class)->paidInclByMonth(
+            $companyId,
+            now()->subMonths(11)->startOfMonth(),
+            now()->endOfMonth(),
+        );
 
         for ($i = 11; $i >= 0; $i--) {
             $month = now()->subMonths($i);
@@ -244,7 +259,7 @@ class DashboardController extends Controller
             $outstandingSeries[] = round($monthInvoices->sum(
                 fn (Invoice $invoice) => $invoice->isPaid() ? 0 : (float) $invoice->amount_due
             ), 2);
-            $expensesSeries[] = 0;
+            $expensesSeries[] = round($paidPurchases[$ym] ?? 0, 2);
         }
 
         $paymentStatus = [

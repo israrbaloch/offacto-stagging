@@ -21,6 +21,10 @@ function buildNavGroups({ isAdmin, viewingCompany }) {
           ]
         : [];
 
+    const purchases = viewingCompany
+        ? [{ href: '/purchases', label: 'nav.incoming_invoices', icon: 'inbox', comingSoon: true }]
+        : [];
+
     const work = viewingCompany
         ? [
               { href: '/time', label: 'nav.time_tracking', icon: 'clock' },
@@ -40,6 +44,7 @@ function buildNavGroups({ isAdmin, viewingCompany }) {
     return [
         { labelKey: 'nav.overview', items: overview },
         ...(sales.length ? [{ labelKey: 'nav.sales', items: sales }] : []),
+        ...(purchases.length ? [{ labelKey: 'nav.purchases', items: purchases }] : []),
         ...(work.length ? [{ labelKey: 'nav.work', items: work }] : []),
         { labelKey: 'nav.manage', items: manage },
     ];

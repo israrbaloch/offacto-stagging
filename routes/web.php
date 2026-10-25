@@ -42,6 +42,7 @@ use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UpgradeController;
+use App\Http\Controllers\PurchaseInvoiceController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\InvoiceFromTimeController;
@@ -184,6 +185,15 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     
     // Services
     Route::resource('services', ServiceController::class);
+
+    Route::get('purchases/export', [PurchaseInvoiceController::class, 'export'])->name('purchases.export');
+    Route::get('purchases', [PurchaseInvoiceController::class, 'index'])->name('purchases.index');
+    Route::post('purchases', [PurchaseInvoiceController::class, 'store'])->name('purchases.store');
+    Route::put('purchases/{purchase}', [PurchaseInvoiceController::class, 'update'])->name('purchases.update');
+    Route::post('purchases/{purchase}/book', [PurchaseInvoiceController::class, 'book'])->name('purchases.book');
+    Route::post('purchases/{purchase}/flag', [PurchaseInvoiceController::class, 'flag'])->name('purchases.flag');
+    Route::post('purchases/{purchase}/pay', [PurchaseInvoiceController::class, 'pay'])->name('purchases.pay');
+    Route::get('purchases/{purchase}/file', [PurchaseInvoiceController::class, 'file'])->name('purchases.file');
 
     Route::get('time', [TimeEntryController::class, 'index'])->name('time.index');
     Route::post('time', [TimeEntryController::class, 'store'])->name('time.store');

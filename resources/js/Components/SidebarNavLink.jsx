@@ -30,6 +30,10 @@ export function resolveSidebarActiveHref(currentUrl, items) {
                 aliases.some((a) => path === a || path.startsWith(`${normalizeSidebarPath(a)}/`));
         }
 
+        if (item.comingSoon) {
+            continue;
+        }
+
         if (matches && href.length > bestLength) {
             bestHref = item.href;
             bestLength = href.length;
@@ -51,6 +55,16 @@ export default function SidebarNavLink({
     showTimerDot = false,
 }) {
     const active = normalizeSidebarPath(item.href) === normalizeSidebarPath(activeHref || '');
+
+    if (item.comingSoon && variant === 'offacto') {
+        return (
+            <span className="offacto-nav-soon" aria-disabled="true">
+                <Icon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
+                <span className="min-w-0 flex-1 truncate text-inherit">{label}</span>
+                <span className="nav-new">{t('nav.coming_soon')}</span>
+            </span>
+        );
+    }
 
     if (variant === 'offacto') {
         return (

@@ -41,8 +41,8 @@ function DashboardKpi({ hero, icon, label, amount, trend, trendMuted }) {
     );
 }
 
-function InvoicedReceivedChart({ labels, invoiced, received }) {
-    const max = Math.max(...invoiced, ...received, 1);
+function InvoicedReceivedChart({ labels, invoiced, received, costs = [] }) {
+    const max = Math.max(...invoiced, ...received, ...costs, 1);
 
     return (
         <div className="offacto-dash-chart">
@@ -58,6 +58,11 @@ function InvoicedReceivedChart({ labels, invoiced, received }) {
                             className="offacto-dash-bar offacto-dash-bar--received"
                             style={{ height: `${(received[index] / max) * 100}%` }}
                             title={money(received[index])}
+                        />
+                        <div
+                            className="offacto-dash-bar offacto-dash-bar--cost"
+                            style={{ height: `${((costs[index] || 0) / max) * 100}%` }}
+                            title={money(costs[index] || 0)}
                         />
                     </div>
                     <small>{label}</small>
@@ -83,14 +88,16 @@ export default function Dashboard({
     const labels = cashflow.labels || [];
     const paid = cashflow.paid || [];
     const outstanding = cashflow.outstanding || [];
+    const costs = cashflow.expenses || [];
 
     const chartRows = useMemo(() => {
         return labels.map((label, index) => ({
             label,
             invoiced: (paid[index] || 0) + (outstanding[index] || 0),
             received: paid[index] || 0,
+            costs: costs[index] || 0,
         }));
-    }, [labels, paid, outstanding]);
+    }, [labels, paid, outstanding, costs]);
 
     const marginPct =
         stats.revenue > 0 ? Math.round((stats.netResult / stats.revenue) * 100) : 0;
@@ -232,7 +239,7 @@ export default function Dashboard({
                 <DashboardKpi
                     icon="file"
                     label={t('dashboard.vat_payable')}
-                    amount={0}
+                    amount={stats.vatPayable ?? 0}
                     trend={
                         period === 'Y'
                             ? t('dashboard.vat_not_available')
@@ -255,6 +262,9 @@ export default function Dashboard({
                             <span>
                                 <i className="pale" /> {t('dashboard.received')}
                             </span>
+                            <span>
+                                <i className="cost" /> {t('dashboard.expenses')}
+                            </span>
                         </div>
                     </div>
                     <div className="offacto-dash-card-body">
@@ -262,6 +272,7 @@ export default function Dashboard({
                             labels={chartRows.map((row) => row.label)}
                             invoiced={chartRows.map((row) => row.invoiced)}
                             received={chartRows.map((row) => row.received)}
+                            costs={chartRows.map((row) => row.costs)}
                         />
                     </div>
                 </div>
