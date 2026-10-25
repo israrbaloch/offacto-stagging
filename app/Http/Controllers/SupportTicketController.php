@@ -3,15 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\SupportTicket;
+use App\Models\SupportTicketAttachment;
 use App\Models\SupportTicketMessage;
 use App\Services\SupportTicketNotifier;
 use App\Support\SupportPolicy;
 use App\Support\SupportReference;
 use App\Support\SupportSettings;
+use App\Support\SupportTicketAttachmentHandler;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -50,6 +54,9 @@ class SupportTicketController extends Controller
                 'created_at' => $t->created_at->toIso8601String(),
             ]),
             'company' => ['id' => $company->id, 'name' => $company->company_name],
+            'filters' => [
+                'drawer' => $request->query('drawer') === 'new' ? 'new' : null,
+            ],
         ]);
     }
 
@@ -65,11 +72,11 @@ class SupportTicketController extends Controller
             return back()->with('error', 'no-company');
         }
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'subject' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:10000'],
             'priority' => ['required', Rule::in(['urgent', 'high', 'normal', 'low'])],
-        ]);
+        ], SupportTicketAttachmentHandler::validationRules()));
 
         $hours = SupportPolicy::slaHoursForPriority($data['priority']);
         $ticket = SupportTicket::create([
@@ -85,12 +92,14 @@ class SupportTicketController extends Controller
             'sla_due_at' => now()->addHours($hours),
         ]);
 
-        SupportTicketMessage::create([
+        $message = SupportTicketMessage::create([
             'support_ticket_id' => $ticket->id,
             'user_id' => $user->id,
             'body' => $data['description'],
             'is_internal' => false,
         ]);
+
+        SupportTicketAttachmentHandler::persist($ticket, $message, $request);
 
         $notifier->notify('new_ticket', $ticket, [
             'snippet' => Str::limit($data['description'], 240),
@@ -104,7 +113,9 @@ class SupportTicketController extends Controller
     {
         $this->authorize('view', $ticket);
 
-        $ticket->load(['messages' => fn ($q) => $q->where('is_internal', false)->with('user:id,name')]);
+        $ticket->load([
+            'messages' => fn ($q) => $q->where('is_internal', false)->with(['user:id,name', 'attachments']),
+        ]);
 
         return Inertia::render('Support/Tickets/Show', [
             'ticket' => [
@@ -121,24 +132,47 @@ class SupportTicketController extends Controller
                 'author' => $m->user_id === $request->user()->id ? 'You' : ($m->user?->name ?? 'Support team'),
                 'is_staff' => $m->user_id !== $ticket->customer_user_id,
                 'created_at' => $m->created_at->toIso8601String(),
+                'attachments' => SupportTicketAttachmentHandler::serializeForTicket($ticket, $m->attachments),
             ]),
         ]);
+    }
+
+    public function showAttachment(Request $request, SupportTicket $ticket, SupportTicketAttachment $attachment): StreamedResponse
+    {
+        $this->authorize('view', $ticket);
+
+        $attachment->loadMissing('message');
+        if ($attachment->message?->support_ticket_id !== $ticket->id) {
+            abort(404);
+        }
+
+        if (! Storage::disk('local')->exists($attachment->file_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response(
+            $attachment->file_path,
+            $attachment->original_name,
+            ['Content-Type' => $attachment->mime_type],
+        );
     }
 
     public function storeMessage(Request $request, SupportTicket $ticket, SupportTicketNotifier $notifier): RedirectResponse
     {
         $this->authorize('reply', $ticket);
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'body' => ['required', 'string', 'max:10000'],
-        ]);
+        ], SupportTicketAttachmentHandler::validationRules()));
 
-        SupportTicketMessage::create([
+        $message = SupportTicketMessage::create([
             'support_ticket_id' => $ticket->id,
             'user_id' => $request->user()->id,
             'body' => $data['body'],
             'is_internal' => false,
         ]);
+
+        SupportTicketAttachmentHandler::persist($ticket, $message, $request);
 
         $ticket->update(['status' => SupportTicket::STATUS_OPEN]);
 

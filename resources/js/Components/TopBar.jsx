@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { t } from '../lib/i18n';
 import Icon from './Icon';
 import LocaleSelect from './LocaleSelect';
-import TimeTrackerWidget from './TimeTrackerWidget';
 import TopBarNotifications from './TopBarNotifications';
+import { applyTheme } from '../lib/applyTheme';
+import { COMPANY_PLAN_SETTINGS_PATH } from '../lib/companyPlanSettingsPath';
 
 function initials(name = '') {
     return name
@@ -52,22 +53,22 @@ export default function TopBar() {
 
     const trialBadge = (() => {
         if (!activeCompany || auth?.user?.is_admin) return null;
-        if (activeCompany.subscription_plan) {
+        if (activeCompany.subscription_valid && activeCompany.subscription_plan) {
             return (
-                <Link href="/upgrade" className="offacto-topbar-trial hidden sm:inline">
+                <Link href={COMPANY_PLAN_SETTINGS_PATH} className="offacto-topbar-trial hidden sm:inline">
                     {t(`upgrade.plans.${activeCompany.subscription_plan}.name`)}
                 </Link>
             );
         }
         if (activeCompany.trial_expired) {
             return (
-                <Link href="/upgrade" className="offacto-topbar-trial hidden sm:inline">
+                <Link href={COMPANY_PLAN_SETTINGS_PATH} className="offacto-topbar-trial hidden sm:inline">
                     {t('topbar.trial_ended')}
                 </Link>
             );
         }
         return (
-            <Link href="/upgrade" className="offacto-topbar-trial hidden sm:inline">
+            <Link href={COMPANY_PLAN_SETTINGS_PATH} className="offacto-topbar-trial hidden sm:inline">
                 {t('topbar.trial_short', { days: activeCompany.trial_days_left ?? 0 })}
             </Link>
         );
@@ -99,9 +100,6 @@ export default function TopBar() {
                 <div className="offacto-topbar-spacer" aria-hidden="true" />
 
                 <div className="offacto-topbar-actions">
-                    <div className="hidden md:flex">
-                        <TimeTrackerWidget variant="topbar" />
-                    </div>
                     {trialBadge}
                     <LocaleSelect variant="topbar" />
                     <button
@@ -109,8 +107,8 @@ export default function TopBar() {
                         className="offacto-topbar-icobtn"
                         onClick={() => {
                             const next = appearance === 'dark' ? 'light' : 'dark';
-                            document.documentElement.classList.toggle('dark', next === 'dark');
-                            router.post('/theme', { theme: next }, { preserveScroll: true, preserveState: true });
+                            applyTheme(next);
+                            router.post('/theme', { theme: next }, { preserveScroll: true });
                         }}
                         aria-label={appearance === 'dark' ? t('theme.to_light') : t('theme.to_dark')}
                         title={appearance === 'dark' ? t('theme.light') : t('theme.dark')}
@@ -157,55 +155,35 @@ export default function TopBar() {
                         </button>
 
                         {profileOpen && (
-                            <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-[rgba(14,18,80,0.08)] bg-white text-[#0E1250] shadow-xl">
-                                <div className="flex items-center gap-3 border-b border-[rgba(14,18,80,0.08)] px-4 py-3">
+                            <div className="offacto-topbar-me-menu absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl shadow-xl">
+                                <div className="offacto-topbar-me-head flex items-center gap-3 px-4 py-3">
                                     <span className="offacto-topbar-me-avatar">{initials(user?.name)}</span>
                                     <div className="min-w-0">
-                                        <div className="truncate text-sm font-semibold text-[#0E1250]">{user?.name}</div>
-                                        <div className="truncate text-xs text-[#48537F]">{user?.email}</div>
+                                        <div className="offacto-topbar-me-name truncate text-sm font-semibold">{user?.name}</div>
+                                        <div className="offacto-topbar-me-email truncate text-xs">{user?.email}</div>
                                     </div>
                                 </div>
                                 <div className="p-1.5">
                                     <Link
                                         href="/profile"
                                         onClick={() => setProfileOpen(false)}
-                                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#0E1250] hover:bg-[#EEEAFE]"
+                                        className="offacto-topbar-me-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm"
                                     >
-                                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEEAFE] text-[#6B59DC]">
+                                        <span className="offacto-topbar-me-ico">
                                             <Icon name="user" className="h-4 w-4" />
                                         </span>
                                         {t('topbar.profile')}
                                     </Link>
-                                    <Link
-                                        href="/company/settings"
-                                        onClick={() => setProfileOpen(false)}
-                                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#0E1250] hover:bg-[#EEEAFE]"
-                                    >
-                                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEEAFE] text-[#6B59DC]">
-                                            <Icon name="building" className="h-4 w-4" />
-                                        </span>
-                                        {t('topbar.company_settings')}
-                                    </Link>
-                                    <Link
-                                        href="/support"
-                                        onClick={() => setProfileOpen(false)}
-                                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#0E1250] hover:bg-[#EEEAFE]"
-                                    >
-                                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEEAFE] text-[#6B59DC]">
-                                            <Icon name="help" className="h-4 w-4" />
-                                        </span>
-                                        {t('topbar.help')}
-                                    </Link>
                                 </div>
-                                <div className="border-t border-[rgba(14,18,80,0.08)] p-1.5">
+                                <div className="offacto-topbar-me-foot p-1.5">
                                     <Link
                                         href="/logout"
                                         method="post"
                                         as="button"
                                         onClick={() => setProfileOpen(false)}
-                                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[#F27D8C] hover:bg-[#F27D8C]/10"
+                                        className="offacto-topbar-me-link is-danger flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm"
                                     >
-                                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#F27D8C]/15 text-[#F27D8C]">
+                                        <span className="offacto-topbar-me-ico is-danger">
                                             <Icon name="logout" className="h-4 w-4" />
                                         </span>
                                         {t('topbar.logout')}

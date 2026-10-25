@@ -5,6 +5,8 @@ import CompanyIntegrationsPanel from '../../../Components/CompanyIntegrationsPan
 import CompanySettingsBrandingPanel from '../../../Components/CompanySettingsBrandingPanel';
 import CompanySettingsLegalDocumentsPanel from '../../../Components/CompanySettingsLegalDocumentsPanel';
 import CompanySettingsRemindersPanel from '../../../Components/CompanySettingsRemindersPanel';
+import CompanySettingsPlanPanel from '../../../Components/CompanySettingsPlanPanel';
+import CompanySettingsTeamPanel from '../../../Components/CompanySettingsTeamPanel';
 import CompanySettingsVatPanel from '../../../Components/CompanySettingsVatPanel';
 import NumberingSeriesEditor from '../../../Components/NumberingSeriesEditor';
 import SelectMenu from '../../../Components/SelectMenu';
@@ -60,8 +62,8 @@ const NAV = [
     { id: 'numbering', icon: 'flag', labelKey: 'company_settings.nav_numbering' },
     { id: 'integrations', icon: 'link', labelKey: 'company_settings.nav_integrations' },
     { id: 'reminders', icon: 'bell', labelKey: 'company_settings.nav_reminders' },
-    { id: 'team', icon: 'users', labelKey: 'company_settings.nav_team', comingSoon: true },
-    { id: 'plan', icon: 'shield', labelKey: 'company_settings.nav_plan', comingSoon: true },
+    { id: 'team', icon: 'users', labelKey: 'company_settings.nav_team' },
+    { id: 'plan', icon: 'shield', labelKey: 'company_settings.nav_plan' },
 ];
 
 function Field({ label, error, children }) {
@@ -114,6 +116,8 @@ export default function CompanySettingsIndex({
     integrations = {},
     integrationLinks = {},
     reminders = {},
+    team = {},
+    plan = {},
     settingsBasePath = '/company/settings',
 }) {
     const [section, setSection] = useState(initialSection);
@@ -470,6 +474,12 @@ export default function CompanySettingsIndex({
                         {section === 'reminders' && (
                             <CompanySettingsRemindersPanel reminders={reminders} settingsBasePath={settingsBasePath} />
                         )}
+
+                        {section === 'team' && (
+                            <CompanySettingsTeamPanel team={team} settingsBasePath={settingsBasePath} />
+                        )}
+
+                        {section === 'plan' && <CompanySettingsPlanPanel plan={plan} />}
 
                         {section === 'legal' && (
                             <Panel title={t('company_settings.legal_title')} description={t('company_settings.legal_desc')}>

@@ -82,6 +82,16 @@ body {
 :root {
     --company-primary: #4054b2;
     --company-secondary: #0f172a;
+    /* offacto-app-demo.html semantic tokens (light) */
+    --offacto-bg: #f5f7ff;
+    --offacto-shell-bg: #c9d7f2;
+    --offacto-card: #ffffff;
+    --offacto-text: #1a1f3c;
+    --offacto-muted: #5c6488;
+    --offacto-line: rgb(107 125 196 / 0.16);
+    --offacto-soft: #eef1ff;
+    --offacto-navy: #2b3580;
+    --offacto-primary: #3a4aa0;
 }
 
 /* Admin sidebar: scroll when needed, no visible scrollbar */
@@ -96,11 +106,1117 @@ body {
 
 html.dark {
     color-scheme: dark;
+    /* offacto-app-demo.html :root[data-theme="dark"] */
+    --offacto-bg: #0f1330;
+    --offacto-shell-bg: #0f1330;
+    --offacto-card: #171c42;
+    --offacto-text: #e8ecff;
+    --offacto-muted: #9aa4d4;
+    --offacto-line: rgb(139 165 217 / 0.16);
+    --offacto-soft: #1f2654;
+    --offacto-navy: #e8ecff;
+    --offacto-primary: #8ba5d9;
+    --offacto-pale: #2e3772;
+    --offacto-ok: #5fd3b3;
+    --offacto-okbg: #0f3a31;
+    --offacto-warn: #f0b44c;
+    --offacto-warnbg: #3d2d0a;
+    --offacto-bad: #f27d8c;
+    --offacto-shadow: 0 4px 24px rgb(0 0 0 / 0.35);
+    /* Shared dash tokens (demo uses var(--card) on .card) */
+    --dash-navy: #e8ecff;
+    --dash-primary: #6b59dc;
+    --dash-mid: #9d8df1;
+    --dash-pale: #2e3772;
+    --dash-card: #171c42;
+    --dash-muted: #9aa4d4;
+    --dash-soft: #1f2654;
+    --dash-line: rgb(139 165 217 / 0.16);
+    --dash-ok: #5fd3b3;
+    --dash-link: #b4a9ff;
 }
 
 html.dark body {
-    background: #0b1220;
-    color: #e2e8f0;
+    background: var(--offacto-bg);
+    color: var(--offacto-text);
+}
+
+/* Authenticated shell — demo dark page background */
+.offacto-app-shell,
+.offacto-app-scroll {
+    background: var(--offacto-shell-bg);
+    color: var(--offacto-text);
+}
+
+/* Page shells redefine light --dash-* ; force demo dark tokens (higher specificity). */
+html.dark :is(
+        .offacto-dash,
+        .offacto-briefings,
+        .offacto-time-page,
+        .offacto-settings-page,
+        .offacto-quotes-page,
+        .offacto-invoices-page,
+        .offacto-customers-page,
+        .offacto-services-page,
+        .offacto-assistant-page,
+        .offacto-support-page,
+        .offacto-quote-builder-page,
+        .offacto-invoice-builder-page
+    ) {
+    --dash-navy: #e8ecff;
+    --dash-primary: #6b59dc;
+    --dash-mid: #9d8df1;
+    --dash-pale: #2e3772;
+    --dash-card: #171c42;
+    --dash-muted: #9aa4d4;
+    --dash-soft: #1f2654;
+    --dash-line: rgb(139 165 217 / 0.16);
+    --dash-ok: #5fd3b3;
+    --dash-link: #b4a9ff;
+    color: var(--offacto-text);
+}
+
+html.dark
+    :is(.offacto-dash, .offacto-briefings)
+    :is(h1, h2, h3, h4, b, .offacto-dash-kpi-val, .offacto-dash-kpi-lbl, .offacto-brief-kpi-title, .offacto-brief-kpi-val):not(
+        :is(.offacto-demo-paper, .offacto-invoice-paper, .offacto-settings-email-preview, .offacto-quote-preview-sheet)
+            :is(h1, h2, h3, h4, b, .offacto-dash-kpi-val, .offacto-dash-kpi-lbl, .offacto-brief-kpi-title, .offacto-brief-kpi-val)
+    ) {
+    color: var(--offacto-text);
+}
+
+html.dark :is(.offacto-dash-kpi-ic, .offacto-dash-ficon, .offacto-brief-kpi-ic) {
+    background: var(--offacto-soft);
+    border: 1px solid var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark :is(.offacto-dash-kpi-ic, .offacto-dash-ficon, .offacto-brief-kpi-ic) svg {
+    color: var(--offacto-text);
+    stroke: currentColor;
+}
+
+html.dark .offacto-dash-toolbar {
+    background: var(--dash-card);
+    border-color: var(--offacto-line);
+}
+
+html.dark .offacto-dash-toolbar b {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-dash-tabs {
+    background: rgb(255 255 255 / 0.06);
+}
+
+html.dark .offacto-dash-tabs button {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-dash-tabs button.on {
+    background: var(--offacto-soft);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-dash-btn-outline {
+    background: var(--offacto-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-dash-btn-outline:hover {
+    border-color: #9d8df1;
+    color: #fff;
+}
+
+html.dark .offacto-brief-btn-sm {
+    background: var(--offacto-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-brief-btn-sm:hover {
+    border-color: #9d8df1;
+    color: #fff;
+}
+
+html.dark .offacto-dash-legend {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-dash-link {
+    color: var(--dash-link);
+}
+
+html.dark .offacto-dash-act-title,
+html.dark .offacto-brief-who b {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-dash-act-meta {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-brief-table-head {
+    border-bottom-color: var(--offacto-line);
+}
+
+html.dark .offacto-brief-table-head h3 {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-time-wk > div:not(.today) {
+    background: var(--offacto-soft);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-time-wk > div:not(.today) small {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-time-bar {
+    background: var(--offacto-pale);
+}
+
+html.dark .offacto-time-session-row td {
+    background: rgb(255 255 255 / 0.04);
+}
+
+html.dark .offacto-time-card-head {
+    border-bottom-color: var(--offacto-line);
+}
+
+html.dark .offacto-time-card-head h3,
+html.dark .offacto-time-clock,
+html.dark .offacto-time-billable-row b {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-time-note {
+    background: var(--offacto-warnbg);
+    color: var(--offacto-warn);
+}
+
+html.dark .offacto-demo-badge.ok {
+    background: var(--offacto-okbg);
+    color: var(--offacto-ok);
+}
+
+html.dark .offacto-demo-badge.warn {
+    background: var(--offacto-warnbg);
+    color: var(--offacto-warn);
+}
+
+html.dark .offacto-demo-badge.bad {
+    background: rgb(64 26 36);
+    color: var(--offacto-bad);
+}
+
+html.dark .offacto-demo-badge.ai {
+    color: #b4a9ff;
+}
+
+html.dark .offacto-status-badge {
+    background: rgb(255 255 255 / 0.1);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-status-badge.ok {
+    background: var(--offacto-okbg);
+    color: var(--offacto-ok);
+}
+
+html.dark .offacto-status-badge.grey {
+    background: rgb(255 255 255 / 0.08);
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-dash-card {
+    background: var(--dash-card);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-dash-card-head {
+    border-bottom-color: var(--offacto-line);
+}
+
+html.dark .offacto-dash-card-head h3 {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-brief-edit-ph p,
+html.dark .offacto-dash-hero p,
+html.dark .offacto-dash-toolbar-muted,
+html.dark .offacto-settings-hint,
+html.dark .offacto-settings-page .offacto-brief-edit-ph p {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-brief-btn {
+    background: var(--offacto-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-brief-btn:hover {
+    border-color: #9d8df1;
+    color: #fff;
+}
+
+html.dark .offacto-brief-btn.p,
+html.dark .offacto-settings-page .offacto-brief-btn.p {
+    background: var(--dash-primary) !important;
+    border-color: var(--dash-primary) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+}
+
+html.dark .offacto-brief-btn.p:hover,
+html.dark .offacto-settings-page .offacto-brief-btn.p:hover {
+    background: #5a48c8 !important;
+    border-color: #5a48c8 !important;
+    color: #fff !important;
+}
+
+html.dark .offacto-btn-p:not(.offacto-sidebar *):not(.offacto-plusmenu *) {
+    background: var(--dash-primary) !important;
+    border-color: var(--dash-primary) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+}
+
+html.dark .offacto-btn-p:not(.offacto-sidebar *):not(.offacto-plusmenu *):hover {
+    background: #5a48c8 !important;
+    color: #fff !important;
+}
+
+html.dark .offacto-btn-p:not(.offacto-sidebar *):not(.offacto-plusmenu *) svg {
+    background: #0e1250 !important;
+    color: #fff !important;
+}
+
+html.dark .offacto-time-inp,
+html.dark .offacto-select-menu-trigger,
+html.dark .offacto-settings-page .offacto-time-inp,
+html.dark .offacto-settings-page .offacto-select-menu-trigger {
+    background: var(--offacto-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-time-inp::placeholder {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-select-menu-label.is-placeholder {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-select-menu-label.is-selected {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-brief-table-card.offacto-dash-card,
+html.dark .offacto-brief-table-wrap {
+    background: var(--dash-card);
+}
+
+html.dark .offacto-brief-table th {
+    color: var(--offacto-muted);
+    border-bottom-color: var(--offacto-line);
+}
+
+html.dark .offacto-brief-table td {
+    color: var(--offacto-text);
+    border-bottom-color: var(--offacto-line);
+}
+
+html.dark .offacto-brief-table tr:hover td {
+    background: rgb(255 255 255 / 0.04);
+}
+
+html.dark .offacto-demo-badge.grey {
+    background: rgb(255 255 255 / 0.08);
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-topbar-pop {
+    background: #171c42;
+    color: var(--offacto-text);
+    box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
+}
+
+html.dark .offacto-topbar-pop-head {
+    border-bottom-color: var(--offacto-line);
+}
+
+html.dark .offacto-topbar-pop-head h3 {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-topbar-pop-empty {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-topbar-act {
+    border-bottom-color: var(--offacto-line);
+}
+
+html.dark .offacto-topbar-act b,
+html.dark .offacto-topbar-act div {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-topbar-act small {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-settings-page {
+    --set-line: rgb(139 165 217 / 0.16);
+    --set-primary: #8ba5d9;
+    --set-navy: #e8ecff;
+}
+
+html.dark .offacto-settings-page .offacto-settings-grid > .offacto-dash-card,
+html.dark .offacto-settings-page .offacto-settings-main > .offacto-dash-card {
+    background: var(--dash-card);
+}
+
+html.dark .offacto-settings-page .offacto-brief-btn {
+    background: var(--offacto-soft);
+    color: var(--offacto-text);
+    border-color: var(--offacto-line);
+}
+
+html.dark .offacto-settings-page .offacto-settings-plan-tile {
+    background: var(--offacto-soft);
+    border-color: var(--offacto-line);
+}
+
+html.dark .offacto-settings-plan-name,
+html.dark .offacto-settings-plan-val,
+html.dark .offacto-settings-plan-feature {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-settings-plan-val span {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-setnav button {
+    color: #c8cef0;
+}
+
+html.dark .offacto-setnav button.on {
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+}
+
+html.dark .offacto-assistant-msg.is-assistant {
+    background: var(--offacto-soft);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-assistant-insight {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-dash-grid-3 > .offacto-dash-card.lift:not(:hover) {
+    background: var(--dash-card);
+}
+
+html.dark .offacto-dash-card.lift:hover {
+    background: var(--dash-primary);
+}
+
+html.dark .offacto-dash-card.lift:hover :is(.offacto-dash-kpi-lbl, .offacto-dash-kpi-val, .offacto-dash-kpi-tr, p, h3, a, .offacto-demo-badge) {
+    color: #fff !important;
+}
+
+/* Lift/hover KPI icons — --dash-navy is light in dark mode; use navy tile + white stroke (demo .kpi .ic) */
+html.dark .offacto-dash-card.lift:hover :is(.offacto-dash-kpi-ic, .offacto-dash-ficon),
+html.dark .offacto-brief-kpi:hover .offacto-brief-kpi-ic,
+html.dark .offacto-quotes-page .offacto-quotes-kpi.offacto-dash-card.lift:hover .offacto-dash-kpi-ic,
+html.dark .offacto-invoices-page .offacto-invoices-kpi.offacto-dash-card.lift:hover .offacto-dash-kpi-ic,
+html.dark .offacto-customers-page .offacto-customers-kpi.offacto-dash-card.lift:hover .offacto-dash-kpi-ic {
+    background: #0e1250 !important;
+    border-color: transparent !important;
+    color: #fff !important;
+}
+
+html.dark .offacto-dash-card.lift:hover :is(.offacto-dash-kpi-ic, .offacto-dash-ficon) svg,
+html.dark .offacto-brief-kpi:hover .offacto-brief-kpi-ic svg {
+    color: #fff !important;
+    stroke: currentColor;
+}
+
+html.dark :is(.offacto-quotes-page, .offacto-invoices-page) tbody.offacto-brief-table-click tr:hover {
+    background: var(--dash-soft);
+    box-shadow: inset 3px 0 0 var(--dash-primary);
+}
+
+html.dark :is(.offacto-quotes-page, .offacto-invoices-page) tbody.offacto-brief-table-click tr:hover td {
+    background: transparent;
+    color: var(--offacto-text);
+}
+
+html.dark :is(.offacto-quotes-page, .offacto-invoices-page) .offacto-brief-btn-sm,
+html.dark .offacto-invoice-builder-page .offacto-brief-btn-sm {
+    background: var(--offacto-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark :is(.offacto-quotes-page, .offacto-invoices-page) .offacto-brief-btn-sm:hover,
+html.dark .offacto-invoice-builder-page .offacto-brief-btn-sm:hover {
+    border-color: var(--dash-mid);
+    color: #fff;
+}
+
+html.dark .offacto-invoices-page .offacto-invoice-row-delete {
+    background: var(--offacto-soft);
+    border-color: var(--offacto-line);
+}
+
+html.dark .offacto-invoices-page .offacto-invoice-row-delete:hover {
+    background: rgb(242 125 140 / 0.12);
+    border-color: rgb(242 125 140 / 0.35);
+}
+
+html.dark .offacto-invoices-page .offacto-invoices-period-select {
+    background-color: var(--offacto-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23E8ECFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px 14px;
+}
+
+html.dark .offacto-invoices-page .offacto-invoices-period-select:hover,
+html.dark .offacto-invoices-page .offacto-invoices-period-select:focus {
+    border-color: var(--dash-mid);
+    color: #fff;
+}
+
+html.dark .offacto-settings-drop {
+    background: var(--offacto-bg);
+    border-color: var(--offacto-pale);
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-settings-drop:hover {
+    border-color: var(--dash-primary);
+    color: var(--dash-primary);
+    background: var(--offacto-soft);
+}
+
+html.dark .offacto-settings-drop svg {
+    color: var(--dash-primary);
+}
+
+html.dark .offacto-settings-check {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-settings-page .offacto-btn-p:has(svg) {
+    background: var(--dash-primary) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+}
+
+html.dark .offacto-settings-page .offacto-btn-p:has(svg):hover {
+    background: #5a48c8 !important;
+    color: #fff !important;
+}
+
+/* Quote / invoice builders — demo dark: page --bg, cards --card, .inp on --card (no light lavender shell) */
+html.dark .offacto-quote-builder-page {
+    --qb-bg: #0f1330;
+    --qb-card: #171c42;
+    --qb-panel: #1f2654;
+    --qb-aside: #171c42;
+    --qb-canvas: #1f2654;
+    --qb-navy: #e8ecff;
+    background: var(--qb-bg);
+    color: var(--qb-navy);
+}
+
+html.dark .offacto-quote-builder-page.offacto-briefings {
+    --dash-navy: #e8ecff;
+    --dash-primary: #6b59dc;
+    --dash-mid: #9d8df1;
+    --dash-pale: #2e3772;
+    --dash-card: #171c42;
+    --dash-muted: #9aa4d4;
+    --dash-soft: #1f2654;
+    --dash-line: rgb(139 165 217 / 0.16);
+    --dash-link: #b4a9ff;
+    color: #e8ecff;
+}
+
+html.dark .offacto-quote-builder-page :is(h1, h2, h3):not(
+    :is(.offacto-demo-paper, .offacto-invoice-paper, .offacto-quote-preview-sheet) :is(h1, h2, h3)
+) {
+    color: #e8ecff;
+}
+
+html.dark .offacto-quote-builder-page .offacto-brief-edit-crumb {
+    color: var(--dash-muted);
+}
+
+html.dark .offacto-quote-builder-page .offacto-brief-edit-crumb:hover {
+    color: var(--dash-link);
+}
+
+html.dark .offacto-quote-builder-page .offacto-brief-edit-lbl {
+    color: #e8ecff;
+}
+
+html.dark .offacto-quote-builder-page .offacto-brief-edit-card-h {
+    background: var(--qb-card);
+    border-bottom-color: var(--dash-line);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-aside-card,
+html.dark .offacto-quote-builder-page .offacto-quote-center-card,
+html.dark .offacto-quote-builder-page .offacto-quote-aside-card .offacto-quote-palette,
+html.dark .offacto-quote-builder-page .offacto-quote-aside-card .offacto-brief-edit-card-b {
+    background: var(--qb-card);
+}
+
+html.dark .offacto-quote-builder-page .offacto-brief-inp,
+html.dark .offacto-quote-builder-page .offacto-select-menu-trigger {
+    background-color: var(--dash-card);
+    border-color: var(--dash-line);
+    color: var(--dash-navy);
+}
+
+html.dark .offacto-quote-builder-page .offacto-brief-inp:focus,
+html.dark .offacto-quote-builder-page .offacto-select-menu-trigger:focus {
+    border-color: var(--dash-mid);
+    box-shadow: 0 0 0 3px rgb(157 141 241 / 0.25);
+}
+
+html.dark .offacto-quote-builder-page .offacto-brief-btn {
+    background: var(--offacto-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-quote-builder-page .offacto-brief-btn:hover {
+    border-color: var(--dash-mid);
+    color: #fff;
+}
+
+html.dark .offacto-quote-builder-page .offacto-btn-p {
+    background: var(--dash-primary) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+}
+
+html.dark .offacto-quote-builder-page .offacto-btn-p:hover {
+    background: #5a48c8 !important;
+    color: #fff !important;
+}
+
+html.dark .offacto-quote-builder-page .offacto-btn-p svg {
+    background: #0e1250 !important;
+    color: #fff !important;
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-pal {
+    background: var(--dash-soft);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-pal svg {
+    color: var(--dash-mid);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-blk {
+    background: var(--dash-card);
+    border-color: var(--dash-line);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-blk:hover {
+    border-color: var(--dash-mid);
+    background: var(--dash-card);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-blk-tools button {
+    background: var(--dash-soft);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-canvas {
+    background: var(--qb-canvas);
+}
+
+html.dark .offacto-quote-drop,
+html.dark .offacto-quote-builder-page .offacto-quote-drop {
+    background: var(--offacto-bg);
+    border-color: var(--offacto-pale);
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-quote-drop:hover,
+html.dark .offacto-quote-builder-page .offacto-quote-drop:hover {
+    border-color: var(--dash-primary);
+    color: var(--dash-primary);
+    background: var(--offacto-soft);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-media {
+    background: var(--dash-soft);
+    color: var(--dash-primary);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-media-empty p {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-media-empty svg {
+    color: var(--dash-primary);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-att-row,
+html.dark .offacto-quote-builder-page .offacto-quote-integ {
+    background: var(--dash-soft);
+    border: 1px solid var(--dash-line);
+}
+
+html.dark .offacto-quote-builder-page .offacto-quote-att-row__name {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-invoice-builder-page input.offacto-brief-inp[readonly] {
+    background: var(--dash-soft);
+    color: var(--dash-muted);
+}
+
+html.dark .offacto-invoice-builder-page select.offacto-brief-inp,
+html.dark .offacto-quote-builder-page select.offacto-brief-inp {
+    background-color: var(--dash-card);
+    color: var(--dash-navy);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23E8ECFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 14px 14px;
+}
+
+html.dark .offacto-invoice-builder-page .offacto-invoice-note {
+    background: var(--dash-soft);
+    border-color: var(--dash-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-invoice-builder-page .offacto-invoice-hint,
+html.dark .offacto-invoice-builder-page .offacto-invoice-saved-hint {
+    color: var(--dash-muted);
+}
+
+/* --dash-navy is the light text color in dark mode. Surfaces that stayed #fff
+   rendered that light text on white. Demo dark uses --card / --soft / --bg. */
+html.dark .offacto-brief-hero {
+    background: #141a3a;
+    color: #fff;
+    border: 1px solid var(--offacto-line);
+}
+
+html.dark .offacto-brief-hero h1 {
+    color: #fff !important;
+}
+
+html.dark .offacto-brief-hero p {
+    color: #c8cef0 !important;
+}
+
+html.dark .offacto-briefings .offacto-brief-inp,
+html.dark .offacto-briefings .offacto-select-menu-trigger,
+html.dark .offacto-settings-page .offacto-time-inp {
+    background-color: var(--dash-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-briefings .offacto-brief-inp::placeholder {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-brief-phone .offacto-brief-inp,
+html.dark .offacto-brief-phone-b .offacto-brief-inp {
+    background: #f5f7ff !important;
+    color: #0e1250 !important;
+    border-color: #e4e9f7 !important;
+}
+
+html.dark .offacto-brief-phone-h,
+html.dark .offacto-brief-phone-url,
+html.dark .offacto-brief-phone-title,
+html.dark .offacto-brief-phone-h .offacto-brief-phone-brand b {
+    color: #fff !important;
+}
+
+html.dark .offacto-brief-av {
+    background: var(--dash-soft);
+    color: var(--offacto-text);
+    border: 1px solid var(--offacto-line);
+}
+
+html.dark .offacto-quote-line-menu,
+html.dark #select-menu-portal {
+    background: #171c42 !important;
+    border: 1px solid var(--offacto-line) !important;
+    color: var(--offacto-text);
+    box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
+}
+
+html.dark .offacto-quote-line-menu-item,
+html.dark #select-menu-portal button {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-quote-line-menu-item .text-slate-400,
+html.dark #select-menu-portal .text-slate-400,
+html.dark #select-menu-portal .text-slate-700 {
+    color: var(--offacto-muted) !important;
+}
+
+html.dark .offacto-quote-line-menu-item:hover,
+html.dark #select-menu-portal button:hover {
+    background: var(--dash-soft) !important;
+    color: #fff;
+}
+
+html.dark #select-menu-portal input {
+    background: var(--dash-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-brief-qitem {
+    background: var(--dash-card);
+    border: 1px solid var(--offacto-line);
+}
+
+html.dark .offacto-invoice-toggle {
+    background: rgb(255 255 255 / 0.22);
+}
+
+html.dark .offacto-invoice-toggle.on {
+    background: #6b59dc;
+}
+
+html.dark .offacto-invoice-toggle-row b {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-settings-legal-table-wrap {
+    background: var(--dash-soft);
+    border-color: var(--offacto-line);
+}
+
+html.dark .offacto-settings-legal-table thead th,
+html.dark .offacto-settings-legal-no-file,
+html.dark .offacto-settings-legal-replace {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-settings-legal-table tbody td {
+    border-bottom-color: var(--offacto-line);
+}
+
+html.dark .offacto-settings-legal-doc-name,
+html.dark .offacto-settings-legal-notice strong {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-settings-legal-notice {
+    background: var(--dash-soft);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-settings-vat-option,
+html.dark .offacto-settings-integ-row {
+    background: var(--dash-soft);
+    border-color: var(--offacto-line);
+}
+
+html.dark .offacto-settings-vat-option.on {
+    background: var(--dash-pale);
+    border-color: var(--dash-primary);
+}
+
+html.dark .offacto-settings-vat-radio {
+    background: transparent;
+    border-color: var(--offacto-muted);
+}
+
+html.dark .offacto-settings-vat-option-copy b,
+html.dark .offacto-settings-integ-copy b {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-settings-vat-option-copy span,
+html.dark .offacto-settings-integ-copy span,
+html.dark .offacto-settings-vat-foot {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-settings-integ-connect {
+    background: var(--dash-card);
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-settings-integ-connect:hover {
+    border-color: var(--dash-mid);
+    color: #fff;
+}
+
+html.dark .offacto-settings-page :is(.text-slate-900, .text-slate-800, .text-slate-700) {
+    color: var(--offacto-text) !important;
+}
+
+html.dark .offacto-settings-page :is(.text-slate-600, .text-slate-500) {
+    color: var(--offacto-muted) !important;
+}
+
+html.dark .offacto-settings-page .rounded-2xl.border {
+    background: var(--dash-card);
+    border-color: var(--offacto-line) !important;
+}
+
+html.dark .offacto-settings-page .bg-slate-50 {
+    background-color: var(--dash-soft) !important;
+}
+
+html.dark .offacto-settings-page .bg-white {
+    background-color: var(--dash-card) !important;
+}
+
+html.dark .offacto-settings-page .border-slate-100,
+html.dark .offacto-settings-page .border-slate-200 {
+    border-color: var(--offacto-line) !important;
+}
+
+html.dark .offacto-drawer,
+html.dark .offacto-drawer-body,
+html.dark .offacto-customer-drawer {
+    background: #0f1330;
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-drawer-head,
+html.dark .offacto-customer-drawer .offacto-drawer-head,
+html.dark .offacto-drawer-foot {
+    background: #171c42;
+    border-color: var(--offacto-line);
+}
+
+html.dark .offacto-drawer-who h3,
+html.dark .offacto-customer-drawer .offacto-drawer-lbl,
+html.dark .offacto-drawer .offacto-drawer-lbl {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-drawer-who small,
+html.dark .offacto-customer-drawer .offacto-drawer-hint {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-customer-drawer .offacto-drawer-inp,
+html.dark .offacto-drawer .offacto-drawer-inp,
+html.dark .offacto-drawer .offacto-time-inp {
+    background-color: #1f2654;
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-customer-drawer select.offacto-drawer-inp {
+    background-color: #1f2654;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E8ECFF' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 18px;
+}
+
+html.dark .offacto-customer-drawer .offacto-drawer-btn,
+html.dark .offacto-drawer .offacto-brief-btn {
+    background: #1f2654;
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-customer-drawer .offacto-drawer-btn.primary {
+    background: #6b59dc !important;
+    border-color: #6b59dc !important;
+    color: #fff !important;
+}
+
+html.dark .offacto-drawer-close {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-drawer-close:hover {
+    background: rgb(255 255 255 / 0.06);
+    color: #fff;
+}
+
+html.dark .offacto-drawer-drop,
+html.dark .offacto-support-image-drop {
+    background: #1f2654;
+    border-color: rgb(255 255 255 / 0.18);
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-drawer-drop:hover,
+html.dark .offacto-drawer-drop.over,
+html.dark .offacto-support-image-drop:hover,
+html.dark .offacto-support-image-drop.over {
+    border-color: var(--dash-primary);
+    background: var(--dash-soft);
+    color: var(--dash-primary);
+}
+
+html.dark .offacto-drawer-drop b {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-drawer-drop svg {
+    color: var(--dash-primary);
+}
+
+html.dark .offacto-drawer-drop small {
+    color: var(--offacto-muted);
+}
+
+html.dark .offacto-settings-lbl,
+html.dark .offacto-settings-page .offacto-settings-lbl {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-topbar-me-avatar + div .absolute {
+    background: #171c42;
+    border-color: var(--offacto-line);
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-topbar-me-avatar + div .absolute a,
+html.dark .offacto-topbar-me-avatar + div .absolute .truncate {
+    color: var(--offacto-text);
+}
+
+html.dark .offacto-topbar-me-avatar + div .absolute a:hover {
+    background: rgb(255 255 255 / 0.06);
+}
+
+.offacto-topbar-me-menu {
+    border: 1px solid rgb(14 18 80 / 0.08);
+    background: #fff;
+    color: #0e1250;
+}
+
+.offacto-topbar-me-head {
+    border-bottom: 1px solid rgb(14 18 80 / 0.08);
+}
+
+.offacto-topbar-me-name {
+    color: #0e1250;
+}
+
+.offacto-topbar-me-email {
+    color: #48537f;
+}
+
+.offacto-topbar-me-foot {
+    border-top: 1px solid rgb(14 18 80 / 0.08);
+}
+
+.offacto-topbar-me-link {
+    color: #0e1250;
+}
+
+.offacto-topbar-me-link:hover {
+    background: #eeeafe;
+}
+
+.offacto-topbar-me-link.is-danger,
+.offacto-topbar-me-link.is-danger:hover {
+    color: #f27d8c;
+}
+
+.offacto-topbar-me-link.is-danger:hover {
+    background: rgb(242 125 140 / 0.1);
+}
+
+.offacto-topbar-me-ico {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background-color: #eeeafe;
+    color: #6b59dc;
+}
+
+.offacto-topbar-me-ico svg {
+    color: currentColor;
+    stroke: currentColor;
+}
+
+.offacto-topbar-me-ico.is-danger {
+    background-color: rgb(242 125 140 / 0.15);
+    color: #f27d8c;
+}
+
+html.dark .offacto-topbar-me-menu {
+    border-color: rgb(139 165 217 / 0.16);
+    background: #171c42;
+    color: #e8ecff;
+}
+
+html.dark .offacto-topbar-me-head {
+    border-bottom-color: rgb(139 165 217 / 0.16);
+}
+
+html.dark .offacto-topbar-me-name {
+    color: #e8ecff;
+}
+
+html.dark .offacto-topbar-me-email {
+    color: #9aa4d4;
+}
+
+html.dark .offacto-topbar-me-foot {
+    border-top-color: rgb(139 165 217 / 0.16);
+}
+
+html.dark .offacto-topbar-me-link {
+    color: #e8ecff;
+}
+
+html.dark .offacto-topbar-me-link:hover {
+    background: rgb(255 255 255 / 0.06);
+}
+
+html.dark .offacto-topbar-me-link.is-danger,
+html.dark .offacto-topbar-me-link.is-danger:hover {
+    color: #f27d8c;
+}
+
+html.dark .offacto-topbar-me-ico {
+    background-color: #1f2654 !important;
+    color: #c8cef0 !important;
+}
+
+html.dark .offacto-topbar-me-ico.is-danger {
+    background-color: rgb(242 125 140 / 0.16) !important;
+    color: #f27d8c !important;
 }
 
 html.dark .bg-white { background-color: #111827; }
@@ -365,8 +1481,15 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     stroke-width: 1.8;
 }
 
-.offacto-nav .nav-cnt {
+.offacto-nav .offacto-nav-trail {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.offacto-nav .nav-cnt {
     font-size: 11px;
     background: #9d8df1;
     color: #0e1250;
@@ -398,7 +1521,6 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 }
 
 .offacto-nav .nav-new {
-    margin-left: auto;
     font-size: 10px;
     background: #6b59dc;
     color: #fff;
@@ -409,7 +1531,6 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 }
 
 .offacto-nav .nav-timer-dot {
-    margin-left: auto;
     width: 9px;
     height: 9px;
     flex-shrink: 0;
@@ -3695,6 +4816,11 @@ html.dark .auth-doc-note {
 .offacto-demo-page-surface {
     background: #c9d7f2 !important;
     color: #0e1250;
+}
+
+html.dark .offacto-demo-page-surface {
+    background: #0f1330 !important;
+    color: var(--offacto-text);
 }
 
 /* Core demo palette: #C9D7F2 #E7EDFB #0E1250 #5A48C8 (+ --panel #D8E2F7 canvas) */
@@ -8133,4 +9259,801 @@ html.dark .auth-doc-note {
     font-size: 12px;
     font-weight: 500;
     color: #5c6488;
+}
+
+/* Team & roles — company settings */
+.offacto-settings-team-head {
+    align-items: center;
+}
+
+.offacto-settings-team-head h3 {
+    margin: 0;
+}
+
+.offacto-settings-team-head .offacto-btn-p {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.offacto-settings-team-table-wrap {
+    overflow-x: auto;
+}
+
+.offacto-settings-team-table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+}
+
+.offacto-settings-team-table thead th {
+    padding: 0 12px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: left;
+    color: #5c6488;
+}
+
+.offacto-settings-team-table tbody td {
+    padding: 14px 12px;
+    border-top: 1px solid rgb(107 125 196 / 0.12);
+    vertical-align: middle;
+    font-size: 13px;
+    color: #48537f;
+}
+
+.offacto-settings-team-person {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.offacto-settings-team-av {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgb(107 89 220 / 0.12);
+    color: #6b59dc;
+    font-size: 13px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.offacto-settings-team-person b {
+    display: block;
+    color: var(--dash-navy);
+    font-weight: 700;
+}
+
+.offacto-settings-team-person small {
+    display: block;
+    margin-top: 2px;
+    color: #5c6488;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.offacto-settings-team-role,
+.offacto-settings-team-role-select {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgb(107 89 220 / 0.12);
+    color: #6b59dc;
+    font-size: 12px;
+    font-weight: 700;
+    border: 0;
+    font-family: inherit;
+}
+
+.offacto-settings-team-role-select {
+    cursor: pointer;
+}
+
+.offacto-settings-team-perms {
+    line-height: 1.4;
+    max-width: 280px;
+}
+
+.offacto-settings-team-pending {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #b45309;
+}
+
+.offacto-settings-team-remove {
+    display: block;
+    margin-top: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #b4235a;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* Plan — offacto-app-demo.html instellingen() t==='plan' */
+.offacto-settings-page .offacto-demo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    background: rgb(58 74 160 / 0.08);
+    color: var(--set-primary);
+}
+
+.offacto-settings-page .offacto-demo-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.offacto-settings-page .offacto-demo-badge.nd::before {
+    display: none;
+}
+
+.offacto-settings-page .offacto-demo-badge.ok {
+    background: #e3f6f0;
+    color: #14866d;
+}
+
+.offacto-settings-page .offacto-demo-badge.warn {
+    background: #fff3dd;
+    color: #a45f00;
+}
+
+.offacto-settings-page .offacto-brief-btn.block {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+    margin-top: 14px;
+}
+
+.offacto-settings-page .offacto-brief-btn.p {
+    background: var(--set-primary) !important;
+    color: #fff !important;
+    border-color: var(--set-primary);
+    box-shadow: 0 4px 16px rgb(58 74 160 / 0.28);
+}
+
+.offacto-settings-page .offacto-brief-btn.p:hover:not(:disabled) {
+    background: var(--set-navy) !important;
+    border-color: var(--set-navy);
+    color: #fff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgb(58 74 160 / 0.36);
+}
+
+.offacto-settings-page .offacto-brief-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.offacto-settings-plan-warn {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #a45f00;
+}
+
+.offacto-settings-plan-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+    .offacto-settings-plan-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.offacto-settings-page .offacto-settings-plan-tile {
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgb(107 125 196 / 0.16);
+    box-shadow: 0 4px 24px rgb(58 74 160 / 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.offacto-settings-page .offacto-settings-plan-tile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--set-primary), #6b7dc4);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.offacto-settings-page .offacto-settings-plan-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 36px rgb(58 74 160 / 0.18);
+}
+
+.offacto-settings-page .offacto-settings-plan-tile:hover::before {
+    opacity: 1;
+}
+
+.offacto-settings-page .offacto-settings-plan-tile.is-featured {
+    border: 2px solid var(--set-primary);
+    box-shadow: 0 4px 24px rgb(58 74 160 / 0.1);
+}
+
+.offacto-settings-page .offacto-settings-plan-tile.is-current {
+    border-color: #14866d;
+}
+
+.offacto-settings-plan-tile-inner {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: 20px;
+}
+
+.offacto-settings-plan-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--set-navy);
+}
+
+.offacto-settings-plan-val {
+    margin: 6px 0 0;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: #1a1f3c;
+}
+
+.offacto-settings-plan-val span {
+    font-size: 13px;
+    font-weight: 500;
+    color: #5c6488;
+}
+
+.offacto-settings-plan-features {
+    flex: 1;
+}
+
+.offacto-settings-plan-feature {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #1a1f3c;
+}
+
+.offacto-settings-plan-feature svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    stroke: var(--set-primary);
+    color: var(--set-primary);
+}
+
+.offacto-settings-plan-footnote {
+    margin-top: 12px;
+}
+
+/* AI assistant — offacto-app-demo.html assistent() */
+.offacto-assistant-page .offacto-dash-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgb(58 74 160 / 0.08);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dash-primary);
+}
+
+.offacto-assistant-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: start;
+}
+
+@media (max-width: 960px) {
+    .offacto-assistant-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.offacto-assistant-chat {
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+}
+
+.offacto-assistant-msgs {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.offacto-assistant-msg {
+    max-width: 85%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.offacto-assistant-msg.is-assistant {
+    align-self: flex-start;
+    background: #eef1ff;
+    color: #1a1f3c;
+}
+
+.offacto-assistant-compose {
+    display: flex;
+    gap: 8px;
+    padding: 14px 16px 16px;
+    border-top: 1px solid rgb(14 18 80 / 0.07);
+}
+
+.offacto-assistant-compose .offacto-time-inp {
+    flex: 1;
+}
+
+.offacto-assistant-compose .offacto-btn-p {
+    padding: 10px 14px;
+    border-radius: 10px;
+}
+
+.offacto-assistant-compose .offacto-btn-p svg {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    background: transparent;
+}
+
+.offacto-assistant-aside {
+    display: grid;
+    gap: 18px;
+}
+
+.offacto-assistant-try-list {
+    display: grid;
+    gap: 8px;
+}
+
+.offacto-assistant-try-list .offacto-brief-btn {
+    white-space: normal;
+    text-align: left;
+    justify-content: flex-start;
+}
+
+.offacto-assistant-insights {
+    display: grid;
+    gap: 10px;
+}
+
+.offacto-assistant-insight {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, rgb(91 75 214 / 0.08), rgb(107 125 196 / 0.08));
+    font-size: 13px;
+    line-height: 1.4;
+    color: #48537f;
+}
+
+.offacto-assistant-insight svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #6b59dc;
+}
+
+.offacto-assistant-insight p {
+    margin: 0;
+}
+
+/* Support — workspace tickets (demo .ph + .card + .inp) */
+.offacto-support-page .offacto-brief-edit-ph h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.offacto-support-page .offacto-brief-edit-ph p {
+    max-width: 52ch;
+    color: var(--dash-muted);
+}
+
+.offacto-support-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgb(107 89 220 / 0.12);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dash-primary);
+}
+
+.offacto-support-eyebrow svg {
+    width: 14px;
+    height: 14px;
+}
+
+.offacto-support-stack {
+    display: grid;
+    gap: 18px;
+    max-width: 880px;
+}
+
+.offacto-support-page .offacto-brief-edit-ph {
+    align-items: flex-end;
+}
+
+.offacto-support-table-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dash-navy);
+}
+
+.offacto-support-table-subject {
+    font-weight: 600;
+    color: var(--dash-navy);
+}
+
+.offacto-support-table-muted {
+    font-size: 13px;
+    color: var(--dash-muted);
+}
+
+.offacto-support-drawer-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.offacto-support-image-picker {
+    display: grid;
+    gap: 10px;
+}
+
+.offacto-support-image-picker.is-compact .offacto-support-image-drop {
+    padding: 14px 16px;
+}
+
+.offacto-support-image-picker-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.offacto-support-image-picker-list li {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgb(14 18 80 / 0.12);
+    background: var(--dash-soft);
+}
+
+.offacto-support-image-picker-list img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.offacto-support-image-picker-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: rgb(14 18 80 / 0.72);
+    color: #fff;
+    cursor: pointer;
+}
+
+.offacto-support-image-picker-remove svg {
+    width: 12px;
+    height: 12px;
+}
+
+.offacto-support-image-drop.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.offacto-support-msg-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.offacto-support-msg-attach {
+    display: block;
+    width: 120px;
+    height: 90px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgb(14 18 80 / 0.12);
+    background: #fff;
+}
+
+.offacto-support-msg-attach img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.offacto-support-drawer .offacto-drawer-who h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.offacto-support-form {
+    display: grid;
+    gap: 16px;
+}
+
+.offacto-support-form .offacto-brief-edit-lbl {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dash-navy);
+}
+
+.offacto-support-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.offacto-support-form-actions .offacto-btn-p svg {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    background: transparent;
+}
+
+.offacto-support-tickets-card .offacto-brief-empty {
+    padding: 32px 20px;
+}
+
+.offacto-support-ticket-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.offacto-support-ticket-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    border-top: 1px solid rgb(14 18 80 / 0.07);
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.12s;
+}
+
+.offacto-support-ticket-list li:first-child .offacto-support-ticket-row {
+    border-top: 0;
+}
+
+.offacto-support-ticket-row:hover {
+    background: rgb(14 18 80 / 0.03);
+}
+
+html.dark .offacto-support-ticket-row:hover {
+    background: var(--dash-soft);
+    box-shadow: inset 3px 0 0 var(--dash-primary);
+}
+
+.offacto-support-ticket-main {
+    min-width: 0;
+}
+
+.offacto-support-ticket-main b {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dash-navy);
+}
+
+.offacto-support-ticket-main span {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--dash-muted);
+}
+
+.offacto-support-thread {
+    display: grid;
+    gap: 12px;
+}
+
+.offacto-support-msg {
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.offacto-support-msg.is-staff {
+    background: var(--dash-soft);
+    color: var(--dash-navy);
+}
+
+.offacto-support-msg.is-user {
+    background: rgb(107 89 220 / 0.12);
+    color: var(--dash-navy);
+}
+
+.offacto-support-msg-meta {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--dash-muted);
+}
+
+.offacto-support-msg-body {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.offacto-support-empty-card .offacto-brief-empty {
+    display: grid;
+    gap: 16px;
+    justify-items: center;
+    padding: 40px 24px;
+}
+
+.offacto-support-page .offacto-demo-badge {
+    vertical-align: middle;
+    margin-left: 6px;
+    text-transform: capitalize;
+}
+
+html.dark .offacto-support-image-picker-list li,
+html.dark .offacto-support-msg-attach {
+    border-color: rgb(255 255 255 / 0.12);
+    background: var(--dash-soft);
+}
+
+/* Quote, invoice, credit note, and email previews follow company branding, not the app dark theme. */
+.offacto-quote-preview-sheet {
+    padding: 4px 2px 8px;
+    border-radius: 12px;
+    background: #fff;
+    color: #1a1f3c;
+}
+
+html.dark :is(.offacto-demo-paper, .offacto-invoice-paper, .offacto-settings-email-preview, .offacto-quote-preview-sheet) {
+    color-scheme: light;
+    color: #1a1f3c;
+    background-color: #fff;
+}
+
+html.dark .offacto-quote-preview-sheet .offacto-quote-preview-h {
+    color: var(--brand, #0e1250);
+}
+
+html.dark .offacto-quote-preview-sheet .offacto-quote-hint {
+    color: #48537f;
+}
+
+html.dark .offacto-demo-paper-classic-title {
+    color: var(--brand-accent, var(--brand));
+}
+
+html.dark .offacto-demo-paper-head-right h4,
+html.dark .offacto-demo-paper-totals .total {
+    color: var(--brand);
+}
+
+html.dark .offacto-demo-paper-from-name,
+html.dark .offacto-demo-paper-lines td,
+html.dark .offacto-demo-paper-classic-lines td {
+    color: #1a1f3c;
+}
+
+html.dark .offacto-demo-paper-muted,
+html.dark .offacto-demo-paper-billto-lbl,
+html.dark .offacto-demo-paper-lines th,
+html.dark .offacto-demo-paper-classic-dates {
+    color: #5c6488;
+}
+
+html.dark .offacto-demo-paper-classic-lines th {
+    color: var(--brand-accent, #48537f);
+}
+
+html.dark .offacto-demo-modern-hero,
+html.dark .offacto-demo-modern-hero :is(h1, h2, h3, h4, b, .offacto-demo-paper-from-name) {
+    color: #fff;
+}
+
+html.dark .offacto-demo-modern-hero .offacto-demo-paper-muted,
+html.dark .offacto-demo-modern-hero-muted {
+    color: rgb(255 255 255 / 0.82);
+}
+
+html.dark .offacto-settings-email-preview-head,
+html.dark .offacto-settings-email-preview-head :is(b, span) {
+    color: #fff;
+}
+
+html.dark .offacto-settings-email-preview-body,
+html.dark .offacto-settings-email-preview-greeting,
+html.dark .offacto-settings-email-preview-card-row b,
+html.dark .offacto-settings-email-preview-subject span:last-child {
+    color: #1a1f3c;
+}
+
+html.dark .offacto-settings-email-preview-muted,
+html.dark .offacto-settings-email-preview-card-row,
+html.dark .offacto-settings-email-preview-footnote,
+html.dark .offacto-settings-email-preview-footer,
+html.dark .offacto-settings-email-preview-subject-lbl {
+    color: #5c6488;
+}
+
+html.dark .offacto-settings-email-preview-btn {
+    color: #fff;
+}
+
+html.dark .offacto-settings-email-preview-subject,
+html.dark .offacto-settings-email-preview-footer {
+    background-color: #f5f7ff;
+}
+
+html.dark .offacto-settings-email-preview-card {
+    background-color: #fafbff;
 }

@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\UserCompanyController;
+use App\Http\Controllers\AssistantController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BriefingController;
 use App\Http\Controllers\InvoiceController;
@@ -126,6 +127,8 @@ Route::middleware(['auth', 'verified.email'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])->group(function () {
+    Route::get('/assistant', [AssistantController::class, 'index'])->name('assistant.index');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -138,6 +141,9 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     Route::post('/company/settings/branding', [ProfileController::class, 'updateCompanySettings'])->name('company.settings.branding.store');
     Route::patch('/company/settings/reminders', [CompanySettingsController::class, 'updateReminders'])->name('company.settings.reminders.update');
     Route::patch('/company/settings/vat', [CompanySettingsController::class, 'updateVatRegime'])->name('company.settings.vat.update');
+    Route::post('/company/settings/team/invites', [CompanySettingsController::class, 'storeTeamInvite'])->name('company.settings.team.invite');
+    Route::patch('/company/settings/team/members/{member}', [CompanySettingsController::class, 'updateTeamMember'])->name('company.settings.team.update');
+    Route::delete('/company/settings/team/members/{member}', [CompanySettingsController::class, 'destroyTeamMember'])->name('company.settings.team.destroy');
     Route::patch('/company/settings/legal-documents/{document}', [CompanySettingsController::class, 'updateLegalDocument'])->name('company.settings.legal.update');
     Route::get('/company/settings/legal-documents/{document}/download', [CompanySettingsController::class, 'downloadLegalDocument'])->name('company.settings.legal.download');
     Route::post('/company/settings/numbering-series', [NumberingSeriesController::class, 'store'])->name('company.settings.numbering.store');
@@ -157,6 +163,7 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('/support/tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
     Route::post('/support/tickets/{ticket}/messages', [SupportTicketController::class, 'storeMessage'])->name('support.tickets.messages.store');
+    Route::get('/support/tickets/{ticket}/attachments/{attachment}', [SupportTicketController::class, 'showAttachment'])->name('support.tickets.attachments.show');
     Route::get('/upgrade', [UpgradeController::class, 'index'])->name('upgrade');
     Route::post('/upgrade', [UpgradeController::class, 'store'])->name('upgrade.store');
     Route::get('/upgrade/callback', [UpgradeController::class, 'callback'])->name('upgrade.callback');

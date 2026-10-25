@@ -5,18 +5,24 @@ import { t } from '../lib/i18n';
 import CompanySwitcher from './CompanySwitcher';
 import Icon from './Icon';
 import SidebarCreateMenu from './SidebarCreateMenu';
+import { COMPANY_PLAN_SETTINGS_PATH } from '../lib/companyPlanSettingsPath';
 import SidebarNavLink, { normalizeSidebarPath, resolveSidebarActiveHref } from './SidebarNavLink';
 
 const AUTH_MARK_SRC = '/assets/images/favicon.ico';
 
 function buildNavGroups({ isAdmin, viewingCompany }) {
-    const overview = [{ href: '/dashboard', label: 'nav.dashboard', icon: 'grid', exact: true }];
+    const overview = [
+        { href: '/dashboard', label: 'nav.dashboard', icon: 'grid', exact: true },
+        ...(viewingCompany
+            ? [{ href: '/assistant', label: 'nav.ai_assistant', icon: 'spark', comingSoon: true }]
+            : []),
+    ];
 
     const sales = viewingCompany
         ? [
               { href: '/briefings', label: 'nav.briefings', icon: 'clipboard' },
               { href: '/offers', label: 'nav.quotes', icon: 'offers' },
-              { href: '/invoices', label: 'nav.invoices', icon: 'invoice' },
+              { href: '/invoices', label: 'nav.invoices', icon: 'invoice', countKey: 'invoices' },
               { href: '/customers', label: 'nav.customers', icon: 'customers' },
           ]
         : [];
@@ -36,9 +42,9 @@ function buildNavGroups({ isAdmin, viewingCompany }) {
         ...(viewingCompany
             ? [{ href: '/company/settings', label: 'nav.settings', icon: 'settings', aliases: ['/profile'] }]
             : []),
+        { href: '/support', label: 'nav.support', icon: 'help' },
         ...(isAdmin ? [{ href: '/companies', label: 'nav.companies', icon: 'building' }] : []),
         ...(isAdmin ? [{ href: '/admin/dashboard', label: 'nav.offacto_admin', icon: 'shield' }] : []),
-        { href: '/support', label: 'nav.brief_check', icon: 'road' },
     ];
 
     return [
@@ -51,20 +57,19 @@ function buildNavGroups({ isAdmin, viewingCompany }) {
 }
 
 function trialFoot(activeCompany) {
-    if (!activeCompany || activeCompany.subscription_plan || activeCompany.trial_expired) {
+    if (!activeCompany || activeCompany.subscription_valid) {
         return null;
     }
-    const left = activeCompany.trial_days_left ?? 0;
-    let percent = 36;
-    const start = activeCompany.trial_starts_at ? new Date(activeCompany.trial_starts_at).getTime() : null;
-    const end = activeCompany.trial_ends_at ? new Date(activeCompany.trial_ends_at).getTime() : null;
-    if (start && end && end > start) {
-        percent = Math.min(100, Math.max(4, ((Date.now() - start) / (end - start)) * 100));
-    }
-    const totalDays = start && end ? Math.max(1, Math.round((end - start) / 86400000)) : 14;
-    const used = Math.max(0, totalDays - left);
 
-    return { percent, used, total: totalDays, left };
+    const left = Math.max(0, activeCompany.trial_days_left ?? 0);
+    const total = Math.max(1, activeCompany.trial_days_total ?? 14);
+    const elapsed = Math.min(total, Math.max(0, total - left));
+    const percent =
+        activeCompany.trial_expired || left === 0
+            ? 100
+            : Math.min(100, Math.max(4, (elapsed / total) * 100));
+
+    return { percent, left, total };
 }
 
 function flattenItems(groups) {
@@ -82,6 +87,7 @@ export default function Sidebar({ onNavigate }) {
     const allNavItems = useMemo(() => flattenItems(groups), [groups]);
     const activeHref = resolveSidebarActiveHref(url, allNavItems);
     const trial = trialFoot(activeCompany);
+    const sidebarCounts = props.workspaceShell?.sidebarCounts ?? {};
     const timerRunning = Boolean(props.timeTracking?.running);
     const onTimePage = normalizeSidebarPath(url) === '/time';
 
@@ -108,10 +114,10 @@ export default function Sidebar({ onNavigate }) {
 
     const planLabel = (() => {
         if (!activeCompany) return null;
-        if (activeCompany.subscription_plan) {
+        if (activeCompany.subscription_valid && activeCompany.subscription_plan) {
             return t(`upgrade.plans.${activeCompany.subscription_plan}.name`);
         }
-        if (!activeCompany.trial_expired) {
+        if (!activeCompany.subscription_valid && !activeCompany.trial_expired) {
             return t('sidebar.trial');
         }
         return null;
@@ -148,6 +154,10 @@ export default function Sidebar({ onNavigate }) {
                                         label={t(item.label)}
                                         variant="offacto"
                                         onNavigate={onNavigate}
+                                        count={
+                                            item.countKey != null ? sidebarCounts[item.countKey] : undefined
+                                        }
+                                        badge={item.badgeKey ? t(item.badgeKey) : item.badge}
                                         showTimerDot={item.href === '/time' && timerRunning && !onTimePage}
                                     />
                                 ))}
@@ -159,11 +169,11 @@ export default function Sidebar({ onNavigate }) {
                 {trial && !isAdmin && (
                     <div className="offacto-side-foot shrink-0">
                         <b>{t('sidebar.trial')}</b>
-                        {t('sidebar.trial_days_left', { used: trial.used, total: trial.total })}
+                        {t('sidebar.trial_days_left', { left: trial.left, total: trial.total })}
                         <div className="offacto-trial-bar">
                             <i style={{ width: `${trial.percent}%` }} />
                         </div>
-                        <Link href="/upgrade" onClick={onNavigate}>
+                        <Link href={COMPANY_PLAN_SETTINGS_PATH} onClick={onNavigate}>
                             {t('sidebar.choose_plan')} →
                         </Link>
                     </div>

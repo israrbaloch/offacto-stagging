@@ -1,97 +1,153 @@
-import { Link, useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import Icon from '../../../Components/Icon';
+import SupportTicketDrawer from '../../../Components/SupportTicketDrawer';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
 import { t } from '../../../lib/i18n';
 import { formatDate } from '../../../lib/utils';
 
-export default function SupportTicketsIndex({ tickets = [], company }) {
-    const form = useForm({
-        subject: '',
-        description: '',
-        priority: 'normal',
-    });
+function ticketStatusBadgeClass(status) {
+    const key = String(status || '').toLowerCase();
+    if (key === 'closed') {
+        return 'grey';
+    }
+    if (key === 'open' || key === 'new') {
+        return 'ok';
+    }
+    if (key === 'pending' || key === 'waiting') {
+        return 'warn';
+    }
+    return '';
+}
+
+function priorityLabel(priority) {
+    const key = String(priority || 'normal').toLowerCase();
+    const map = {
+        low: 'support.priority_low',
+        normal: 'support.priority_normal',
+        high: 'support.priority_high',
+        urgent: 'support.priority_urgent',
+    };
+    return t(map[key] || map.normal);
+}
+
+function drawerOpenFromFilters(filters = {}) {
+    return filters.drawer === 'new';
+}
+
+export default function SupportTicketsIndex({ tickets = [], company, filters = {} }) {
+    const [drawerOpen, setDrawerOpen] = useState(() => drawerOpenFromFilters(filters));
+    const companyName = company?.name || company?.company_name || '';
+
+    useEffect(() => {
+        setDrawerOpen(drawerOpenFromFilters(filters));
+    }, [filters.drawer]);
+
+    useEffect(() => {
+        if (!drawerOpen) {
+            document.body.style.removeProperty('overflow');
+            return undefined;
+        }
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    }, [drawerOpen]);
+
+    function syncDrawerUrl(open) {
+        const url = open ? '/support?drawer=new' : '/support';
+        window.history.replaceState({}, '', url);
+    }
+
+    function openNewDrawer() {
+        setDrawerOpen(true);
+        syncDrawerUrl(true);
+    }
+
+    function closeDrawer() {
+        setDrawerOpen(false);
+        syncDrawerUrl(false);
+    }
+
+    function openTicket(id) {
+        router.visit(`/support/tickets/${id}`);
+    }
 
     return (
         <AuthenticatedLayout title={t('support.title')}>
-            <div className="mx-auto max-w-3xl space-y-6">
-                <div>
-                    <h1 className="text-xl font-semibold text-slate-900">{t('support.title')}</h1>
-                    <p className="mt-1 text-sm text-slate-500">
-                        {t('support.tickets_intro', { company: company?.name || '' })}
-                    </p>
+            <div className="offacto-briefings offacto-dash offacto-support-page">
+                <header className="offacto-brief-edit-ph">
+                    <div>
+                        <span className="offacto-support-eyebrow">
+                            <Icon name="help" />
+                            {t('nav.support')}
+                        </span>
+                        <h1>{t('support.title')}</h1>
+                        <p>{t('support.tickets_intro', { company: companyName })}</p>
+                    </div>
+                    <button type="button" className="offacto-btn-p" onClick={openNewDrawer}>
+                        <Icon name="plus" />
+                        {t('support.new_ticket')}
+                    </button>
+                </header>
+
+                <div className="offacto-brief-table-card offacto-dash-card">
+                    <div className="offacto-quotes-toolbar">
+                        <b className="offacto-support-table-title">{t('support.your_tickets')}</b>
+                    </div>
+                    <div className="offacto-brief-table-wrap">
+                        <table className="offacto-brief-table">
+                            <thead>
+                                <tr>
+                                    <th>{t('support.subject')}</th>
+                                    <th>{t('support.reference')}</th>
+                                    <th>{t('support.updated')}</th>
+                                    <th>{t('support.priority')}</th>
+                                    <th>{t('support.status')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="offacto-brief-table-click">
+                                {tickets.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="offacto-brief-empty">
+                                            {t('support.empty')}
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    tickets.map((row) => (
+                                        <tr key={row.id} onClick={() => openTicket(row.id)}>
+                                            <td>
+                                                <b className="offacto-support-table-subject">{row.subject}</b>
+                                            </td>
+                                            <td>
+                                                <span className="offacto-support-table-muted">{row.reference}</span>
+                                            </td>
+                                            <td>
+                                                <span className="offacto-support-table-muted">{formatDate(row.updated_at)}</span>
+                                            </td>
+                                            <td>
+                                                <span className="offacto-demo-badge grey nd">{priorityLabel(row.priority)}</span>
+                                            </td>
+                                            <td>
+                                                <span className={`offacto-demo-badge nd ${ticketStatusBadgeClass(row.status)}`}>
+                                                    {row.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">{t('support.new_ticket')}</h2>
-                    <form
-                        className="mt-4 space-y-4"
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            form.post('/support/tickets');
-                        }}
-                    >
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700">{t('support.subject')}</label>
-                            <input
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                                value={form.data.subject}
-                                onChange={(e) => form.setData('subject', e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700">{t('support.message')}</label>
-                            <textarea
-                                className="min-h-[120px] w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                                value={form.data.description}
-                                onChange={(e) => form.setData('description', e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700">{t('support.priority')}</label>
-                            <select
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                                value={form.data.priority}
-                                onChange={(e) => form.setData('priority', e.target.value)}
-                            >
-                                <option value="low">{t('support.priority_low')}</option>
-                                <option value="normal">{t('support.priority_normal')}</option>
-                                <option value="high">{t('support.priority_high')}</option>
-                                <option value="urgent">{t('support.priority_urgent')}</option>
-                            </select>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={form.processing}
-                            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-                        >
-                            {t('support.submit_ticket')}
-                        </button>
-                    </form>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <h2 className="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-900">{t('support.your_tickets')}</h2>
-                    {tickets.length === 0 ? (
-                        <p className="px-6 py-8 text-sm text-slate-500">{t('support.no_tickets')}</p>
-                    ) : (
-                        <ul className="divide-y divide-slate-100">
-                            {tickets.map((row) => (
-                                <li key={row.id}>
-                                    <Link href={`/support/tickets/${row.id}`} className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 hover:bg-slate-50">
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-900">{row.subject}</p>
-                                            <p className="text-xs text-slate-500">
-                                                {row.reference} · {formatDate(row.updated_at)}
-                                            </p>
-                                        </div>
-                                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-700">{row.status}</span>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
+                <SupportTicketDrawer
+                    key={drawerOpen ? 'open' : 'closed'}
+                    open={drawerOpen}
+                    onClose={closeDrawer}
+                    companyName={companyName}
+                />
             </div>
         </AuthenticatedLayout>
     );

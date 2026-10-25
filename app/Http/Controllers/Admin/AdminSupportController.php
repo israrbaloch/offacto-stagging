@@ -21,6 +21,7 @@ use App\Support\AdminSupportInsights;
 use App\Support\SupportPolicy;
 use App\Support\SupportReference;
 use App\Support\SupportSettingsRegistry;
+use App\Support\SupportTicketAttachmentHandler;
 use App\Support\PlatformLocales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,7 +60,12 @@ class AdminSupportController extends Controller
 
     public function ticketShow(SupportTicket $ticket): InertiaResponse
     {
-        $ticket->load(['company:id,company_name,email', 'assignedTo:id,name', 'messages.user:id,name']);
+        $ticket->load([
+            'company:id,company_name,email',
+            'assignedTo:id,name',
+            'messages.user:id,name',
+            'messages.attachments',
+        ]);
 
         AdminNotification::query()
             ->where('user_id', auth()->id())
@@ -88,6 +94,7 @@ class AdminSupportController extends Controller
                 'is_internal' => $m->is_internal,
                 'author' => $m->user?->name ?? 'System',
                 'created_at' => $m->created_at->toIso8601String(),
+                'attachments' => SupportTicketAttachmentHandler::serializeForTicket($ticket, $m->attachments),
             ]),
             'timeline' => $ticket->company_id
                 ? AdminSupportInsights::companyTimeline($ticket->company_id, 25)
@@ -152,17 +159,19 @@ class AdminSupportController extends Controller
 
     public function storeMessage(Request $request, SupportTicket $ticket): RedirectResponse
     {
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'body' => ['required', 'string'],
             'is_internal' => ['boolean'],
-        ]);
+        ], SupportTicketAttachmentHandler::validationRules()));
 
-        SupportTicketMessage::create([
+        $message = SupportTicketMessage::create([
             'support_ticket_id' => $ticket->id,
             'user_id' => $request->user()->id,
             'body' => $data['body'],
             'is_internal' => $request->boolean('is_internal'),
         ]);
+
+        SupportTicketAttachmentHandler::persist($ticket, $message, $request);
 
         if (! $ticket->first_response_at && ! $request->boolean('is_internal')) {
             $ticket->update(['first_response_at' => now()]);

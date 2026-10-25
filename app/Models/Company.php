@@ -83,6 +83,11 @@ class Company extends Model
         return $this->hasMany(CompanyLegalDocument::class);
     }
 
+    public function teamMembers()
+    {
+        return $this->hasMany(CompanyTeamMember::class);
+    }
+
     public function statusEvents()
     {
         return $this->hasMany(CompanyStatusEvent::class);

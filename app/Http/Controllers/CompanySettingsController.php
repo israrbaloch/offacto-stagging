@@ -4,11 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\CompanyLegalDocument;
 use App\Models\CompanySetting;
+use App\Models\CompanyTeamMember;
 use App\Models\Language;
+use App\Models\SiteSetting;
+use App\Models\SubscriptionPlan;
+use App\Services\PlatformMollieService;
 use App\Services\NumberingSeriesService;
 use App\Support\CompanyAccess;
 use App\Support\CompanyIntegrations;
 use App\Support\CompanyReminderPolicy;
+use App\Support\CompanyTeamRoles;
 use App\Support\PublicStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,7 +33,7 @@ class CompanySettingsController extends Controller
         }
 
         $section = (string) $request->query('section', 'company');
-        $allowed = ['company', 'branding', 'numbering', 'integrations', 'reminders', 'legal', 'vat'];
+        $allowed = ['company', 'branding', 'numbering', 'integrations', 'reminders', 'legal', 'vat', 'team', 'plan'];
         if (! in_array($section, $allowed, true)) {
             $section = 'company';
         }
@@ -118,6 +123,78 @@ class CompanySettingsController extends Controller
         return Storage::disk('public')->download($document->file_path, $document->original_name);
     }
 
+    public function storeTeamInvite(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $company = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $company, false, 'team.invite', 'team_users')) {
+            return $deny;
+        }
+        if (! CompanyTeamRoles::canManageTeam($user, $company)) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'surname' => ['nullable', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'role' => ['required', 'in:staff,accountant'],
+        ]);
+
+        $email = strtolower($data['email']);
+        if ($email === strtolower((string) ($company->email ?? $company->user?->email ?? ''))) {
+            return back()->withErrors(['email' => __('company_settings.team_invite_owner_email')]);
+        }
+
+        CompanyTeamMember::updateOrCreate(
+            ['company_id' => $company->id, 'email' => $email],
+            [
+                'first_name' => $data['first_name'],
+                'surname' => $data['surname'] ?? '',
+                'role' => $data['role'],
+                'invited_at' => now(),
+            ],
+        );
+
+        return back()->with('status', 'team-invite-sent');
+    }
+
+    public function updateTeamMember(Request $request, CompanyTeamMember $member): RedirectResponse
+    {
+        $user = $request->user();
+        $company = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $company, false, 'team.manage_roles')) {
+            return $deny;
+        }
+        if (! $company || $member->company_id !== $company->id || ! CompanyTeamRoles::canManageTeam($user, $company)) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'role' => ['required', 'in:staff,accountant'],
+        ]);
+
+        $member->update(['role' => $data['role']]);
+
+        return back()->with('status', 'team-member-updated');
+    }
+
+    public function destroyTeamMember(Request $request, CompanyTeamMember $member): RedirectResponse
+    {
+        $user = $request->user();
+        $company = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $company, false, 'team.manage_roles')) {
+            return $deny;
+        }
+        if (! $company || $member->company_id !== $company->id || ! CompanyTeamRoles::canManageTeam($user, $company)) {
+            abort(403);
+        }
+
+        $member->delete();
+
+        return back()->with('status', 'team-member-removed');
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -156,7 +233,42 @@ class CompanySettingsController extends Controller
                 'postbode_tokens' => config('services.postbode.token_app_url'),
             ],
             'reminders' => CompanyReminderPolicy::formDefaults($company),
+            'team' => [
+                'can_manage' => CompanyTeamRoles::canManageTeam(request()->user(), $company),
+                'owner' => CompanyTeamRoles::ownerRow($company),
+                'members' => CompanyTeamRoles::membersForCompany($company),
+            ],
+            'plan' => $this->planSettingsProps($company),
             'settingsBasePath' => '/company/settings',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function planSettingsProps(\App\Models\Company $company): array
+    {
+        $currentPlan = $company->hasActiveSubscription()
+            ? SubscriptionPlan::findBySlug($company->subscription_plan)
+            : null;
+
+        $plans = SubscriptionPlan::active()->ordered()->get()->map(
+            fn (SubscriptionPlan $plan) => $plan->toUpgradeArray(currentPlan: $currentPlan)
+        );
+
+        $trialTotal = max(1, SiteSetting::getInteger('trial_duration_days', 14));
+        if ($company->trial_starts_at && $company->trial_ends_at) {
+            $trialTotal = max(1, (int) $company->trial_starts_at->diffInDays($company->trial_ends_at));
+        }
+
+        return [
+            'plans' => $plans,
+            'trial_days_left' => $company->trialDaysLeft(),
+            'trial_days_total' => $trialTotal,
+            'subscription_valid' => $company->hasValidSubscription(),
+            'current_plan_name' => $currentPlan?->label('name'),
+            'payment_configured' => app(PlatformMollieService::class)->isConfigured()
+                && SiteSetting::get('payment_gateway', 'mollie') !== 'none',
         ];
     }
 

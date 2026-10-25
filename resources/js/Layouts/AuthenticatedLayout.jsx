@@ -20,7 +20,7 @@ export default function AuthenticatedLayout({ title, children, shellClass = '' }
     }, [primary, secondary, appearance]);
 
     return (
-        <div className="offacto-app-shell bg-[#C9D7F2] font-[Figtree,system-ui,sans-serif]">
+        <div className="offacto-app-shell font-[Figtree,system-ui,sans-serif]">
             <I18nSync />
             <Head title={title} />
             <FlashToaster />
@@ -29,7 +29,7 @@ export default function AuthenticatedLayout({ title, children, shellClass = '' }
             <div className="offacto-app-shell__frame">
                 <Sidebar />
                 <div
-                    className={`offacto-app-scroll flex min-h-0 min-w-0 flex-1 flex-col bg-[#C9D7F2] text-[14.5px] leading-normal text-[#0E1250] ${shellClass}`.trim()}
+                    className={`offacto-app-scroll flex min-h-0 min-w-0 flex-1 flex-col text-[14.5px] leading-normal ${shellClass}`.trim()}
                 >
                     <TopBar />
                     {adminWorkspace && (

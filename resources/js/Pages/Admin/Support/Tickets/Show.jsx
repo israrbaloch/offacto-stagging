@@ -1,5 +1,6 @@
 import { Link, useForm } from '@inertiajs/react';
 import { AdminBadge, AdminBody, AdminButton, AdminCard, AdminField, AdminHeader, AdminPage, AdminTable, badgeToneFor, inputClass, selectClass } from '../../../../Components/Admin/ui';
+import SupportMessageAttachments from '../../../../Components/SupportMessageAttachments';
 import AdminLayout from '../../../../Layouts/AdminLayout';
 import { formatDate } from '../../../../lib/utils';
 
@@ -37,6 +38,7 @@ export default function SupportTicketShow({ ticket, messages = [], timeline = []
                                             <span>{formatDate(msg.created_at)}</span>
                                         </div>
                                         <p className="whitespace-pre-wrap text-slate-800">{msg.body}</p>
+                                        <SupportMessageAttachments attachments={msg.attachments} />
                                     </div>
                                 ))}
                             </div>

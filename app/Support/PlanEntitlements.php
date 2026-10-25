@@ -217,7 +217,7 @@ class PlanEntitlements
             'companies' => $company->user_id
                 ? Company::query()->where('user_id', $company->user_id)->when($since, fn ($q) => $q->where('created_at', '>=', $since))->count()
                 : 1,
-            'team_users' => $company->users()->count(),
+            'team_users' => 1 + $company->teamMembers()->count(),
             default => 0,
         };
     }

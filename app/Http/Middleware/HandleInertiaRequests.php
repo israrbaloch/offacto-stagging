@@ -5,9 +5,11 @@ namespace App\Http\Middleware;
 use App\Http\Middleware\SetLocale;
 use App\Models\Customer;
 use App\Models\Service;
+use App\Models\SiteSetting;
 use App\Models\TimeEntry;
 use App\Support\AdminShellInsights;
 use App\Support\WorkspaceShellInsights;
+use App\Support\WorkspaceSidebarNav;
 use App\Support\PublicStorage;
 use App\Support\ServiceBilling;
 use App\Support\SubscriptionReminder;
@@ -38,6 +40,13 @@ class HandleInertiaRequests extends Middleware
         $settings = $active?->companySetting;
         $theme = is_array($settings?->theme) ? $settings->theme : [];
         $daysLeft = $active?->trialDaysLeft();
+        $trialTotal = null;
+        if ($active) {
+            $trialTotal = max(1, SiteSetting::getInteger('trial_duration_days', 14));
+            if ($active->trial_starts_at && $active->trial_ends_at) {
+                $trialTotal = max(1, (int) $active->trial_starts_at->diffInDays($active->trial_ends_at));
+            }
+        }
 
         return [
             ...parent::share($request),
@@ -90,6 +99,7 @@ class HandleInertiaRequests extends Middleware
                 'trial_starts_at' => $active->trial_starts_at?->toIso8601String(),
                 'trial_ends_at' => $active->trial_ends_at?->toIso8601String(),
                 'trial_days_left' => $daysLeft,
+                'trial_days_total' => $trialTotal,
                 'trial_expired' => $active->isTrialExpired(),
                 'subscription_plan' => $active->subscription_plan,
                 'subscription_ends_at' => $active->subscription_ends_at?->toIso8601String(),
@@ -117,6 +127,7 @@ class HandleInertiaRequests extends Middleware
             'workspaceShell' => $user
                 ? [
                     'notifications' => WorkspaceShellInsights::notifications($user, $active),
+                    'sidebarCounts' => WorkspaceSidebarNav::counts($active),
                 ]
                 : null,
             'timeTracking' => $this->timeTrackingShare($user, $active),

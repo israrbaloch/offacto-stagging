@@ -76,15 +76,17 @@ export default function SidebarNavLink({
             >
                 <Icon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
                 <span className="min-w-0 flex-1 truncate text-inherit">{label}</span>
-                {count != null && count > 0 ? <span className="nav-cnt">{count}</span> : null}
-                {badge ? <span className="nav-new">{badge}</span> : null}
-                {showTimerDot ? (
-                    <span
-                        className="nav-timer-dot"
-                        title={t('time.timer_running_indicator')}
-                        aria-label={t('time.timer_running_indicator')}
-                    />
-                ) : null}
+                <span className="offacto-nav-trail">
+                    {count != null && count > 0 ? <span className="nav-cnt">{count}</span> : null}
+                    {badge ? <span className="nav-new">{badge}</span> : null}
+                    {showTimerDot ? (
+                        <span
+                            className="nav-timer-dot"
+                            title={t('time.timer_running_indicator')}
+                            aria-label={t('time.timer_running_indicator')}
+                        />
+                    ) : null}
+                </span>
             </Link>
         );
     }

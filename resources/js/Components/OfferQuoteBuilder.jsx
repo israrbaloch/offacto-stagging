@@ -779,6 +779,7 @@ export default function OfferQuoteBuilder({
                                 </button>
                             </div>
                             <div className="offacto-brief-edit-card-b">
+                                <div className="offacto-quote-preview-sheet">
                                 <div className="offacto-quote-preview-bar" style={{ background: brand }} />
                                 {blocks
                                     .filter((b) => b.type === 'text')
@@ -800,6 +801,7 @@ export default function OfferQuoteBuilder({
                                     theme={activeCompany?.theme}
                                     logoUrl={activeCompany?.invoice_logo_url}
                                 />
+                                </div>
                             </div>
                         </div>
                     </>
