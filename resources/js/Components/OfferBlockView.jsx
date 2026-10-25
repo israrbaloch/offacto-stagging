@@ -1,4 +1,6 @@
-import { blockImageUrl, tableRowsFromContent } from '../lib/offerBlocks';
+import Icon from './Icon';
+import { blockDocumentUrl, blockImageUrl, tableRowsFromContent } from '../lib/offerBlocks';
+import { t } from '../lib/i18n';
 
 export default function OfferBlockView({ block, primary = '#4054b2' }) {
     if (!block) {
@@ -21,6 +23,34 @@ export default function OfferBlockView({ block, primary = '#4054b2' }) {
         return (
             <a href={block.content.url} className="font-medium hover:underline" style={{ color: primary }} target="_blank" rel="noreferrer">
                 Watch video
+            </a>
+        );
+    }
+
+    if (block.type === 'sign') {
+        return <p className="offacto-quote-hint">{t('offers.block_sign_public')}</p>;
+    }
+
+    if (block.type === 'voice') {
+        return <p className="offacto-quote-hint">{t('offers.block_voice_public')}</p>;
+    }
+
+    if (block.type === 'attachments') {
+        const docUrl = blockDocumentUrl(block.content);
+        if (!docUrl) {
+            return null;
+        }
+        const fileName = block.content?.original_name || docUrl.split('/').pop();
+        return (
+            <a
+                href={docUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 font-medium hover:underline"
+                style={{ color: primary }}
+            >
+                <Icon name="file" className="h-[18px] w-[18px]" />
+                {fileName}
             </a>
         );
     }

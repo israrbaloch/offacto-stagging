@@ -13,6 +13,11 @@ export function blockImageUrl(content) {
     return null;
 }
 
+/** @param {OfferBlockContent | null | undefined} content */
+export function blockDocumentUrl(content) {
+    return blockImageUrl(content);
+}
+
 /**
  * @param {OfferBlockContent | null | undefined} content
  * @returns {string[][]}

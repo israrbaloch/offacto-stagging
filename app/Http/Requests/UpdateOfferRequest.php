@@ -46,6 +46,10 @@ class UpdateOfferRequest extends FormRequest
             'desc' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'payment_terms' => ['nullable', 'string', 'max:5000'],
+            'quote_template' => ['nullable', 'string', 'max:32'],
+            'require_nda_before_open' => ['sometimes', 'boolean'],
+            'mollie_deposit_enabled' => ['sometimes', 'boolean'],
+            'on_acceptance_invoice' => ['nullable', 'string', 'in:draft,send'],
             'email_message' => ['nullable', 'string'],
             'status' => [
                 'required',

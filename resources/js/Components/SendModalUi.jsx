@@ -97,6 +97,13 @@ const ICONS = {
     mollie: { node: PeppolIcon, wrap: 'bg-violet-50 text-violet-600' },
 };
 
+/** Colored channel badge icon (same glyphs as delivery channel cards). */
+export function SendChannelBadgeIcon({ icon = 'email', className = 'h-5 w-5' }) {
+    const meta = ICONS[icon] || ICONS.email;
+    const IconComponent = meta.node;
+    return <IconComponent className={className} />;
+}
+
 export function DeliveryChannelsPanel({ channelError, extra, children }) {
     return (
         <section className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">

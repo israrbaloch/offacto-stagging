@@ -8,7 +8,7 @@ import SubscriptionReminderModal from '../Components/SubscriptionReminderModal';
 import TopBar from '../Components/TopBar';
 import { t } from '../lib/i18n';
 
-export default function AuthenticatedLayout({ title, children }) {
+export default function AuthenticatedLayout({ title, children, shellClass = '' }) {
     const { activeCompany, adminWorkspace, auth, flash, appearance } = usePage().props;
     const primary = activeCompany?.theme?.primary || '#4054b2';
     const secondary = activeCompany?.theme?.secondary || '#0f172a';
@@ -20,15 +20,17 @@ export default function AuthenticatedLayout({ title, children }) {
     }, [primary, secondary, appearance]);
 
     return (
-        <div className="h-screen overflow-hidden bg-[#C9D7F2] font-[Figtree,system-ui,sans-serif]">
+        <div className="offacto-app-shell bg-[#C9D7F2] font-[Figtree,system-ui,sans-serif]">
             <I18nSync />
             <Head title={title} />
             <FlashToaster />
             <FormErrorsToaster />
             <SubscriptionReminderModal />
-            <div className="flex h-full">
+            <div className="offacto-app-shell__frame">
                 <Sidebar />
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#C9D7F2] text-[14.5px] leading-normal text-[#0E1250]">
+                <div
+                    className={`offacto-app-scroll flex min-h-0 min-w-0 flex-1 flex-col bg-[#C9D7F2] text-[14.5px] leading-normal text-[#0E1250] ${shellClass}`.trim()}
+                >
                     <TopBar />
                     {adminWorkspace && (
                         <div className="mx-4 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm text-indigo-900 lg:mx-7">

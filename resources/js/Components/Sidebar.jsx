@@ -112,7 +112,7 @@ export default function Sidebar({ onNavigate }) {
 
     return (
         <aside
-            className="offacto-sidebar sticky top-0 z-auto hidden h-screen w-[256px] shrink-0 flex-col overflow-hidden md:flex"
+            className="offacto-sidebar sticky top-0 z-auto hidden h-full max-h-[100dvh] w-[256px] shrink-0 flex-col overflow-hidden md:flex"
         >
             <AuthDiamond size={60} className="pointer-events-none absolute -right-3.5 top-[180px]" />
             <AuthDiamond size={28} delay="2s" className="pointer-events-none absolute right-2.5 bottom-[330px]" />

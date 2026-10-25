@@ -212,6 +212,7 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     Route::post('offers/{offer}/send', [OfferController::class, 'send'])->name('offers.send');
     Route::post('offers/{offer}/blocks', [OfferController::class, 'syncBlocks'])->name('offers.blocks.sync');
     Route::post('offers/{offer}/blocks/image', [OfferController::class, 'uploadBlockImage'])->name('offers.blocks.image');
+    Route::post('offers/{offer}/blocks/document', [OfferController::class, 'uploadBlockDocument'])->name('offers.blocks.document');
     Route::post('offers/{offer}/attachments', [OfferController::class, 'storeAttachment'])->name('offers.attachments.store');
     Route::delete('offers/{offer}/attachments/{attachment}', [OfferController::class, 'destroyAttachment'])->name('offers.attachments.destroy');
     Route::get('offers/{offer}/preview', [OfferController::class, 'preview'])->name('offers.preview');

@@ -462,6 +462,14 @@ class OfferController extends Controller
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
                 'payment_terms' => $request->validated()['payment_terms'] ?? null,
+                'quote_template' => $request->validated()['quote_template'] ?? $offer->quote_template,
+                'require_nda_before_open' => $request->has('require_nda_before_open')
+                    ? $request->boolean('require_nda_before_open')
+                    : $offer->require_nda_before_open,
+                'mollie_deposit_enabled' => $request->has('mollie_deposit_enabled')
+                    ? $request->boolean('mollie_deposit_enabled')
+                    : $offer->mollie_deposit_enabled,
+                'on_acceptance_invoice' => $request->validated()['on_acceptance_invoice'] ?? $offer->on_acceptance_invoice,
                 'email_message' => $request->validated()['email_message'] ?? $offer->email_message,
                 'status' => $request->validated()['status'],
             ]);
@@ -698,7 +706,7 @@ class OfferController extends Controller
 
         $validated = $request->validate([
             'blocks' => ['array'],
-            'blocks.*.type' => ['required', 'in:text,image,video,table'],
+            'blocks.*.type' => ['required', 'in:text,image,video,table,sign,voice,attachments'],
             'blocks.*.content' => ['nullable', 'array'],
             'blocks.*.sort_order' => ['nullable', 'integer'],
         ]);
@@ -733,7 +741,25 @@ class OfferController extends Controller
         ]);
     }
 
-    public function storeAttachment(Request $request, $offer): RedirectResponse
+    public function uploadBlockDocument(Request $request, $offer): JsonResponse
+    {
+        $activeCompany = $request->user()?->activeCompany();
+        $offer = Offer::where('id', $offer)->where('company_id', $activeCompany?->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf,doc,docx,txt', 'max:10240'],
+        ]);
+
+        $path = $validated['file']->store('offer-blocks/'.$offer->id, 'public');
+
+        return response()->json([
+            'path' => $path,
+            'url' => PublicStorage::url($path),
+            'original_name' => $validated['file']->getClientOriginalName(),
+        ]);
+    }
+
+    public function storeAttachment(Request $request, $offer): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -743,22 +769,30 @@ class OfferController extends Controller
 
         $offer = Offer::where('id', $offer)->where('company_id', $activeCompany->id)->firstOrFail();
 
-        $request->validate([
-            'file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf,doc,docx,txt', 'max:10240'],
         ]);
 
-        $path = $request->file('file')->store('offer-attachments/'.$offer->id, 'public');
+        $path = $validated['file']->store('offer-attachments/'.$offer->id, 'public');
 
-        OfferAttachment::create([
+        $attachment = OfferAttachment::create([
             'offer_id' => $offer->id,
             'file_path' => $path,
-            'original_name' => $request->file('file')->getClientOriginalName(),
+            'original_name' => $validated['file']->getClientOriginalName(),
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'id' => $attachment->id,
+                'file_path' => $attachment->file_path,
+                'original_name' => $attachment->original_name,
+            ]);
+        }
 
         return back()->with('status', 'attachment-uploaded');
     }
 
-    public function destroyAttachment(Request $request, $offer, OfferAttachment $attachment): RedirectResponse
+    public function destroyAttachment(Request $request, $offer, OfferAttachment $attachment): RedirectResponse|JsonResponse
     {
         $activeCompany = $request->user()?->activeCompany();
         $offer = Offer::where('id', $offer)->where('company_id', $activeCompany?->id)->firstOrFail();
@@ -769,6 +803,10 @@ class OfferController extends Controller
 
         Storage::disk('public')->delete($attachment->file_path);
         $attachment->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back()->with('status', 'attachment-deleted');
     }

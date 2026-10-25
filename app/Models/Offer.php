@@ -34,6 +34,10 @@ class Offer extends Model
         'attachment',
         'notes',
         'payment_terms',
+        'quote_template',
+        'require_nda_before_open',
+        'mollie_deposit_enabled',
+        'on_acceptance_invoice',
         'email_message',
         'status',
         'share_token',
@@ -59,6 +63,8 @@ class Offer extends Model
             'accepted_at' => 'datetime',
             'declined_at' => 'datetime',
             'postbode_sent_at' => 'datetime',
+            'require_nda_before_open' => 'boolean',
+            'mollie_deposit_enabled' => 'boolean',
         ];
     }
 

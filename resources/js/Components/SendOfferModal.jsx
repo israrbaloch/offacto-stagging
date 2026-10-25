@@ -1,15 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
-import EmailRecipientsField from './EmailRecipientsField';
-import {
-    ChannelCard,
-    DeliveryChannelsPanel,
-    EmailDeliveryPanel,
-    MessageField,
-    SendInfoBanner,
-    SendModalFooter,
-    SendModalFrame,
-} from './SendModalUi';
+import Icon from './Icon';
+import { SendChannelBadgeIcon } from './SendModalUi';
 import { t } from '../lib/i18n';
 
 function parseDefaultEmails(defaultEmail) {
@@ -22,51 +14,73 @@ function parseDefaultEmails(defaultEmail) {
         .filter(Boolean);
 }
 
-function buildOfferChannels({ postbodeConfigured, whatsappConfigured }) {
-    return [
-        {
-            id: 'email',
-            titleKey: 'send_modal.channel_email',
-            subtitleKey: 'send_modal.channel_email_quote_sub',
-            icon: 'email',
-        },
-        {
-            id: 'whatsapp',
-            titleKey: 'send_modal.channel_whatsapp',
-            subtitleKey: whatsappConfigured ? 'send_modal.channel_whatsapp_sub' : 'send_modal.channel_whatsapp_off',
-            icon: 'whatsapp',
-            alwaysShow: true,
-            disabled: !whatsappConfigured,
-        },
-        {
-            id: 'postbode',
-            titleKey: 'send_modal.channel_postbode',
-            subtitleKey: postbodeConfigured ? 'send_modal.channel_postbode_sub' : 'send_modal.channel_postbode_off',
-            badgeKey: 'send_modal.badge_postal',
-            icon: 'postbode',
-            alwaysShow: true,
-            disabled: !postbodeConfigured,
-        },
-    ];
+const OFFER_SEND_CHANNELS = [
+    {
+        id: 'peppol',
+        icon: 'peppol',
+        color: '#2B3580',
+        titleKey: 'send_modal.channel_peppol',
+        subtitleKey: 'send_modal.channel_peppol_sub',
+        quoteDisabled: true,
+    },
+    {
+        id: 'email',
+        icon: 'email',
+        color: '#3A4AA0',
+        titleKey: 'send_modal.channel_email',
+        subtitleKey: 'send_modal.channel_email_quote_sub',
+    },
+    {
+        id: 'whatsapp',
+        icon: 'whatsapp',
+        color: '#15803D',
+        titleKey: 'send_modal.channel_whatsapp',
+        subtitleKey: 'send_modal.channel_whatsapp_sub',
+        subtitleOffKey: 'send_modal.channel_whatsapp_off',
+        integrationKey: 'whatsapp',
+    },
+    {
+        id: 'postbode',
+        icon: 'postbode',
+        color: '#C2410C',
+        titleKey: 'send_modal.channel_postbode',
+        subtitleKey: 'send_modal.channel_postbode_sub',
+        subtitleOffKey: 'send_modal.channel_postbode_off',
+        integrationKey: 'postbode',
+    },
+];
+
+function channelEnabled(channel, { postbodeConfigured, whatsappConfigured }) {
+    if (channel.quoteDisabled) {
+        return false;
+    }
+    if (channel.integrationKey === 'whatsapp') {
+        return whatsappConfigured;
+    }
+    if (channel.integrationKey === 'postbode') {
+        return postbodeConfigured;
+    }
+    return true;
 }
 
 export default function SendOfferModal({
     open,
     onClose,
     offerId,
-    documentNumber = '',
     defaultEmail = '',
-    defaultMessage = '',
+    customerName = '',
     legalDocumentIds = [],
+    attachmentCount = 0,
     postbodeConfigured = false,
     whatsappConfigured = false,
     whatsappShareUrl = '',
     onBeforeSend,
 }) {
     const [channelError, setChannelError] = useState('');
+    const [activeChannel, setActiveChannel] = useState('email');
     const form = useForm({
         emails: parseDefaultEmails(defaultEmail),
-        message: defaultMessage,
+        message: '',
         channels: ['email'],
         legal_document_ids: legalDocumentIds,
         registered: false,
@@ -76,9 +90,10 @@ export default function SendOfferModal({
     useEffect(() => {
         if (open && !wasOpen.current) {
             setChannelError('');
+            setActiveChannel('email');
             form.setData({
                 emails: parseDefaultEmails(defaultEmail),
-                message: defaultMessage,
+                message: '',
                 channels: ['email'],
                 legal_document_ids: legalDocumentIds,
                 registered: false,
@@ -86,42 +101,30 @@ export default function SendOfferModal({
             form.clearErrors();
         }
         wasOpen.current = open;
-    }, [open, defaultEmail, defaultMessage, legalDocumentIds]);
+    }, [open, defaultEmail, legalDocumentIds]);
 
-    const channelDefs = buildOfferChannels({ postbodeConfigured, whatsappConfigured });
-
-    const toggleChannel = (id) => {
-        setChannelError('');
-        const current = form.data.channels;
-        if (current.includes(id)) {
-            if (current.length === 1) {
-                setChannelError(t('offers.channel_required'));
-                return;
-            }
-            form.setData(
-                'channels',
-                current.filter((c) => c !== id),
-            );
-        } else {
-            form.setData('channels', [...current, id]);
+    const selectChannel = (id, enabled) => {
+        if (!enabled) {
+            return;
         }
+        setChannelError('');
+        setActiveChannel(id);
+        form.setData('channels', [id]);
     };
-
-    const emailError =
-        form.errors.emails ||
-        form.errors['emails.0'] ||
-        (typeof form.errors.email === 'string' ? form.errors.email : null);
 
     const submit = () => {
         if (!offerId) return;
+        const emails = parseDefaultEmails(defaultEmail);
         if (form.data.channels.length === 0) {
             setChannelError(t('offers.channel_required'));
             return;
         }
-        if (form.data.channels.includes('email') && form.data.emails.length === 0) {
-            form.setError('emails', t('offers.send_emails_required'));
+        if (form.data.channels.includes('email') && emails.length === 0) {
+            setChannelError(t('offers.send_emails_required'));
             return;
         }
+
+        form.setData('emails', emails);
 
         const openWhatsapp = form.data.channels.includes('whatsapp') && whatsappShareUrl;
 
@@ -144,75 +147,80 @@ export default function SendOfferModal({
         }
     };
 
-    const showEmail = form.data.channels.includes('email');
-    const showPostbode = form.data.channels.includes('postbode');
+    if (!open) {
+        return null;
+    }
+
+    const toEmail = defaultEmail || '—';
+    const attachmentsLabel = t('offers.send_attachments_auto').replace(':count', String(attachmentCount));
 
     return (
-        <SendModalFrame
-            open={open}
-            onClose={onClose}
-            title={t('offers.send_modal_title')}
-            documentNumber={documentNumber}
-            hint={t('offers.send_modal_hint')}
-            footer={
-                <SendModalFooter
-                    onCancel={onClose}
-                    onSubmit={submit}
-                    processing={form.processing}
-                />
-            }
-        >
-            <div className="grid gap-6 lg:grid-cols-2">
-                <DeliveryChannelsPanel
-                    channelError={channelError}
-                    extra={
-                        showPostbode && (
-                            <div className="mt-4 border-t border-slate-200 pt-4">
-                                <label className="flex items-start gap-2 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        checked={form.data.registered}
-                                        onChange={(e) => form.setData('registered', e.target.checked)}
-                                        className="mt-0.5"
-                                    />
-                                    <span>{t('integrations.postbode_registered_shipment')}</span>
-                                </label>
-                            </div>
-                        )
-                    }
-                >
-                    {channelDefs.map((channel) => (
-                        <ChannelCard
-                            key={channel.id}
-                            id={channel.id}
-                            icon={channel.icon}
-                            title={t(channel.titleKey)}
-                            subtitle={t(channel.subtitleKey)}
-                            badge={channel.badgeKey ? t(channel.badgeKey) : null}
-                            checked={form.data.channels.includes(channel.id)}
-                            disabled={Boolean(channel.disabled)}
-                            onToggle={toggleChannel}
-                        />
-                    ))}
-                </DeliveryChannelsPanel>
+        <>
+            <button type="button" className="offacto-brief-scrim on" aria-label={t('common.close')} onClick={onClose} />
+            <div
+                className="offacto-brief-modal offacto-send-modal on"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="offacto-send-modal-title"
+            >
+                <div className="offacto-brief-edit-card-h">
+                    <h3 id="offacto-send-modal-title">{t('offers.send_modal_title')}</h3>
+                    <button type="button" className="offacto-brief-modal-close" onClick={onClose} aria-label={t('common.close')}>
+                        <Icon name="close" />
+                    </button>
+                </div>
+                <div className="offacto-brief-modal-b offacto-send-modal-b">
+                    <p className="offacto-send-to-line">
+                        {t('offers.send_to_line')}: <strong>{customerName || '—'}</strong>
+                        {toEmail !== '—' ? <> · {toEmail}</> : null}
+                    </p>
 
-                <EmailDeliveryPanel show={showEmail} placeholderOff={t('offers.send_email_section_off')}>
-                    <EmailRecipientsField
-                        label={t('offers.send_emails_label')}
-                        value={form.data.emails}
-                        onChange={(emails) => form.setData('emails', emails)}
-                        error={emailError}
-                    />
-                    <MessageField
-                        label={t('offers.send_message_label')}
-                        optionalLabel={t('send_modal.optional')}
-                        placeholder={t('send_modal.message_placeholder')}
-                        value={form.data.message}
-                        onChange={(e) => form.setData('message', e.target.value)}
-                    />
-                    <SendInfoBanner>{t('offers.email_link_hint')}</SendInfoBanner>
-                </EmailDeliveryPanel>
+                    <div className="offacto-send-channels">
+                        {OFFER_SEND_CHANNELS.map((channel) => {
+                            const enabled = channelEnabled(channel, { postbodeConfigured, whatsappConfigured });
+                            const subtitleKey =
+                                enabled || !channel.subtitleOffKey ? channel.subtitleKey : channel.subtitleOffKey;
+                            const isOn = activeChannel === channel.id;
+
+                            return (
+                                <button
+                                    key={channel.id}
+                                    type="button"
+                                    disabled={!enabled}
+                                    className={`offacto-send-chan${isOn ? ' is-on' : ''}${enabled ? '' : ' is-off'}`}
+                                    onClick={() => selectChannel(channel.id, enabled)}
+                                >
+                                    <span className="offacto-send-chan__lg" style={{ background: channel.color }}>
+                                        <SendChannelBadgeIcon icon={channel.icon} className="offacto-send-chan__icon" />
+                                    </span>
+                                    <span className="offacto-send-chan__body">
+                                        <strong>{t(channel.titleKey)}</strong>
+                                        <span className="offacto-send-chan__hint">{t(subtitleKey)}</span>
+                                    </span>
+                                    {isOn ? <Icon name="check" className="offacto-send-chan__check" /> : null}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {channelError ? <p className="offacto-send-field-error">{channelError}</p> : null}
+
+                    <div className="offacto-send-footer-row">
+                        <span className="offacto-send-attach-hint">
+                            <Icon name="clip" />
+                            {attachmentsLabel}
+                        </span>
+                        <button
+                            type="button"
+                            disabled={form.processing}
+                            className="offacto-brief-btn offacto-btn-p"
+                            onClick={submit}
+                        >
+                            <Icon name="send" />
+                            {t('offers.send_confirm')}
+                        </button>
+                    </div>
+                </div>
             </div>
-        </SendModalFrame>
+        </>
     );
 }

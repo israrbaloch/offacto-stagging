@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import Icon from './Icon';
 import { useUi } from '../context/UiContext';
 import { t } from '../lib/i18n';
 
-export default function CopyLinkButton({ url, className = '', labelKey = 'common.copy_link' }) {
+export default function CopyLinkButton({ url, className = '', labelKey = 'common.copy_link', showIcon = false }) {
     const { toast } = useUi();
     const [copied, setCopied] = useState(false);
 
@@ -23,6 +24,7 @@ export default function CopyLinkButton({ url, className = '', labelKey = 'common
 
     return (
         <button type="button" onClick={copy} className={className}>
+            {showIcon ? <Icon name="copy" /> : null}
             {copied ? t('common.copied') : t(labelKey)}
         </button>
     );

@@ -11,7 +11,9 @@ export default function SelectMenu({
     error,
     searchable,
     allowEmpty = true,
+    variant = 'default',
 }) {
+    const demo = variant === 'demo';
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [menuStyle, setMenuStyle] = useState(null);
@@ -77,12 +79,25 @@ export default function SelectMenu({
             <button
                 type="button"
                 onClick={() => setOpen((current) => !current)}
-                className={`flex w-full items-center gap-2 text-left ${className} ${error ? 'border-rose-400' : ''}`}
+                className={`flex w-full items-center gap-2 text-left ${demo ? 'offacto-select-menu-trigger' : ''} ${className} ${error ? 'border-rose-400' : ''}`}
             >
-                <span className={`flex-1 truncate ${selected ? 'text-slate-900' : 'text-slate-400'}`}>
+                <span
+                    className={
+                        demo
+                            ? `offacto-select-menu-label flex-1 truncate ${selected ? 'is-selected' : 'is-placeholder'}`
+                            : `flex-1 truncate ${selected ? 'text-slate-900' : 'text-slate-400'}`
+                    }
+                >
                     {selected?.label || placeholder}
                 </span>
-                <Icon name="chevron" className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
+                <Icon
+                    name="chevron"
+                    className={
+                        demo
+                            ? `offacto-select-menu-chevron shrink-0 transition ${open ? 'rotate-180' : ''}`
+                            : `h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`
+                    }
+                />
             </button>
 
             {open && menuStyle && typeof document !== 'undefined' && createPortal(
