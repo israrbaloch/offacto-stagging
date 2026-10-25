@@ -2,7 +2,7 @@ import { router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Button from '../../Components/Button';
 import { Select } from '../../Components/Input';
-import InvoicePreview from '../../Components/InvoicePreview';
+import InvoiceDocumentPreview, { normalizeInvoiceTemplate } from '../../Components/InvoiceDocumentPreview';
 import InvoiceAcknowledgmentPanel from '../../Components/InvoiceAcknowledgmentPanel';
 import InvoiceReminderModal from '../../Components/InvoiceReminderModal';
 import SendInvoiceModal from '../../Components/SendInvoiceModal';
@@ -47,21 +47,23 @@ export default function Show({
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    {!isDraft && (
-                        <Button href={`/invoices/${invoice.id}/preview`} as="a" variant="secondary" target="_blank" rel="noreferrer">
-                            Preview PDF
+                    {isDraft ? (
+                        <Button href={`/invoices/${invoice.id}/edit`} variant="secondary">
+                            {t('common.edit')}
                         </Button>
-                    )}
-                    <Button href={`/invoices/${invoice.id}/edit`} variant="secondary">
-                        Edit
-                    </Button>
-                    <Button onClick={() => setSendOpen(true)}>{t('invoices.send_modal_title')}</Button>
+                    ) : null}
+                    {isDraft ? <Button onClick={() => setSendOpen(true)}>{t('invoices.send_modal_title')}</Button> : null}
+                    {!isDraft ? (
+                        <Button href={`/invoices/${invoice.id}/preview`} as="a" variant="secondary" target="_blank" rel="noreferrer">
+                            PDF
+                        </Button>
+                    ) : null}
                     {canRemind && (
                         <Button variant="secondary" onClick={() => setReminderOpen(true)}>
                             {t('invoices.reminder_send')}
                         </Button>
                     )}
-                    {!isDraft && invoice.payment_status !== 'paid' && (
+                    {!isDraft && !invoice.parent_invoice_id ? (
                         <Button
                             variant="secondary"
                             onClick={async () => {
@@ -75,9 +77,9 @@ export default function Show({
                                 }
                             }}
                         >
-                            Credit note
+                            {t('invoices.doc_credit')}
                         </Button>
-                    )}
+                    ) : null}
                     {isDraft && (
                         <Button
                             variant="danger"
@@ -99,38 +101,59 @@ export default function Show({
                 </div>
             </div>
 
-            {invoice.needs_resend && (
-                <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    {t('invoices.resend_required_banner')}
+            {!isDraft ? (
+                <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
+                    {t('invoices.sent_locked_banner')}
                 </div>
-            )}
+            ) : null}
 
             <InvoiceAcknowledgmentPanel invoice={invoice} />
 
             <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <label className="inline-flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={recurring.data.is_recurring}
-                            onChange={(e) => recurring.setData('is_recurring', e.target.checked)}
-                        />
-                        {t('invoices.recurring_enable')}
-                    </label>
-                    {recurring.data.is_recurring && (
-                        <Select
-                            value={recurring.data.recurring_interval}
-                            onChange={(e) => recurring.setData('recurring_interval', e.target.value)}
-                            options={[
-                                { value: 'weekly', label: t('invoices.recurring_weekly') },
-                                { value: 'monthly', label: t('invoices.recurring_monthly') },
-                                { value: 'yearly', label: t('invoices.recurring_yearly') },
-                            ]}
-                        />
-                    )}
-                    <Button variant="secondary" onClick={() => recurring.post(`/invoices/${invoice.id}/recurring`)}>
-                        {t('invoices.recurring_save')}
-                    </Button>
+                    {isDraft ? (
+                        <>
+                            <label className="inline-flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={recurring.data.is_recurring}
+                                    onChange={(e) => recurring.setData('is_recurring', e.target.checked)}
+                                />
+                                {t('invoices.recurring_enable')}
+                            </label>
+                            {recurring.data.is_recurring && (
+                                <Select
+                                    value={recurring.data.recurring_interval}
+                                    onChange={(e) => recurring.setData('recurring_interval', e.target.value)}
+                                    options={[
+                                        { value: 'weekly', label: t('invoices.recurring_weekly') },
+                                        { value: 'monthly', label: t('invoices.recurring_monthly') },
+                                        { value: 'yearly', label: t('invoices.recurring_yearly') },
+                                    ]}
+                                />
+                            )}
+                            <Button variant="secondary" onClick={() => recurring.post(`/invoices/${invoice.id}/recurring`)}>
+                                {t('invoices.recurring_save')}
+                            </Button>
+                        </>
+                    ) : null}
+                    {!isDraft && !invoice.parent_invoice_id ? (
+                        <Button
+                            variant="secondary"
+                            onClick={async () => {
+                                if (
+                                    await confirm({
+                                        message: t('invoices.recurring_from_sent_confirm'),
+                                        confirmLabel: t('common.confirm'),
+                                    })
+                                ) {
+                                    router.post(`/invoices/${invoice.id}/recurring-from`);
+                                }
+                            }}
+                        >
+                            {t('invoices.recurring_from_sent')}
+                        </Button>
+                    ) : null}
                     {invoice.is_recurring && invoice.next_run_at && (
                         <span className="text-slate-600">
                             {t('invoices.recurring_next_run', { date: formatDate(invoice.next_run_at) })}
@@ -158,11 +181,16 @@ export default function Show({
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <InvoicePreview
+                <InvoiceDocumentPreview
+                    template={normalizeInvoiceTemplate(activeCompany?.invoice_template)}
                     number={invoice.invoice_number}
                     date={invoice.invoice_date}
                     dueDate={invoice.due_date}
                     offerNumber={invoice.offer?.offer_number}
+                    documentType={invoice.parent_invoice_id ? 'credit' : 'invoice'}
+                    showMollieLink={Boolean(mollieConfigured && invoice.mollie_checkout_url)}
+                    fromVatNumber={company.vat_number || ''}
+                    toVatNumber={customer.vat_number || ''}
                     from={{
                         name: company.company_name,
                         street: company.street,

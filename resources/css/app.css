@@ -2191,11 +2191,13 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     color: #fff;
 }
 
+/* Demo v6 facturen toolbar — period + ZIP + UBL pills */
 .offacto-invoices-page .offacto-invoices-period-select {
     width: auto;
     min-height: 0;
     height: auto;
-    padding: 6px 32px 6px 11px;
+    box-sizing: border-box;
+    padding: 7px 32px 7px 12px;
     border-radius: 999px;
     border: 1px solid rgb(14 18 80 / 0.1);
     background-color: #fff;
@@ -2222,7 +2224,41 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 }
 
 .offacto-invoices-page .offacto-quotes-toolbar-r {
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 8px;
+}
+
+.offacto-invoices-page .offacto-quotes-toolbar-r .offacto-brief-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background: #fff;
+    font-family: var(--dash-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--dash-navy);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.18s, color 0.18s;
+    flex-shrink: 0;
+}
+
+.offacto-invoices-page .offacto-quotes-toolbar-r .offacto-brief-btn-sm:hover {
+    border-color: var(--dash-primary);
+    color: var(--dash-primary);
+}
+
+.offacto-invoices-page .offacto-quotes-toolbar-r .offacto-brief-btn-sm svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    flex-shrink: 0;
 }
 
 .offacto-invoice-num-sub {
@@ -4635,4 +4671,526 @@ html.dark .auth-doc-note {
 .offacto-quote-drop-btn {
     display: block;
     margin: 0;
+}
+
+/* Invoice editor — offacto-app-demo.html invEditor */
+.offacto-invoice-builder-page input.offacto-brief-inp[readonly] {
+    background: #f5f7ff;
+    color: #48537f;
+    cursor: default;
+}
+
+.offacto-invoice-builder-page select.offacto-brief-inp {
+    appearance: none;
+    padding-right: 40px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230E1250' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 14px 14px;
+    cursor: pointer;
+}
+
+.offacto-invoice-builder-page .offacto-quote-lines-editor .offacto-select-menu-trigger {
+    color: var(--dash-navy);
+}
+
+.offacto-invoice-builder-page .offacto-quote-lines-editor .offacto-select-menu-label.is-selected {
+    color: var(--dash-navy);
+    font-weight: 600;
+}
+
+.offacto-invoice-builder-page .offacto-quote-lines-editor .offacto-select-menu-label.is-placeholder {
+    color: var(--dash-muted);
+    font-weight: 500;
+}
+
+.offacto-invoice-builder-page .offacto-quote-lines-editor .offacto-select-menu-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--dash-muted);
+}
+
+.offacto-invoice-builder-page .offacto-invoice-vat-inp {
+    min-width: 7.5rem;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-ed {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .offacto-invoice-builder-page .offacto-invoice-ed {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .offacto-invoice-builder-page .offacto-invoice-sticky {
+        position: static !important;
+    }
+}
+
+.offacto-invoice-builder-page .offacto-invoice-ed-main {
+    display: grid;
+    gap: 18px;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-sticky {
+    position: sticky;
+    top: 16px;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-type-tabs {
+    margin-bottom: 0;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-type-extra {
+    display: grid;
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-fg {
+    display: grid;
+    gap: 16px;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-card-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.offacto-invoice-builder-page .offacto-brief-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0e1250;
+    cursor: pointer;
+}
+
+.offacto-invoice-builder-page .offacto-brief-btn-sm:hover {
+    border-color: #6b59dc;
+    color: #6b59dc;
+}
+
+.offacto-invoice-builder-page .offacto-brief-btn-sm svg {
+    width: 18px;
+    height: 18px;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-delete-btn {
+    color: #c23a4b;
+    border-color: rgb(194 58 75 / 0.25);
+}
+
+.offacto-invoice-builder-page .offacto-invoice-delete-btn:hover {
+    color: #a82f3e;
+    border-color: rgb(194 58 75 / 0.45);
+}
+
+.offacto-invoice-builder-page .offacto-invoice-delete-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.offacto-invoices-page .offacto-invoice-row-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    border-radius: 999px;
+    background: #fff;
+    color: #c23a4b;
+    cursor: pointer;
+}
+
+.offacto-invoices-page .offacto-invoice-row-delete:hover {
+    border-color: rgb(194 58 75 / 0.35);
+    background: #fdecee;
+}
+
+.offacto-invoices-page .offacto-invoice-row-delete svg {
+    width: 16px;
+    height: 16px;
+}
+
+.offacto-invoices-page .offacto-invoice-row-act {
+    width: 44px;
+    text-align: right;
+    padding-right: 12px !important;
+}
+
+.offacto-invoice-hint {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #48537f;
+}
+
+.offacto-invoice-saved-hint {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #48537f;
+}
+
+.offacto-invoice-okline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #14794a;
+}
+
+.offacto-invoice-okline svg {
+    width: 16px;
+    height: 16px;
+}
+
+.offacto-invoice-note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgb(14 18 80 / 0.08);
+    font-size: 13px;
+    line-height: 1.45;
+    color: #0e1250;
+}
+
+.offacto-invoice-note.warn {
+    background: #fff3dd;
+    border-color: rgb(164 95 0 / 0.15);
+    color: #7c4a00;
+}
+
+.offacto-invoice-note svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.offacto-invoice-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.offacto-invoice-toggle-row b {
+    display: block;
+    font-size: 14px;
+    color: #0e1250;
+}
+
+.offacto-invoice-toggle {
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 20px;
+    background: rgb(14 18 80 / 0.15);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.offacto-invoice-toggle::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.2s;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+}
+
+.offacto-invoice-toggle.on {
+    background: #6b59dc;
+}
+
+.offacto-invoice-toggle.on::after {
+    left: 21px;
+}
+
+.offacto-invoice-sep {
+    height: 1px;
+    background: rgb(14 18 80 / 0.08);
+}
+
+.offacto-invoice-att-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 13px;
+    align-items: flex-start;
+}
+
+.offacto-invoice-att-row svg {
+    width: 16px;
+    height: 16px;
+    color: #6b59dc;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.offacto-invoice-preview-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.offacto-invoice-template-link {
+    font-size: 12px;
+    font-weight: 600;
+    color: #5a48c8;
+    text-decoration: none;
+}
+
+.offacto-invoice-template-link:hover {
+    text-decoration: underline;
+}
+
+.offacto-invoice-paper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid #e4e9f7;
+    background: #fff;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.12);
+    font-size: 12px;
+    color: #1a1f3c;
+}
+
+.offacto-invoice-paper-brand {
+    height: 6px;
+}
+
+.offacto-invoice-paper-inner {
+    max-height: min(78vh, 920px);
+    overflow: auto;
+}
+
+.offacto-invoice-paper-inner > div {
+    font-size: 12px;
+}
+
+.offacto-invoice-paper-att {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px 14px;
+    border-top: 1px solid #eef1ff;
+    font-size: 11px;
+    color: #48537f;
+}
+
+/* Demo v6 .paper — minimal invoice live preview */
+.offacto-demo-paper {
+    --brand: #3a4aa0;
+    position: relative;
+    overflow: hidden;
+    padding: 30px;
+    border-radius: 12px;
+    background: #fff;
+    color: #1a1f3c;
+    font-size: 12px;
+    border: 1px solid #e4e9f7;
+    box-shadow: 0 8px 36px rgb(58 74 160 / 0.18);
+}
+
+.offacto-demo-paper .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.offacto-demo-paper-head {
+    margin-bottom: 4px;
+}
+
+.offacto-demo-paper-logo {
+    width: 34px;
+    height: auto;
+    object-fit: contain;
+}
+
+.offacto-demo-paper-logo-svg {
+    width: 34px;
+    height: auto;
+}
+
+.offacto-demo-paper-from-name {
+    margin-top: 6px;
+    font-weight: 800;
+    font-size: 14px;
+    color: #1a1f3c;
+}
+
+.offacto-demo-paper-muted {
+    color: #5c6488;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.offacto-demo-paper-head-right {
+    text-align: right;
+}
+
+.offacto-demo-paper-head-right h4 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--brand);
+}
+
+.offacto-demo-paper-billto {
+    margin: 22px 0 16px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--brand);
+    background: #f5f7ff;
+    border-radius: 0 8px 8px 0;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.offacto-demo-paper-billto-lbl {
+    color: #5c6488;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.offacto-demo-paper-lines {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.offacto-demo-paper-lines th,
+.offacto-demo-paper-lines td {
+    padding: 7px 0;
+    border-bottom: 1px solid #eef1ff;
+    font-size: 11.5px;
+    color: #1a1f3c;
+}
+
+.offacto-demo-paper-lines th {
+    color: #5c6488;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.offacto-demo-paper-lines th.num,
+.offacto-demo-paper-lines td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.offacto-demo-paper-empty {
+    padding: 16px 0 !important;
+    text-align: center;
+    color: #5c6488;
+}
+
+.offacto-demo-paper-totals {
+    margin-left: auto;
+    max-width: 220px;
+    margin-top: 10px;
+    display: grid;
+    gap: 4px;
+}
+
+.offacto-demo-paper-totals .muted {
+    color: #5c6488;
+}
+
+.offacto-demo-paper-totals .total {
+    font-weight: 800;
+    font-size: 14px;
+    border-top: 1px solid #eef1ff;
+    padding-top: 6px;
+}
+
+.offacto-demo-paper-rc {
+    font-size: 10.5px;
+    color: #5c6488;
+    margin-top: 8px;
+}
+
+.offacto-demo-paper-pt {
+    align-items: center;
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: #f5f7ff;
+    border-radius: 10px;
+    font-size: 11.5px;
+    line-height: 1.5;
+}
+
+.offacto-demo-paper-mollie {
+    font-weight: 700;
+}
+
+.offacto-demo-paper-qr {
+    width: 62px;
+    height: 62px;
+    flex-shrink: 0;
+    background: repeating-conic-gradient(#1a1f3c 0 25%, #fff 0 50%) 0 0 / 12px 12px;
+    border-radius: 4px;
+    border: 4px solid #fff;
+    outline: 1px solid #e4e9f7;
+}
+
+.offacto-demo-paper-att {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.offacto-demo-paper-att span {
+    font-size: 10.5px;
+    background: #eef1ff;
+    color: #2b3580;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.offacto-invoice-builder-page .offacto-invoice-paper--minimal {
+    padding: 0;
+    border: 0;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.12);
+}
+
+.offacto-invoice-builder-page .offacto-invoice-paper--minimal .offacto-demo-paper {
+    box-shadow: none;
+    border: 0;
+    border-radius: 18px;
 }

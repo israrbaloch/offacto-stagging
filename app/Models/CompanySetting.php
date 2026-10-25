@@ -19,6 +19,7 @@ class CompanySetting extends Model
         'invoice_logo',
         'logo_in_emails',
         'theme',
+        'invoice_template',
         'numbering_series',
         'integrations_mode',
         'mollie_test_key',

@@ -138,6 +138,7 @@ class PublicInvoiceController extends Controller
                     'primary' => $theme['primary'] ?? '#4054b2',
                     'secondary' => $theme['secondary'] ?? '#0f172a',
                 ],
+                'invoice_template' => $settings?->invoice_template ?? 'classic',
             ],
             'customer' => [
                 'name' => $invoice->customer?->org_name

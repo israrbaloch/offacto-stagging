@@ -496,8 +496,12 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany->id)
-            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'attachments', 'blocks'])
+            ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'attachments', 'blocks', 'parentInvoice.items'])
             ->firstOrFail();
+
+        if (! $invoice->isDraft()) {
+            return redirect()->route('invoices.show', $invoice);
+        }
 
         $customers = Customer::where('company_id', $activeCompany->id)
             ->orderBy('first_name')
@@ -558,7 +562,19 @@ class InvoiceController extends Controller
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
             'nextInvoiceNumber' => $invoice->invoice_number,
             'customersData' => Customer::where('company_id', $activeCompany->id)
-                ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email']),
+                ->with('country:id,code')
+                ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email', 'vat_number', 'country_id'])
+                ->map(fn (Customer $customer) => [
+                    'id' => $customer->id,
+                    'first_name' => $customer->first_name,
+                    'surname' => $customer->surname,
+                    'org_name' => $customer->org_name,
+                    'office_address' => $customer->office_address,
+                    'email' => $customer->email,
+                    'vat_number' => $customer->vat_number,
+                    'country_code' => $customer->country?->code,
+                ])
+                ->values(),
         ]);
     }
 
@@ -595,7 +611,9 @@ class InvoiceController extends Controller
             return redirect()->back()->with('error', 'Invoice not found or access denied.');
         }
 
-        $wasSent = ! $invoice->isDraft();
+        if ($deny = $this->rejectIfNotDraft($invoice, $request)) {
+            return $deny;
+        }
 
         DB::beginTransaction();
         try {
@@ -610,7 +628,6 @@ class InvoiceController extends Controller
                 'email_message' => $request->validated()['email_message'] ?? $invoice->email_message,
                 'status' => $request->validated()['status'],
                 'ip_transfer_type' => $request->validated()['ip_transfer_type'] ?? null,
-                'needs_resend' => $wasSent ? true : $invoice->needs_resend,
             ]);
 
             // Delete existing items
@@ -643,9 +660,7 @@ class InvoiceController extends Controller
                 ]);
             }
 
-            $flash = $wasSent ? 'invoice-updated-resend' : 'invoice-updated';
-
-            return redirect()->route('invoices.edit', $invoice->id)->with('status', $flash);
+            return redirect()->route('invoices.edit', $invoice->id)->with('status', 'invoice-updated');
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -694,7 +709,16 @@ class InvoiceController extends Controller
         }
 
         if (! $invoice->isDraft()) {
-            return redirect()->back()->with('error', 'Sent invoices cannot be deleted.');
+            $message = 'Only draft invoices can be deleted.';
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                    'errors' => ['invoice' => [$message]],
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', $message);
         }
 
         app(\App\Services\TimeEntryInvoicingService::class)->releaseEntriesForInvoice($invoice);
@@ -984,7 +1008,10 @@ class InvoiceController extends Controller
     {
         $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer', 'blocks']);
 
-        return Pdf::loadView('pdf.invoice', [
+        $template = $invoice->company?->companySetting?->invoice_template ?? 'classic';
+        $view = $template === 'minimal' ? 'pdf.invoice-minimal' : 'pdf.invoice';
+
+        return Pdf::loadView($view, [
             'invoice' => $invoice,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
         ])->setPaper('a4');
@@ -1125,7 +1152,11 @@ class InvoiceController extends Controller
     public function storeAttachment(Request $request, $invoice): RedirectResponse
     {
         $activeCompany = $request->user()?->activeCompany();
-        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->with('statusRelation')->firstOrFail();
+
+        if ($deny = $this->rejectIfNotDraft($invoice, $request)) {
+            return $deny;
+        }
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
@@ -1144,7 +1175,11 @@ class InvoiceController extends Controller
     public function destroyAttachment(Request $request, $invoice, InvoiceAttachment $attachment): RedirectResponse
     {
         $activeCompany = $request->user()?->activeCompany();
-        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->with('statusRelation')->firstOrFail();
+
+        if ($deny = $this->rejectIfNotDraft($invoice, $request)) {
+            return $deny;
+        }
 
         if ($attachment->invoice_id !== $invoice->id) {
             abort(404);
@@ -1169,8 +1204,16 @@ class InvoiceController extends Controller
 
         $source = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany?->id)
-            ->with('items')
+            ->with(['items', 'statusRelation'])
             ->firstOrFail();
+
+        if ($source->isDraft()) {
+            return back()->with('error', 'Only sent invoices can be credited. Send this invoice first or delete the draft.');
+        }
+
+        if ($source->parent_invoice_id) {
+            return back()->with('error', 'Credit notes cannot be credited again.');
+        }
 
         $draftStatus = Status::forTable('invoices')->where('name', 'Draft')->first();
 
@@ -1204,6 +1247,67 @@ class InvoiceController extends Controller
         });
 
         return redirect()->route('invoices.edit', $credit->id)->with('status', 'credit-note-created');
+    }
+
+    public function createRecurringFromInvoice(Request $request, $invoice): RedirectResponse
+    {
+        $user = $request->user();
+        $activeCompany = $user?->activeCompany();
+        if ($deny = CompanyAccess::denyWrite($user, $activeCompany, false, 'invoices.recurring')) {
+            return $deny;
+        }
+        if ($deny = CompanyAccess::denyCreate($user, $activeCompany, 'invoices', 'invoices.create')) {
+            return $deny;
+        }
+
+        $source = Invoice::where('id', $invoice)
+            ->where('company_id', $activeCompany?->id)
+            ->with(['items', 'statusRelation'])
+            ->firstOrFail();
+
+        if ($source->isDraft()) {
+            return back()->with('error', 'Start recurring billing from a sent invoice, or enable recurring while editing a draft.');
+        }
+
+        if ($source->parent_invoice_id) {
+            return back()->with('error', 'Recurring schedules cannot be created from a credit note.');
+        }
+
+        $draftStatus = Status::forTable('invoices')->where('name', 'Draft')->first();
+
+        $recurring = DB::transaction(function () use ($source, $draftStatus, $activeCompany) {
+            $recurring = Invoice::create([
+                'company_id' => $activeCompany->id,
+                'customer_id' => $source->customer_id,
+                'offer_id' => $source->offer_id,
+                'invoice_number' => $this->generateInvoiceNumber($activeCompany->id),
+                'invoice_date' => now(),
+                'due_date' => now()->addDays(30),
+                'intro' => $source->intro,
+                'desc' => $source->desc,
+                'notes' => $source->notes,
+                'email_message' => $source->email_message,
+                'status' => $draftStatus?->id,
+                'payment_status' => Invoice::PAYMENT_UNPAID,
+                'is_recurring' => true,
+                'recurring_interval' => 'monthly',
+                'next_run_at' => RecurringInvoice::initialNextRun('monthly'),
+            ]);
+
+            foreach ($source->items as $item) {
+                InvoiceItem::create([
+                    'invoice_id' => $recurring->id,
+                    'service_id' => $item->service_id,
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                ]);
+            }
+
+            return $recurring;
+        });
+
+        return redirect()->route('invoices.edit', $recurring->id)->with('status', 'recurring-from-invoice-created');
     }
 
     public function sendReminder(Request $request, $invoice): RedirectResponse
@@ -1345,7 +1449,11 @@ class InvoiceController extends Controller
     public function syncBlocks(Request $request, $invoice): RedirectResponse
     {
         $activeCompany = $request->user()?->activeCompany();
-        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->with('statusRelation')->firstOrFail();
+
+        if ($deny = $this->rejectIfNotDraft($invoice, $request)) {
+            return $deny;
+        }
 
         $validated = $request->validate([
             'blocks' => ['array'],
@@ -1370,7 +1478,11 @@ class InvoiceController extends Controller
     public function uploadBlockImage(Request $request, $invoice): JsonResponse
     {
         $activeCompany = $request->user()?->activeCompany();
-        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->firstOrFail();
+        $invoice = Invoice::where('id', $invoice)->where('company_id', $activeCompany?->id)->with('statusRelation')->firstOrFail();
+
+        if ($deny = $this->rejectIfNotDraft($invoice, $request)) {
+            return $deny;
+        }
 
         $validated = $request->validate([
             'file' => ['required', 'image', 'max:5120'],
@@ -1394,7 +1506,12 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::where('id', $invoice)
             ->where('company_id', $activeCompany?->id)
+            ->with('statusRelation')
             ->firstOrFail();
+
+        if ($deny = $this->rejectIfNotDraft($invoice, $request)) {
+            return $deny;
+        }
 
         $validated = $request->validate([
             'is_recurring' => ['required', 'boolean'],
@@ -1421,6 +1538,27 @@ class InvoiceController extends Controller
         $invoice->update($payload);
 
         return back()->with('status', 'recurring-updated');
+    }
+
+    /**
+     * @return JsonResponse|RedirectResponse|null
+     */
+    private function rejectIfNotDraft(Invoice $invoice, Request $request): JsonResponse|RedirectResponse|null
+    {
+        if ($invoice->isDraft()) {
+            return null;
+        }
+
+        $message = 'Sent invoices cannot be edited or modified. Create a credit note or a new recurring schedule instead.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'errors' => ['invoice' => [$message]],
+            ], 422);
+        }
+
+        return redirect()->back()->with('error', $message);
     }
 
     /**

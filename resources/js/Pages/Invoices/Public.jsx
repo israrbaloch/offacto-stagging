@@ -1,7 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import FlashToaster from '../../Components/FlashToaster';
-import InvoicePreview from '../../Components/InvoicePreview';
+import InvoiceDocumentPreview, { normalizeInvoiceTemplate } from '../../Components/InvoiceDocumentPreview';
 import Logo from '../../Components/Logo';
 import Modal from '../../Components/Modal';
 import OfferBlockView from '../../Components/OfferBlockView';
@@ -101,10 +101,17 @@ export default function Public({ invoice, token, canAcknowledge }) {
                 )}
 
                 <div className="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
-                    <InvoicePreview
+                    <InvoiceDocumentPreview
+                        template={normalizeInvoiceTemplate(invoice.company?.invoice_template)}
                         number={invoice.invoice_number}
                         date={invoice.invoice_date}
                         dueDate={invoice.due_date}
+                        showMollieLink={Boolean(invoice.mollie_checkout_url)}
+                        totalsOverride={{
+                            subtotal: invoice.subtotal,
+                            tax: invoice.tax_amount,
+                            total: invoice.total,
+                        }}
                         from={{
                             name: invoice.company?.name,
                             street: invoice.company?.street,

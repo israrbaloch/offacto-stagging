@@ -8,8 +8,18 @@ import {
 } from '../lib/serviceBilling';
 import { money } from '../lib/utils';
 
-export default function LineItemsEditor({ items, setItems, services = [], vatRate = 21, error, variant = 'default' }) {
+export default function LineItemsEditor({
+    items,
+    setItems,
+    services = [],
+    vatRate = 21,
+    error,
+    variant = 'default',
+    invoiceStyle = false,
+    suppressToolbar = false,
+}) {
     const builder = variant === 'builder';
+    const invoiceLines = builder && invoiceStyle;
     const inpClass = builder ? 'offacto-brief-inp offacto-quote-line-inp' : 'w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-100';
     const selectClass = builder
         ? 'offacto-brief-inp offacto-quote-line-inp w-full'
@@ -143,6 +153,9 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                             <th className={builder ? undefined : 'pb-3 pr-3 font-medium'}>Description</th>
                             <th className={builder ? 'num' : 'w-24 pb-3 pr-3 font-medium'}>{qtyHeader}</th>
                             <th className={builder ? 'num' : 'w-36 pb-3 pr-3 font-medium'}>{priceHeader}</th>
+                            {invoiceLines ? (
+                                <th className={builder ? undefined : 'w-28 pb-3 pr-3 font-medium'}>VAT</th>
+                            ) : null}
                             <th className={builder ? 'num' : 'w-28 pb-3 pr-3 font-medium'}>Total</th>
                             <th className={builder ? 'offacto-quote-lines-act' : 'w-16 pb-3'} aria-hidden={builder ? true : undefined} />
                         </tr>
@@ -150,7 +163,10 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                     <tbody>
                         {items.length === 0 && (
                             <tr>
-                                <td colSpan={5} className={builder ? 'offacto-quote-lines-empty' : 'py-8 text-center text-slate-400'}>
+                                <td
+                                    colSpan={invoiceLines ? 6 : 5}
+                                    className={builder ? 'offacto-quote-lines-empty' : 'py-8 text-center text-slate-400'}
+                                >
                                     Add a product, quotation line, or note to get started.
                                 </td>
                             </tr>
@@ -161,7 +177,7 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                             return (
                                 <tr key={index} className={builder ? undefined : 'border-b border-slate-100'}>
                                     <td>
-                                        {!isText && (
+                                        {!isText && !invoiceLines && (
                                             <div className={builder ? 'offacto-quote-line-svc' : 'mb-2'}>
                                                 <SelectMenu
                                                     className={selectClass}
@@ -175,6 +191,7 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                                         )}
                                         <input
                                             className={inpClass}
+                                            list={invoiceLines && !isText ? 'offacto-invoice-svc-list' : undefined}
                                             placeholder={isText ? 'Add a note for the client' : 'Describe this line'}
                                             value={item.description || ''}
                                             onChange={(e) => update(index, 'description', e.target.value)}
@@ -205,6 +222,23 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                                             />
                                         )}
                                     </td>
+                                    {invoiceLines ? (
+                                        <td className={builder ? undefined : 'py-3 pr-3 align-top'}>
+                                            {!isText && (
+                                                <select
+                                                    className={`${inpClass} offacto-invoice-vat-inp`}
+                                                    value={String(vatRate)}
+                                                    aria-label="VAT"
+                                                    onChange={() => {}}
+                                                >
+                                                    <option value="21">21%</option>
+                                                    <option value="12">12%</option>
+                                                    <option value="6">6%</option>
+                                                    <option value="0">{vatRate === 0 ? '0% · IC' : '0%'}</option>
+                                                </select>
+                                            )}
+                                        </td>
+                                    ) : null}
                                     <td className={builder ? 'num' : 'py-3 pr-3 align-top font-medium text-slate-800'}>
                                         {isText ? '—' : <b>{money(line)}</b>}
                                     </td>
@@ -225,9 +259,19 @@ export default function LineItemsEditor({ items, setItems, services = [], vatRat
                 </table>
             </div>
 
-            <div className={builder ? 'offacto-quote-line-actions' : 'mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
-                <div className="flex flex-wrap gap-2">{addButtons}</div>
-            </div>
+            {invoiceLines ? (
+                <datalist id="offacto-invoice-svc-list">
+                    {services.map((service) => (
+                        <option key={service.id} value={service.name} />
+                    ))}
+                </datalist>
+            ) : null}
+
+            {!suppressToolbar ? (
+                <div className={builder ? 'offacto-quote-line-actions' : 'mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
+                    <div className="flex flex-wrap gap-2">{addButtons}</div>
+                </div>
+            ) : null}
 
             {error && <p className={builder ? 'offacto-quote-hint' : 'mt-2 text-xs text-rose-600'}>{error}</p>}
 

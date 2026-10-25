@@ -150,7 +150,26 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
     const rows = invoices?.data || [];
     const statusTab = filters.status_tab || 'all';
     const dateFilter = filters.date_filter || 'current_quarter';
-    const { toast } = useUi();
+    const { toast, confirm } = useUi();
+
+    async function deleteDraftInvoice(invoice, event) {
+        event?.stopPropagation?.();
+        if (statusKey(invoice) !== 'draft') {
+            return;
+        }
+        if (
+            !(await confirm({
+                message: t('invoices.delete_confirm'),
+                confirmLabel: t('common.delete'),
+                danger: true,
+            }))
+        ) {
+            return;
+        }
+        router.delete(`/invoices/${invoice.id}`, {
+            onSuccess: () => toast.success(t('invoices.deleted_toast')),
+        });
+    }
 
     const monthName = new Date().toLocaleDateString(localeTag(), { month: 'short' });
 
@@ -282,12 +301,13 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
                                     <th>{t('invoices.channel')}</th>
                                     <th className="num">{t('offers.amount')}</th>
                                     <th>{t('common.status')}</th>
+                                    <th className="offacto-invoice-row-act" aria-label={t('common.actions')} />
                                 </tr>
                             </thead>
                             <tbody className="offacto-brief-table-click">
                                 {rows.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="offacto-brief-empty">
+                                        <td colSpan={8} className="offacto-brief-empty">
                                             {t('invoices.empty')}
                                         </td>
                                     </tr>
@@ -346,6 +366,18 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
                                                     <span className={`offacto-demo-badge ${statusBadgeClass(key)}`.trim()}>
                                                         {statusLabel(key)}
                                                     </span>
+                                                </td>
+                                                <td className="offacto-invoice-row-act">
+                                                    {key === 'draft' ? (
+                                                        <button
+                                                            type="button"
+                                                            className="offacto-invoice-row-delete"
+                                                            aria-label={t('common.delete')}
+                                                            onClick={(event) => deleteDraftInvoice(invoice, event)}
+                                                        >
+                                                            <Icon name="trash" />
+                                                        </button>
+                                                    ) : null}
                                                 </td>
                                             </tr>
                                         );

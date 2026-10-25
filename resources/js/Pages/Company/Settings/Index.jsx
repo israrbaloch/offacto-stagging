@@ -111,6 +111,7 @@ export default function CompanySettingsIndex({
             primary: companySettings?.theme?.primary || '#4054b2',
             secondary: companySettings?.theme?.secondary || '#94a3b8',
         },
+        invoice_template: companySettings?.invoice_template || 'classic',
         invoice_logo: null,
         logo_in_emails: companySettings?.logo_in_emails ?? true,
     });
@@ -317,6 +318,32 @@ export default function CompanySettingsIndex({
                                             />
                                             {t('profile.logo_in_emails')}
                                         </label>
+                                    </div>
+                                    <div>
+                                        <span className={labelClass}>{t('invoices.template_picker_label')}</span>
+                                        <div className="mt-2 inline-flex flex-wrap gap-2 rounded-xl bg-slate-100 p-1">
+                                            {[
+                                                { id: 'classic', label: t('invoices.template_classic') },
+                                                { id: 'minimal', label: t('invoices.template_minimal') },
+                                            ].map((option) => (
+                                                <button
+                                                    key={option.id}
+                                                    type="button"
+                                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                                                        brandingForm.data.invoice_template === option.id
+                                                            ? 'bg-white text-indigo-700 shadow-sm'
+                                                            : 'text-slate-600 hover:text-slate-900'
+                                                    }`}
+                                                    onClick={() => {
+                                                        brandingForm.setData('invoice_template', option.id);
+                                                        saveBranding({ invoice_template: option.id });
+                                                    }}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-500">{t('company_settings.invoice_template_hint')}</p>
                                     </div>
                                     <div>
                                         <span className={labelClass}>{t('profile.theme_colors')}</span>

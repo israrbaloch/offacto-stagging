@@ -28,6 +28,7 @@ class UpdateCompanySettingsRequest extends FormRequest
             'theme' => ['nullable', 'array'],
             'theme.primary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'theme.secondary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'invoice_template' => ['sometimes', 'string', Rule::in(['classic', 'minimal'])],
             'numbering_series' => ['sometimes', 'nullable', 'exists:numbering_series,id'],
         ];
     }
