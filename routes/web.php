@@ -46,6 +46,8 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\InvoiceFromTimeController;
 use App\Http\Controllers\CustomerCreditCheckController;
+use App\Http\Controllers\CustomerDocumentController;
+use App\Http\Controllers\ViesValidationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -193,6 +195,12 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     
     // Customers
     Route::resource('customers', CustomerController::class);
+    Route::post('customers/vies-validate', [ViesValidationController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('customers.vies-validate');
+    Route::post('customers/{customer}/documents', [CustomerDocumentController::class, 'store'])->name('customers.documents.store');
+    Route::patch('customers/{customer}/documents/{document}', [CustomerDocumentController::class, 'update'])->name('customers.documents.update');
+    Route::delete('customers/{customer}/documents/{document}', [CustomerDocumentController::class, 'destroy'])->name('customers.documents.destroy');
     Route::post('customers/{customer}/credit-check', [CustomerCreditCheckController::class, 'store'])->name('customers.credit-check');
     
     Route::get('briefings', [BriefingController::class, 'index'])->name('briefings.index');

@@ -107,6 +107,15 @@ class InvoiceSent extends Mailable
             }
         }
 
+        $this->invoice->loadMissing('customer.documents');
+        foreach ($this->invoice->customer?->documents->where('attach_on_invoice', true) ?? [] as $document) {
+            if (Storage::disk('public')->exists($document->file_path)) {
+                $attachments[] = Attachment::fromStorageDisk('public', $document->file_path)
+                    ->as($document->original_name)
+                    ->withMime('application/pdf');
+            }
+        }
+
         return $attachments;
     }
 }

@@ -28,10 +28,10 @@ class StoreCustomerRequest extends FormRequest
         return [
             'first_name' => ['required', 'string', 'max:255'],
             'surname' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:organization,individual'],
+            'type' => ['required', 'in:individual,vzw,company,gov'],
             'country_id' => ['required', 'integer', 'exists:countries,id'],
             'vat_number' => ['nullable', 'string', 'max:255'],
-            'org_name' => ['nullable', 'string', 'max:255', 'required_if:type,organization'],
+            'org_name' => ['nullable', 'string', 'max:255', 'required_unless:type,individual'],
             'office_address' => ['nullable', 'string', 'max:500'],
             'email' => [
                 'required',

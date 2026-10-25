@@ -1,5 +1,2 @@
-import Form from './Form';
-
-export default function Edit(props) {
-    return <Form {...props} />;
-}
+/** @deprecated Drawer flow — CustomerController@edit redirects to index. */
+export { default } from './Index';

@@ -31,6 +31,8 @@ class CustomerCreditCheckController extends Controller
         $customer->load('country');
         $service->check($customer, $activeCompany, $user);
 
-        return back()->with('status', 'credit-check-completed');
+        return redirect()
+            ->route('customers.index', ['customer' => $customer->id])
+            ->with('status', 'credit-check-completed');
     }
 }

@@ -253,8 +253,11 @@ export default function InvoiceEditor({
             .filter((doc) => selectedLegal.includes(doc.id))
             .map((doc) => [doc.original_name || doc.type, t('invoices.auto_attachment_legal')]);
         const pdfs = (invoice?.attachments || []).map((file) => [file.original_name, t('invoices.auto_attachment_pdf')]);
-        return [...legal, ...pdfs];
-    }, [invoice?.attachments, legalDocuments, selectedLegal]);
+        const customerVault = (invoice?.customer?.documents || [])
+            .filter((doc) => doc.attach_on_invoice)
+            .map((doc) => [doc.original_name, t('invoices.auto_attachment_customer_vault')]);
+        return [...legal, ...customerVault, ...pdfs];
+    }, [invoice?.attachments, invoice?.customer?.documents, legalDocuments, selectedLegal]);
 
     const invoiceTemplate = normalizeInvoiceTemplate(activeCompany?.invoice_template);
     const isMinimalTemplate = invoiceTemplate === 'minimal';

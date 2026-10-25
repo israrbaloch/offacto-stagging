@@ -541,7 +541,7 @@ class InvoiceController extends Controller
         })->values();
 
         return Inertia::render('Invoices/Create', [
-            'invoice' => $invoice->loadMissing('offer'),
+            'invoice' => $invoice->loadMissing(['offer', 'customer.documents']),
             'defaultReminderMessage' => InvoiceReminderMessage::resolve($invoice)['body'],
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
