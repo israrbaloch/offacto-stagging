@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import Icon from './Icon';
+import { t } from '../lib/i18n';
 
 /** Shared staff + admin sidebar link appearance (admin shell styles). */
 export function normalizeSidebarPath(path) {
@@ -47,6 +48,7 @@ export default function SidebarNavLink({
     variant = 'light',
     count,
     badge,
+    showTimerDot = false,
 }) {
     const active = normalizeSidebarPath(item.href) === normalizeSidebarPath(activeHref || '');
 
@@ -59,9 +61,16 @@ export default function SidebarNavLink({
                 className={active ? 'on' : undefined}
             >
                 <Icon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
-                <span className="min-w-0 truncate text-inherit">{label}</span>
+                <span className="min-w-0 flex-1 truncate text-inherit">{label}</span>
                 {count != null && count > 0 ? <span className="nav-cnt">{count}</span> : null}
                 {badge ? <span className="nav-new">{badge}</span> : null}
+                {showTimerDot ? (
+                    <span
+                        className="nav-timer-dot"
+                        title={t('time.timer_running_indicator')}
+                        aria-label={t('time.timer_running_indicator')}
+                    />
+                ) : null}
             </Link>
         );
     }

@@ -387,6 +387,30 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     letter-spacing: 0.04em;
 }
 
+.offacto-nav .nav-timer-dot {
+    margin-left: auto;
+    width: 9px;
+    height: 9px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #c23a4b;
+    box-shadow: 0 0 0 2px rgb(194 58 75 / 0.35);
+    animation: offacto-nav-timer-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes offacto-nav-timer-blink {
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.35;
+        transform: scale(0.88);
+    }
+}
+
 .offacto-side-foot {
     margin-top: 16px;
     border-radius: 12px;
@@ -5851,4 +5875,493 @@ html.dark .auth-doc-note {
         opacity: 1;
         transform: translateY(-3px);
     }
+}
+
+/* Time tracking — demo tijd() */
+.offacto-time-page {
+    --dash-primary: #3a4aa0;
+    --dash-navy: #2b3580;
+    --dash-muted: #5c6488;
+    max-width: 1320px;
+}
+
+.offacto-time-page .offacto-btn-p:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    transform: none;
+}
+
+.offacto-time-note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    background: #fff3dd;
+}
+
+.offacto-time-note.warn svg {
+    color: #a45f00;
+    flex-shrink: 0;
+}
+
+.offacto-time-link {
+    font-weight: 600;
+    color: var(--dash-primary);
+}
+
+.offacto-time-timer-card {
+    margin-bottom: 18px;
+    overflow: hidden;
+}
+
+.offacto-time-timer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    padding: 20px;
+}
+
+.offacto-time-playbtn {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--dash-primary);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgb(58 74 160 / 0.28);
+    transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.offacto-time-playbtn:hover:not(:disabled) {
+    background: var(--dash-navy);
+    transform: translateY(-1px);
+}
+
+.offacto-time-playbtn.on {
+    background: #c23a4b;
+    animation: offacto-time-pulse 1.6s infinite;
+}
+
+.offacto-time-playbtn.on:hover:not(:disabled) {
+    background: #c23a4b;
+}
+
+.offacto-time-playbtn svg {
+    width: 22px;
+    height: 22px;
+}
+
+.offacto-time-playbtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+@keyframes offacto-time-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgb(194 58 75 / 0.45);
+    }
+
+    70% {
+        box-shadow: 0 0 0 14px rgb(194 58 75 / 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgb(194 58 75 / 0);
+    }
+}
+
+.offacto-time-clock {
+    font-size: 34px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--dash-navy);
+    min-width: 140px;
+}
+
+.offacto-time-timer-fields {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    min-width: min(100%, 280px);
+}
+
+@media (max-width: 720px) {
+    .offacto-time-timer-fields {
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+}
+
+.offacto-time-inp {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgb(107 125 196 / 0.16);
+    background: #fff;
+    font: inherit;
+    font-size: 14px;
+    color: #1a1f3c;
+    outline: none;
+}
+
+.offacto-time-inp:focus {
+    border-color: var(--dash-primary);
+    box-shadow: 0 0 0 4px rgb(58 74 160 / 0.12);
+}
+
+.offacto-time-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+@media (max-width: 960px) {
+    .offacto-time-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.offacto-time-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgb(107 125 196 / 0.16);
+}
+
+.offacto-time-card-head h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dash-navy);
+}
+
+.offacto-time-week-body {
+    padding: 20px;
+}
+
+.offacto-time-wk {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.offacto-time-wk > div {
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    background: #eef1ff;
+}
+
+.offacto-time-wk > div.today {
+    background: linear-gradient(135deg, var(--dash-navy), var(--dash-primary));
+    color: #fff;
+}
+
+.offacto-time-wk small {
+    display: block;
+    font-size: 11px;
+    color: var(--dash-muted);
+}
+
+.offacto-time-wk > div.today small {
+    color: rgb(255 255 255 / 0.85);
+}
+
+.offacto-time-wk b {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.offacto-time-sep {
+    height: 1px;
+    margin: 16px 0;
+    background: rgb(107 125 196 / 0.16);
+}
+
+.offacto-time-billable-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--dash-muted);
+}
+
+.offacto-time-billable-row b {
+    color: var(--dash-navy);
+}
+
+.offacto-time-bar {
+    height: 6px;
+    margin-top: 8px;
+    border-radius: 6px;
+    background: #c8d5f0;
+    overflow: hidden;
+}
+
+.offacto-time-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--dash-primary), #6b7dc4);
+}
+
+.offacto-time-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.offacto-time-expand-spacer {
+    display: inline-block;
+    width: 26px;
+    flex-shrink: 0;
+}
+
+.offacto-time-expand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--dash-muted);
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.offacto-time-expand:hover {
+    background: rgb(107 125 196 / 0.12);
+    color: var(--dash-navy);
+}
+
+.offacto-time-expand svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.15s ease;
+}
+
+.offacto-time-expand.on svg {
+    transform: rotate(90deg);
+}
+
+.offacto-time-group-row td {
+    font-weight: 500;
+}
+
+.offacto-time-session-row td {
+    background: rgb(245 247 255 / 0.65);
+    border-top: none;
+    font-size: 13px;
+}
+
+.offacto-time-session-row td:first-child {
+    padding-left: 2.75rem;
+}
+
+.offacto-time-session-label {
+    color: var(--dash-muted);
+    font-weight: 500;
+}
+
+.offacto-time-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 20px;
+    border-top: 1px solid rgb(107 125 196 / 0.16);
+}
+
+.offacto-time-page-link {
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dash-muted);
+    text-decoration: none;
+}
+
+.offacto-time-page-link.on {
+    background: var(--dash-primary);
+    color: #fff;
+}
+
+.offacto-time-page-link.disabled {
+    opacity: 0.4;
+}
+
+.offacto-time-manual-form {
+    display: grid;
+    gap: 14px;
+}
+
+.offacto-time-field {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1f3c;
+}
+
+.offacto-time-fg2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 520px) {
+    .offacto-time-fg2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Services & products — offacto-app-demo.html diensten() */
+.offacto-services-page .offacto-brief-edit-ph h1 {
+    color: var(--dash-navy);
+}
+
+.offacto-services-grid {
+    margin-top: 0;
+}
+
+.offacto-service-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+}
+
+.offacto-service-card-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px 22px 20px;
+    min-height: 168px;
+}
+
+.offacto-service-card-name {
+    display: block;
+    margin-top: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dash-navy);
+    line-height: 1.35;
+}
+
+.offacto-service-card-price {
+    margin-top: 8px;
+    font-family: Urbanist, Figtree, system-ui, sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--dash-navy);
+    line-height: 1.2;
+}
+
+.offacto-service-card-unit {
+    margin-left: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--dash-muted);
+}
+
+.offacto-service-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.offacto-service-card.lift:hover .offacto-service-card-name,
+.offacto-service-card.lift:hover .offacto-service-card-price,
+.offacto-service-card.lift:hover .offacto-service-card-unit {
+    color: #fff !important;
+}
+
+.offacto-service-card.lift:hover .offacto-demo-badge.grey {
+    background: rgb(255 255 255 / 0.16);
+    color: #fff;
+}
+
+.offacto-services-empty {
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--dash-muted);
+}
+
+.offacto-services-empty p {
+    margin: 0 0 16px;
+}
+
+.offacto-services-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dash-muted);
+    text-decoration: none;
+}
+
+.offacto-services-back:hover {
+    color: var(--dash-primary);
+}
+
+.offacto-services-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.offacto-services-form-card {
+    padding: 22px;
+}
+
+.offacto-services-form-body {
+    display: grid;
+    gap: 14px;
+    max-width: 640px;
+}
+
+.offacto-drawer-err {
+    margin: 4px 0 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--bad, #c23a4b);
+}
+
+.offacto-service-drawer-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.offacto-service-card.offacto-service-card--inactive {
+    opacity: 0.72;
 }

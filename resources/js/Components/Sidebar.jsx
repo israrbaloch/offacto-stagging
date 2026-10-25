@@ -5,7 +5,7 @@ import { t } from '../lib/i18n';
 import CompanySwitcher from './CompanySwitcher';
 import Icon from './Icon';
 import SidebarCreateMenu from './SidebarCreateMenu';
-import SidebarNavLink, { resolveSidebarActiveHref } from './SidebarNavLink';
+import SidebarNavLink, { normalizeSidebarPath, resolveSidebarActiveHref } from './SidebarNavLink';
 
 const AUTH_MARK_SRC = '/assets/images/favicon.ico';
 
@@ -77,6 +77,8 @@ export default function Sidebar({ onNavigate }) {
     const allNavItems = useMemo(() => flattenItems(groups), [groups]);
     const activeHref = resolveSidebarActiveHref(url, allNavItems);
     const trial = trialFoot(activeCompany);
+    const timerRunning = Boolean(props.timeTracking?.running);
+    const onTimePage = normalizeSidebarPath(url) === '/time';
 
     useEffect(() => {
         const container = sidebarNavRef.current;
@@ -141,6 +143,7 @@ export default function Sidebar({ onNavigate }) {
                                         label={t(item.label)}
                                         variant="offacto"
                                         onNavigate={onNavigate}
+                                        showTimerDot={item.href === '/time' && timerRunning && !onTimePage}
                                     />
                                 ))}
                             </nav>

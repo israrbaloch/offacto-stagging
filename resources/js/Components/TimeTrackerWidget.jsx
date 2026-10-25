@@ -210,22 +210,7 @@ export default function TimeTrackerWidget({ variant = 'default' }) {
 
     if (running) {
         if (isTopbar) {
-            return (
-                <div className="flex items-center gap-1.5">
-                    <span className="offacto-topbar-icobtn ring-2 ring-[#9D8DF1]/50" title={`${running.service?.name || ''} · ${elapsed}`}>
-                        <Icon name="clock" />
-                    </span>
-                    <span className="hidden font-mono text-[11px] tabular-nums text-[#CEC6FB] lg:inline">{elapsed}</span>
-                    <button
-                        type="button"
-                        disabled={busy}
-                        onClick={stop}
-                        className="rounded-full bg-[#6B59DC] px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-[#5A48C8] disabled:opacity-50"
-                    >
-                        {t('time.stop')}
-                    </button>
-                </div>
-            );
+            return null;
         }
 
         return (

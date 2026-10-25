@@ -35,8 +35,13 @@ class ServiceController extends Controller
             ->latest()
             ->get(); // Soft deletes are automatically excluded by default
 
+        $defaultStatus = Status::forTable('services')->where('name', 'Active')->first();
+
         return Inertia::render('Services/Index', [
             'services' => $services,
+            'filters' => $request->only(['service', 'drawer']),
+            'statuses' => Status::forTable('services')->pluck('name', 'id'),
+            'defaultStatusId' => $defaultStatus?->id,
         ]);
     }
 
@@ -90,6 +95,7 @@ class ServiceController extends Controller
         $serviceData = [
             'company_id' => $activeCompany->id,
             ...$request->validated(),
+            'vat_code' => $request->validated('vat_code') ?? '21',
         ];
         
         // Check if service approval is required, otherwise set default status

@@ -11,6 +11,7 @@ use App\Support\TimeEntryRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -67,7 +68,80 @@ class TimeEntryController extends Controller
             'hourlyServices' => $hourlyServices,
             'customers' => $customers,
             'filters' => $request->only(['customer_id', 'status', 'from', 'to']),
+            'weekStats' => $this->weekStats($activeCompany->id),
         ]);
+    }
+
+    /**
+     * @return array{days: list<array{date: string, label: string, seconds: int, display: string}>, total_seconds: int, billable_percent: int, today: string}
+     */
+    private function weekStats(int $companyId): array
+    {
+        $start = now()->startOfWeek(Carbon::MONDAY)->startOfDay();
+        $end = now()->endOfWeek(Carbon::SUNDAY)->endOfDay();
+        $today = now()->toDateString();
+
+        $dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+        $days = [];
+        for ($i = 0; $i < 7; $i++) {
+            $date = $start->copy()->addDays($i);
+            $days[$date->toDateString()] = [
+                'date' => $date->toDateString(),
+                'label' => $dayLabels[$i],
+                'seconds' => 0,
+                'display' => '—',
+            ];
+        }
+
+        $rows = TimeEntry::query()
+            ->forCompany($companyId)
+            ->whereIn('status', [TimeEntry::STATUS_COMPLETED, TimeEntry::STATUS_INVOICED])
+            ->whereBetween('started_at', [$start, $end])
+            ->get(['duration_seconds', 'billable', 'started_at']);
+
+        $totalSeconds = 0;
+        $billableSeconds = 0;
+
+        foreach ($rows as $row) {
+            $seconds = (int) ($row->duration_seconds ?? 0);
+            if ($seconds <= 0) {
+                continue;
+            }
+            $key = $row->started_at?->toDateString();
+            if ($key && isset($days[$key])) {
+                $days[$key]['seconds'] += $seconds;
+            }
+            $totalSeconds += $seconds;
+            if ($row->billable) {
+                $billableSeconds += $seconds;
+            }
+        }
+
+        foreach ($days as &$day) {
+            if ($day['seconds'] > 0) {
+                $day['display'] = $this->formatDurationShort($day['seconds']);
+            }
+        }
+        unset($day);
+
+        $billablePercent = $totalSeconds > 0 ? (int) round(($billableSeconds / $totalSeconds) * 100) : 0;
+
+        return [
+            'days' => array_values($days),
+            'total_seconds' => $totalSeconds,
+            'total_display' => $totalSeconds > 0 ? $this->formatDurationShort($totalSeconds) : '0h 00m',
+            'billable_percent' => $billablePercent,
+            'today' => $today,
+        ];
+    }
+
+    private function formatDurationShort(int $seconds): string
+    {
+        $minutes = (int) floor($seconds / 60);
+        $h = intdiv($minutes, 60);
+        $m = $minutes % 60;
+
+        return sprintf('%dh %02dm', $h, $m);
     }
 
     public function store(Request $request): RedirectResponse|JsonResponse

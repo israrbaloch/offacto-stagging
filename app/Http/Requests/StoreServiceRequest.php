@@ -34,6 +34,7 @@ class StoreServiceRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0'],
             'unit' => ['nullable', 'string', 'max:50'],
             'billing_mode' => ['nullable', 'in:fixed,hourly'],
+            'vat_code' => ['nullable', 'string', 'max:20', 'in:21,12,6,0,ic,rc,ex44,sme'],
         ];
     }
 }

@@ -1,57 +1,39 @@
 import { Link, useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
 import Icon from '../../Components/Icon';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
-
-const fieldClass =
-    'w-full rounded-xl border border-indigo-100 bg-indigo-50/80 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100';
-const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
-
-function Field({ label, error, children }) {
-    return (
-        <label className="block">
-            <span className={labelClass}>{label}</span>
-            {children}
-            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
-        </label>
-    );
-}
-
-function Card({ icon, title, hint, children }) {
-    return (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-start gap-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                    <Icon name={icon} className="h-4 w-4" />
-                </span>
-                <div>
-                    <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-                    {hint && <p className="mt-0.5 text-sm text-slate-500">{hint}</p>}
-                </div>
-            </div>
-            {children}
-        </section>
-    );
-}
+import {
+    CATALOG_UNITS,
+    VAT_CODES,
+    billingFromCatalogUnit,
+    catalogUnitFromService,
+    catalogUnitLabel,
+    vatLabel,
+} from '../../lib/serviceCatalog';
+import { t } from '../../lib/i18n';
 
 export default function Form({ service = null }) {
     const editing = Boolean(service?.id);
-    const { data, setData, post, put, processing, errors } = useForm({
+    const { data, setData, post, put, processing, errors, transform } = useForm({
         name: service?.name || '',
         description: service?.description || '',
         price: service?.price ?? '',
-        unit: service?.unit || '',
-        billing_mode: service?.billing_mode || 'fixed',
+        catalog_unit: catalogUnitFromService(service),
+        vat_code: service?.vat_code || '21',
     });
-
-    useEffect(() => {
-        if (data.billing_mode === 'hourly' && data.unit !== 'hour') {
-            setData('unit', 'hour');
-        }
-    }, [data.billing_mode, data.unit, setData]);
 
     const submit = (e) => {
         e.preventDefault();
+        transform((payload) => {
+            const { billing_mode, unit } = billingFromCatalogUnit(payload.catalog_unit);
+            return {
+                name: payload.name,
+                description: payload.description || null,
+                price: payload.price,
+                billing_mode,
+                unit,
+                vat_code: payload.vat_code,
+            };
+        });
         if (editing) {
             put(`/services/${service.id}`);
         } else {
@@ -60,91 +42,95 @@ export default function Form({ service = null }) {
     };
 
     return (
-        <AuthenticatedLayout title={editing ? 'Edit service' : 'Add service'}>
-            <form onSubmit={submit} className="space-y-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <Link href="/services" className="mb-2 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700">
-                            <Icon name="back" className="h-4 w-4" />
-                            Services
-                        </Link>
-                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-                            {editing ? 'Edit service' : 'Add service'}
-                        </h1>
-                        <p className="mt-1 text-sm text-slate-500">
-                            {editing ? 'Update how this line appears on quotations and invoices.' : 'Add a catalog item you can drop into quotations.'}
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Link href="/services" className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                            Cancel
-                        </Link>
-                        <button type="submit" disabled={processing} className="inline-flex items-center rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                            {editing ? 'Save changes' : 'Save service'}
-                        </button>
-                    </div>
-                </div>
+        <AuthenticatedLayout title={editing ? t('services.edit') : t('services.new')}>
+            <div className="offacto-briefings offacto-dash offacto-services-page">
+                <form onSubmit={submit} className="space-y-6">
+                    <header className="offacto-brief-edit-ph">
+                        <div>
+                            <Link href="/services" className="offacto-services-back">
+                                <Icon name="back" />
+                                {t('services.title_products')}
+                            </Link>
+                            <h1>{editing ? t('services.edit') : t('services.new')}</h1>
+                            <p>{editing ? t('services.edit_subtitle') : t('services.add_subtitle')}</p>
+                        </div>
+                        <div className="offacto-services-form-actions">
+                            <Link href="/services" className="offacto-brief-btn">
+                                {t('common.cancel')}
+                            </Link>
+                            <button type="submit" disabled={processing} className="offacto-btn-p">
+                                {processing ? t('common.saving') : editing ? t('services.save_changes') : t('services.save')}
+                            </button>
+                        </div>
+                    </header>
 
-                <div className="grid gap-6 xl:grid-cols-2">
-                    <Card icon="wrench" title="Service details" hint="Name and description shown on quotes.">
-                        <div className="space-y-4">
-                            <Field label="Name" error={errors.name}>
-                                <input className={fieldClass} value={data.name} onChange={(e) => setData('name', e.target.value)} />
-                            </Field>
-                            <Field label="Description" error={errors.description}>
-                                <textarea rows={7} className={fieldClass} value={data.description} onChange={(e) => setData('description', e.target.value)} />
-                            </Field>
-                        </div>
-                    </Card>
-                    <Card icon="document" title="Pricing" hint="Default price and unit for line items.">
-                        <div className="space-y-4">
-                            <Field label="Price" error={errors.price}>
-                                <input type="number" step="0.01" min="0" className={fieldClass} value={data.price} onChange={(e) => setData('price', e.target.value)} />
-                            </Field>
-                            <Field label="Billing mode" error={errors.billing_mode}>
+                    <div className="offacto-dash-card offacto-services-form-card">
+                        <div className="offacto-services-form-body">
+                            <label className="offacto-time-field">
+                                <span>{t('services.field_name')}</span>
+                                <input
+                                    className="offacto-time-inp"
+                                    value={data.name}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    required
+                                />
+                                {errors.name ? <span className="offacto-drawer-hint bad">{errors.name}</span> : null}
+                            </label>
+                            <label className="offacto-time-field">
+                                <span>{t('services.description')}</span>
+                                <textarea
+                                    className="offacto-time-inp"
+                                    rows={5}
+                                    value={data.description}
+                                    onChange={(e) => setData('description', e.target.value)}
+                                />
+                            </label>
+                            <div className="offacto-time-fg2">
+                                <label className="offacto-time-field">
+                                    <span>{t('services.price')}</span>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        step="0.01"
+                                        className="offacto-time-inp"
+                                        value={data.price}
+                                        onChange={(e) => setData('price', e.target.value)}
+                                        required
+                                    />
+                                </label>
+                                <label className="offacto-time-field">
+                                    <span>{t('services.unit')}</span>
+                                    <select
+                                        className="offacto-time-inp"
+                                        value={data.catalog_unit}
+                                        onChange={(e) => setData('catalog_unit', e.target.value)}
+                                    >
+                                        {CATALOG_UNITS.map((u) => (
+                                            <option key={u} value={u}>
+                                                {catalogUnitLabel(u)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            </div>
+                            <label className="offacto-time-field">
+                                <span>{t('services.vat_short')}</span>
                                 <select
-                                    className={fieldClass}
-                                    value={data.billing_mode}
-                                    onChange={(e) => {
-                                        const mode = e.target.value;
-                                        setData({
-                                            ...data,
-                                            billing_mode: mode,
-                                            unit: mode === 'hourly' ? 'hour' : data.unit,
-                                        });
-                                    }}
+                                    className="offacto-time-inp"
+                                    value={data.vat_code}
+                                    onChange={(e) => setData('vat_code', e.target.value)}
                                 >
-                                    <option value="fixed">Fixed price</option>
-                                    <option value="hourly">Hourly</option>
+                                    {VAT_CODES.map((code) => (
+                                        <option key={code} value={code}>
+                                            {vatLabel(code)}
+                                        </option>
+                                    ))}
                                 </select>
-                            </Field>
-                            <Field label="Unit" error={errors.unit}>
-                                {data.billing_mode === 'hourly' ? (
-                                    <input
-                                        className={`${fieldClass} cursor-not-allowed bg-slate-100 text-slate-600`}
-                                        value="hour"
-                                        readOnly
-                                        tabIndex={-1}
-                                        aria-readonly="true"
-                                    />
-                                ) : (
-                                    <input
-                                        className={fieldClass}
-                                        placeholder="piece, project, day…"
-                                        value={data.unit}
-                                        onChange={(e) => setData('unit', e.target.value)}
-                                    />
-                                )}
-                            </Field>
-                            {data.billing_mode === 'hourly' && (
-                                <p className="text-xs text-slate-500">
-                                    On quotes and invoices, quantity is treated as hours and price as the hourly rate (no built-in timer).
-                                </p>
-                            )}
+                            </label>
                         </div>
-                    </Card>
-                </div>
-            </form>
+                    </div>
+                </form>
+            </div>
         </AuthenticatedLayout>
     );
 }

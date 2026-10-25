@@ -22,6 +22,7 @@ class Service extends Model
         'price',
         'billing_mode',
         'unit',
+        'vat_code',
         'status',
     ];
 
