@@ -64,7 +64,7 @@ class InvoiceController extends Controller
 
         // Build query with filters
         $query = Invoice::where('company_id', $activeCompany->id)
-            ->with(['customer', 'statusRelation', 'items.service', 'payments']);
+            ->with(['customer', 'statusRelation', 'parentInvoice', 'items.service', 'payments']);
 
         // Search filter (customer name or invoice number)
         if ($request->filled('search')) {
@@ -87,6 +87,12 @@ class InvoiceController extends Controller
         // Payment status filter
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->payment_status);
+        }
+
+        if ($request->filled('status_tab') && $request->status_tab !== 'all') {
+            $this->applyInvoiceStatusTab($query, (string) $request->status_tab);
+        } elseif ($request->get('status_tab', 'all') === 'all') {
+            $query->where('is_recurring', false);
         }
 
         // Date filter
@@ -160,6 +166,19 @@ class InvoiceController extends Controller
             })->sum(function ($invoice) {
                 return $invoice->total;
             }),
+            'paid_month' => $allInvoices->filter(function ($invoice) {
+                return $invoice->payment_status === Invoice::PAYMENT_PAID
+                    && $invoice->invoice_date
+                    && $invoice->invoice_date->year === now()->year
+                    && $invoice->invoice_date->month === now()->month;
+            })->sum(function ($invoice) {
+                return $invoice->total;
+            }),
+            'recurring_month' => $allInvoices->filter(function ($invoice) {
+                return $invoice->is_recurring;
+            })->sum(function ($invoice) {
+                return $invoice->total;
+            }),
             'peppol_sent' => $allInvoices->filter(function ($invoice) {
                 $name = strtolower((string) $invoice->statusRelation?->name);
                 return in_array($name, ['sent', 'paid'], true);
@@ -175,7 +194,48 @@ class InvoiceController extends Controller
             'invoices' => $invoices,
             'statuses' => $statuses,
             'stats' => $stats,
+            'filters' => [
+                'search' => $request->search,
+                'status_tab' => $request->get('status_tab', 'all'),
+                'date_filter' => $request->get('date_filter'),
+            ],
         ]);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Invoice>  $query
+     */
+    private function applyInvoiceStatusTab($query, string $tab): void
+    {
+        switch ($tab) {
+            case 'open':
+                $query->where('is_recurring', false)
+                    ->where('payment_status', '!=', Invoice::PAYMENT_PAID)
+                    ->whereHas('statusRelation', function ($status) {
+                        $status->whereRaw('LOWER(name) != ?', ['draft']);
+                    });
+                break;
+            case 'paid':
+                $query->where('payment_status', Invoice::PAYMENT_PAID);
+                break;
+            case 'overdue':
+                $query->where('payment_status', '!=', Invoice::PAYMENT_PAID)
+                    ->whereNotNull('due_date')
+                    ->where('due_date', '<', now()->startOfDay());
+                break;
+            case 'credit':
+                $query->whereNotNull('parent_invoice_id');
+                break;
+            case 'rec':
+                $query->where('is_recurring', true);
+                break;
+            case 'draft':
+                $query->where('is_recurring', false)
+                    ->whereHas('statusRelation', function ($status) {
+                        $status->whereRaw('LOWER(name) = ?', ['draft']);
+                    });
+                break;
+        }
     }
 
     /**
@@ -197,6 +257,8 @@ class InvoiceController extends Controller
         $defaultStatus = Status::where('for', 'invoices')->where('name', 'Draft')->first()
             ?? Status::forTable('invoices')->first();
 
+        $recurring = $request->boolean('recurring');
+
         $invoice = Invoice::create([
             'company_id' => $activeCompany->id,
             'customer_id' => null,
@@ -205,6 +267,8 @@ class InvoiceController extends Controller
             'due_date' => now()->addDays(30),
             'status' => $defaultStatus?->id,
             'payment_status' => Invoice::PAYMENT_UNPAID,
+            'is_recurring' => $recurring,
+            'recurring_interval' => $recurring ? 'monthly' : null,
         ]);
 
         return redirect()->route('invoices.edit', $invoice);

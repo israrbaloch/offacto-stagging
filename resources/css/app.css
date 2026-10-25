@@ -2171,6 +2171,75 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
     max-width: 100%;
 }
 
+/* Invoices index — offacto-app-demo.html facturen */
+.offacto-invoices-page .offacto-invoices-kpi.offacto-dash-card.lift:hover {
+    background: #6b59dc;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
+}
+
+.offacto-invoices-page .offacto-invoices-kpi.offacto-dash-card.lift:hover .offacto-dash-kpi-corner {
+    border-color: rgb(255 255 255 / 0.12);
+}
+
+.offacto-invoices-page .offacto-invoices-kpi.offacto-dash-card.lift:hover .offacto-dash-kpi-ic {
+    background: rgb(255 255 255 / 0.16);
+    color: #fff;
+}
+
+.offacto-invoices-page .offacto-invoices-kpi.offacto-dash-card.lift:hover .offacto-dash-kpi-lbl,
+.offacto-invoices-page .offacto-invoices-kpi.offacto-dash-card.lift:hover .offacto-dash-kpi-val {
+    color: #fff;
+}
+
+.offacto-invoices-page .offacto-invoices-period-select {
+    width: auto;
+    min-height: 0;
+    height: auto;
+    padding: 6px 32px 6px 11px;
+    border-radius: 999px;
+    border: 1px solid rgb(14 18 80 / 0.1);
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230E1250' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px 14px;
+    font-family: var(--dash-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--dash-navy);
+    cursor: pointer;
+    appearance: none;
+    flex-shrink: 0;
+    outline: none;
+    transition: border-color 0.18s, color 0.18s;
+}
+
+.offacto-invoices-page .offacto-invoices-period-select:hover,
+.offacto-invoices-page .offacto-invoices-period-select:focus {
+    border-color: var(--dash-primary);
+    color: var(--dash-primary);
+}
+
+.offacto-invoices-page .offacto-quotes-toolbar-r {
+    gap: 8px;
+}
+
+.offacto-invoice-num-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--dash-muted);
+}
+
+.offacto-invoice-due-overdue {
+    font-weight: 600;
+    color: #c23a4b;
+}
+
+.offacto-invoice-amount-negative {
+    color: #c23a4b;
+}
+
 .offacto-brief-table-click tr {
     cursor: pointer;
     transition: background 0.12s, box-shadow 0.12s;

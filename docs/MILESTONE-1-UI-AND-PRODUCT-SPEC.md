@@ -118,6 +118,11 @@ Design a modern version of each (they appear everywhere):
 - Notes / alerts (success, error, warning, **trial**)  
 - Pagination  
 
+**Icon semantics (billing)**
+
+- **Credit note** actions use an **invoice / document** icon plus the label “Credit note”. Avoid a standalone **minus** icon — it suggests delete or line-item subtract, not a formal credit document.
+- **Minus** is for in-form quantity/amount adjustments only.
+
 ### 3.5 Trial chrome (global)
 
 Trial is a **company-level** 14-day window starting when the company is created (or when first approved, if approval is required).

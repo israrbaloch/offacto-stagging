@@ -1,21 +1,28 @@
 import { Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import CountUpMoney from '../../Components/CountUpMoney';
 import Icon from '../../Components/Icon';
 import Pagination from '../../Components/Pagination';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../context/UiContext';
 import { localeTag, t } from '../../lib/i18n';
 import { customerName, money } from '../../lib/utils';
 
-function prettyDate(value) {
-    if (!value) return '—';
+function prettyDateShort(value) {
+    if (!value) {
+        return '—';
+    }
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString(localeTag(), { month: 'short', day: 'numeric', year: 'numeric' });
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleDateString(localeTag(), { day: 'numeric', month: 'numeric', year: 'numeric' });
 }
 
 function initials(customer) {
     const source = customer?.org_name || [customer?.first_name, customer?.surname].filter(Boolean).join(' ');
-    if (!source) return '—';
+    if (!source) {
+        return '—';
+    }
     return source
         .split(' ')
         .filter(Boolean)
@@ -25,263 +32,335 @@ function initials(customer) {
 }
 
 function displayName(customer) {
-    if (!customer) return '—';
+    if (!customer) {
+        return '—';
+    }
     return customer.org_name || customerName(customer);
 }
 
-function invoiceType(invoice) {
-    const number = String(invoice.invoice_number || '');
-    if (number.toUpperCase().startsWith('CRN') || Number(invoice.total) < 0) {
-        return 'credit';
-    }
-    return 'standard';
+function invoiceHref(invoice) {
+    const draft = String(invoice.status_relation?.name || 'draft').toLowerCase() === 'draft';
+    return draft ? `/invoices/${invoice.id}/edit` : `/invoices/${invoice.id}`;
 }
 
-function statusMeta(invoice) {
+function statusKey(invoice) {
+    if (invoice.payment_status === 'paid') {
+        return 'paid';
+    }
     if (invoice.is_overdue || (invoice.due_date && invoice.payment_status !== 'paid' && new Date(invoice.due_date) < new Date())) {
-        return { label: t('invoices.overdue'), tone: 'overdue' };
+        return 'overdue';
     }
-    const payment = String(invoice.payment_status || '').toLowerCase();
-    if (payment === 'paid') return { label: t('invoices.paid'), tone: 'paid' };
-    const name = String(invoice.status_relation?.name || 'Draft');
-    const key = name.toLowerCase();
-    if (key === 'sent') return { label: t('invoices.sent'), tone: 'sent' };
-    if (key === 'applied') return { label: t('invoices.applied'), tone: 'paid' };
-    return { label: name, tone: 'draft' };
+    const name = String(invoice.status_relation?.name || 'draft').toLowerCase();
+    if (name === 'sent') {
+        return 'sent';
+    }
+    if (name === 'applied') {
+        return 'paid';
+    }
+    return name === 'draft' ? 'draft' : 'sent';
 }
 
-function StatusPill({ tone, children }) {
-    const styles = {
-        paid: 'bg-emerald-50 text-emerald-700',
-        overdue: 'bg-rose-50 text-rose-700',
-        sent: 'bg-indigo-50 text-indigo-700',
-        draft: 'bg-slate-100 text-slate-600',
-        credit: 'bg-slate-100 text-slate-700',
-        recurring: 'bg-indigo-50 text-indigo-600',
-    };
-    const dots = {
-        paid: 'bg-emerald-500',
-        overdue: 'bg-rose-500',
-        sent: 'bg-indigo-500',
-        draft: 'bg-slate-400',
-    };
+function statusBadgeClass(key) {
+    if (key === 'paid') {
+        return 'ok';
+    }
+    if (key === 'overdue') {
+        return 'bad';
+    }
+    if (key === 'draft') {
+        return 'grey';
+    }
+    return '';
+}
 
+function statusLabel(key) {
+    const map = {
+        paid: 'invoices.paid',
+        overdue: 'invoices.overdue',
+        sent: 'invoices.sent',
+        draft: 'offers.kpi_draft',
+        applied: 'invoices.applied',
+    };
+    const translationKey = map[key];
+    if (translationKey) {
+        return t(translationKey);
+    }
+    return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function sendChannel(invoice) {
+    if (invoice.peppol_sent_at) {
+        return { labelKey: 'invoices.channel_peppol', badge: '' };
+    }
+    if (invoice.postbode_sent_at) {
+        return { labelKey: 'invoices.channel_postbode', badge: 'warn' };
+    }
+    const sent = String(invoice.status_relation?.name || '').toLowerCase() === 'sent' || invoice.payment_status === 'paid';
+    if (sent) {
+        return { labelKey: 'invoices.channel_email', badge: 'grey' };
+    }
+    return null;
+}
+
+function queryParams(filters, overrides = {}) {
+    const next = {
+        search: filters.search || undefined,
+        status_tab: filters.status_tab && filters.status_tab !== 'all' ? filters.status_tab : undefined,
+        date_filter: filters.date_filter || undefined,
+        ...overrides,
+    };
+    Object.keys(next).forEach((key) => {
+        if (next[key] === undefined || next[key] === '') {
+            delete next[key];
+        }
+    });
+    return next;
+}
+
+function periodOptions() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const quarter = Math.floor(now.getMonth() / 3) + 1;
+    const prevQuarter = quarter === 1 ? 4 : quarter - 1;
+    const prevYear = quarter === 1 ? year - 1 : year;
+
+    return [
+        { value: 'current_quarter', label: `Q${quarter} ${year}` },
+        { value: 'last_quarter', label: `Q${prevQuarter} ${prevYear}` },
+        { value: 'current_year', label: String(year) },
+    ];
+}
+
+function InvoiceKpi({ icon, label, value }) {
     return (
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${styles[tone] || styles.draft}`}>
-            {dots[tone] && <span className={`h-1.5 w-1.5 rounded-full ${dots[tone]}`} />}
-            {children}
-        </span>
+        <div className="offacto-dash-card lift offacto-dash-kpi offacto-invoices-kpi">
+            <span className="offacto-dash-kpi-corner" aria-hidden="true" />
+            <div className="offacto-dash-kpi-ic">
+                <Icon name={icon} />
+            </div>
+            <div className="offacto-dash-kpi-lbl">{label}</div>
+            <div className="offacto-dash-kpi-val">
+                <CountUpMoney value={value} />
+            </div>
+        </div>
     );
 }
 
-function TypePill({ type }) {
-    const tone = type === 'credit' ? 'credit' : type === 'recurring' ? 'recurring' : 'draft';
-    const label = type === 'credit' ? t('invoices.credit_note') : t('invoices.standard');
-    return <StatusPill tone={tone}>{label}</StatusPill>;
-}
-
-function StatIcon({ name }) {
-    const common = { className: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: '1.7' };
-    if (name === 'wallet') {
-        return (
-            <svg {...common}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" />
-                <path strokeLinecap="round" d="M3 8l2.4-3.2A2 2 0 0 1 7 4h10a2 2 0 0 1 1.6.8L21 8" />
-                <circle cx="16.5" cy="13.5" r="1" fill="currentColor" stroke="none" />
-            </svg>
-        );
-    }
-    if (name === 'alert') {
-        return (
-            <svg {...common}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.3 4.7 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.7a2 2 0 0 0-3.4 0z" />
-            </svg>
-        );
-    }
-    if (name === 'check') {
-        return (
-            <svg {...common}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="m5 8 4 4" />
-            </svg>
-        );
-    }
-    return (
-        <svg {...common}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M22 2 11 13" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M22 2 15 22l-4-9-9-4 20-7z" />
-        </svg>
-    );
-}
-
-export default function Index({ invoices, stats = {} }) {
+export default function Index({ invoices, stats = {}, filters = {} }) {
     const rows = invoices?.data || [];
-    const total = invoices?.total ?? rows.length;
-    const [filtersOpen, setFiltersOpen] = useState(false);
+    const statusTab = filters.status_tab || 'all';
+    const dateFilter = filters.date_filter || 'current_quarter';
+    const { toast } = useUi();
+
+    const monthName = new Date().toLocaleDateString(localeTag(), { month: 'short' });
+
+    const tabs = [
+        { id: 'all', label: t('invoices.tab_all') },
+        { id: 'open', label: t('invoices.tab_open') },
+        { id: 'paid', label: t('invoices.tab_paid') },
+        { id: 'overdue', label: t('invoices.tab_overdue') },
+        { id: 'credit', label: t('invoices.tab_credit') },
+        { id: 'rec', label: t('invoices.tab_recurring') },
+        { id: 'draft', label: t('invoices.tab_draft') },
+    ];
+
+    function setStatusTab(tab) {
+        router.get('/invoices', queryParams(filters, { status_tab: tab === 'all' ? undefined : tab }), {
+            preserveState: true,
+        });
+    }
+
+    function setDateFilter(value) {
+        router.get('/invoices', queryParams(filters, { date_filter: value || undefined }), {
+            preserveState: true,
+        });
+    }
+
+    const dueColumnLabel = statusTab === 'rec' ? t('invoices.next_run') : t('invoices.due_or_next');
 
     return (
         <AuthenticatedLayout title={t('invoices.title')}>
-            <div className="space-y-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="offacto-briefings offacto-dash offacto-quotes-page offacto-invoices-page">
+                <header className="offacto-brief-edit-ph">
                     <div>
-                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{t('invoices.title')}</h1>
-                        <p className="mt-1 text-sm text-slate-500">{t('invoices.subtitle')}</p>
+                        <h1>{t('invoices.title')}</h1>
+                        <p>{t('invoices.subtitle')}</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="offacto-brief-edit-acts">
                         <button
                             type="button"
-                            onClick={() => {
-                                window.location.href = `/invoices/export-zip${window.location.search}`;
-                            }}
-                            className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
+                            className="offacto-brief-btn"
+                            onClick={() => toast.info(t('invoices.credit_note_hint'))}
                         >
-                            {t('offers.export')}
+                            <Icon name="invoice" />
+                            {t('invoices.new_credit')}
                         </button>
-                        <Link
-                            href="/invoices/create"
-                            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
-                        >
-                            <Icon name="plus" className="h-4 w-4" />
+                        <Link href="/invoices/create?recurring=1" className="offacto-brief-btn">
+                            <Icon name="repeat" />
+                            {t('invoices.new_recurring')}
+                        </Link>
+                        <Link href="/invoices/create" className="offacto-btn-p">
+                            <Icon name="plus" />
                             {t('invoices.new')}
                         </Link>
                     </div>
+                </header>
+
+                <div className="offacto-dash-grid-4 offacto-quotes-kpi-grid">
+                    <InvoiceKpi
+                        icon="check"
+                        label={t('invoices.kpi_paid_month', { month: monthName })}
+                        value={stats.paid_month ?? 0}
+                    />
+                    <InvoiceKpi icon="file" label={t('invoices.outstanding')} value={stats.outstanding ?? 0} />
+                    <InvoiceKpi icon="alert" label={t('invoices.overdue')} value={stats.overdue ?? 0} />
+                    <InvoiceKpi
+                        icon="repeat"
+                        label={t('invoices.kpi_recurring_month')}
+                        value={stats.recurring_month ?? 0}
+                    />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                        <div className="flex items-start justify-between">
-                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                                <StatIcon name="wallet" />
-                            </span>
-                        </div>
-                        <div className="mt-4 text-sm text-slate-500">{t('invoices.outstanding')}</div>
-                        <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.outstanding)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-5">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-rose-500">
-                            <StatIcon name="alert" />
-                        </span>
-                        <div className="mt-4 text-sm font-medium text-rose-600">{t('invoices.overdue')}</div>
-                        <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.overdue)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <StatIcon name="check" />
-                        </span>
-                        <div className="mt-4 text-sm text-slate-500">{t('invoices.paid_ytd')}</div>
-                        <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">{money(stats.paid_ytd ?? stats.paid)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                            <StatIcon name="send" />
-                        </span>
-                        <div className="mt-4 text-sm text-slate-500">{t('invoices.peppol')}</div>
-                        <div className="mt-1 font-serif text-2xl font-semibold text-slate-900">
-                            {stats.peppol_sent ?? 0} <span className="text-base font-sans font-medium text-slate-400">{t('invoices.invoices_unit')}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <section className="rounded-3xl border border-slate-200 bg-white">
-                    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-semibold text-slate-900">{t('invoices.recent')}</h2>
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{t('common.total_count', { count: total })}</span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setFiltersOpen((value) => !value)}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                        >
-                            {t('common.filter')}
-                        </button>
-                    </div>
-
-                    {filtersOpen && (
-                        <div className="flex flex-wrap gap-2 border-t border-slate-100 px-5 py-3 sm:px-6">
-                            {[
-                                { label: t('common.all'), params: {} },
-                                { label: t('invoices.paid'), params: { payment_status: 'paid' } },
-                                { label: t('invoices.unpaid'), params: { payment_status: 'unpaid' } },
-                            ].map((item) => (
+                <div className="offacto-brief-table-card offacto-dash-card">
+                    <div className="offacto-quotes-toolbar">
+                        <div className="offacto-dash-tabs" role="tablist" aria-label={t('invoices.title')}>
+                            {tabs.map((tab) => (
                                 <button
-                                    key={item.label}
+                                    key={tab.id}
                                     type="button"
-                                    onClick={() => router.get('/invoices', item.params, { preserveState: true })}
-                                    className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                                    role="tab"
+                                    aria-selected={statusTab === tab.id}
+                                    className={statusTab === tab.id ? 'on' : ''}
+                                    onClick={() => setStatusTab(tab.id)}
                                 >
-                                    {item.label}
+                                    {tab.label}
                                 </button>
                             ))}
                         </div>
-                    )}
+                        <div className="offacto-quotes-toolbar-r">
+                            <select
+                                className="offacto-invoices-period-select"
+                                value={dateFilter}
+                                onChange={(event) => setDateFilter(event.target.value)}
+                                aria-label={t('common.filter')}
+                            >
+                                {periodOptions().map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                type="button"
+                                className="offacto-brief-btn-sm"
+                                onClick={() => {
+                                    window.location.href = `/invoices/export-zip${window.location.search}`;
+                                }}
+                            >
+                                <Icon name="down" />
+                                {t('invoices.export_zip_pdf')}
+                            </button>
+                            <button
+                                type="button"
+                                className="offacto-brief-btn-sm"
+                                onClick={() => toast.info(t('invoices.export_ubl_toast'))}
+                            >
+                                <Icon name="down" />
+                                {t('invoices.export_ubl')}
+                            </button>
+                        </div>
+                    </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[820px] text-left text-sm">
+                    <div className="offacto-brief-table-wrap">
+                        <table className="offacto-brief-table">
                             <thead>
-                                <tr className="border-y border-slate-100 text-[11px] uppercase tracking-wide text-slate-400">
-                                    <th className="px-5 py-3 font-medium sm:px-6">{t('invoices.number')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('dashboard.customer')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('invoices.issue_date')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('invoices.due_date')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('common.type')}</th>
-                                    <th className="px-3 py-3 font-medium">{t('common.status')}</th>
-                                    <th className="px-5 py-3 text-right font-medium sm:px-6">{t('offers.amount')}</th>
+                                <tr>
+                                    <th>{t('invoices.number')}</th>
+                                    <th>{t('dashboard.customer')}</th>
+                                    <th>{t('invoices.date')}</th>
+                                    <th>{dueColumnLabel}</th>
+                                    <th>{t('invoices.channel')}</th>
+                                    <th className="num">{t('offers.amount')}</th>
+                                    <th>{t('common.status')}</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {rows.length === 0 && (
+                            <tbody className="offacto-brief-table-click">
+                                {rows.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-10 text-center text-slate-400">
+                                        <td colSpan={7} className="offacto-brief-empty">
                                             {t('invoices.empty')}
                                         </td>
                                     </tr>
-                                )}
-                                {rows.map((invoice) => {
-                                    const status = statusMeta(invoice);
-                                    const overdueDue = status.tone === 'overdue';
-                                    const type = invoiceType(invoice);
-                                    return (
-                                        <tr key={invoice.id} className="border-b border-slate-50 last:border-0">
-                                            <td className="px-5 py-4 sm:px-6">
-                                                <Link
-                                                    href={String(invoice.status_relation?.name || 'draft').toLowerCase() === 'draft' ? `/invoices/${invoice.id}/edit` : `/invoices/${invoice.id}`}
-                                                    className="font-medium text-indigo-600 hover:text-indigo-700"
-                                                >
-                                                    {invoice.invoice_number || t('offers.untitled')}
-                                                </Link>
-                                            </td>
-                                            <td className="px-3 py-4">
-                                                <div className="flex items-center gap-2.5">
-                                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
-                                                        {initials(invoice.customer)}
+                                ) : (
+                                    rows.map((invoice) => {
+                                        const href = invoiceHref(invoice);
+                                        const key = statusKey(invoice);
+                                        const channel = sendChannel(invoice);
+                                        const isCredit = Boolean(invoice.parent_invoice_id);
+                                        const negative = Number(invoice.total) < 0;
+                                        const dueValue =
+                                            statusTab === 'rec' && invoice.next_run_at
+                                                ? prettyDateShort(invoice.next_run_at)
+                                                : prettyDateShort(invoice.due_date);
+                                        const overdueDue = key === 'overdue';
+
+                                        return (
+                                            <tr key={invoice.id} onClick={() => router.visit(href)}>
+                                                <td>
+                                                    <b>{invoice.invoice_number || t('offers.untitled')}</b>
+                                                    {isCredit && invoice.parent_invoice?.invoice_number ? (
+                                                        <div className="offacto-invoice-num-sub">
+                                                            {t('invoices.credit_for', {
+                                                                number: invoice.parent_invoice.invoice_number,
+                                                            })}
+                                                        </div>
+                                                    ) : null}
+                                                </td>
+                                                <td>
+                                                    <div className="offacto-brief-who">
+                                                        <span className="offacto-brief-av">{initials(invoice.customer)}</span>
+                                                        <span>{displayName(invoice.customer)}</span>
+                                                    </div>
+                                                </td>
+                                                <td>{prettyDateShort(invoice.invoice_date)}</td>
+                                                <td className={overdueDue ? 'offacto-invoice-due-overdue' : undefined}>
+                                                    {dueValue}
+                                                </td>
+                                                <td>
+                                                    {channel ? (
+                                                        <span
+                                                            className={`offacto-demo-badge nd ${channel.badge}`.trim()}
+                                                        >
+                                                            {t(channel.labelKey)}
+                                                        </span>
+                                                    ) : (
+                                                        '—'
+                                                    )}
+                                                </td>
+                                                <td className="num">
+                                                    <b className={negative ? 'offacto-invoice-amount-negative' : undefined}>
+                                                        {money(invoice.total)}
+                                                    </b>
+                                                </td>
+                                                <td>
+                                                    <span className={`offacto-demo-badge ${statusBadgeClass(key)}`.trim()}>
+                                                        {statusLabel(key)}
                                                     </span>
-                                                    <span className="truncate font-medium text-slate-800">{invoice.customer ? displayName(invoice.customer) : t('offers.untitled')}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-4 text-slate-500">{prettyDate(invoice.invoice_date)}</td>
-                                            <td className={`px-3 py-4 ${overdueDue ? 'font-medium text-rose-600' : 'text-slate-500'}`}>
-                                                {prettyDate(invoice.due_date)}
-                                            </td>
-                                            <td className="px-3 py-4">
-                                                <TypePill type={type} />
-                                            </td>
-                                            <td className="px-3 py-4">
-                                                <StatusPill tone={status.tone}>{status.label}</StatusPill>
-                                            </td>
-                                            <td className="px-5 py-4 text-right font-serif text-slate-900 sm:px-6">
-                                                {money(invoice.total)}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
                             </tbody>
                         </table>
                     </div>
-                    <div className="px-5 py-4 sm:px-6">
-                        <Pagination links={invoices?.links || []} />
-                    </div>
-                </section>
+
+                    {invoices?.last_page > 1 ? (
+                        <div className="offacto-brief-pagination">
+                            <Pagination links={invoices.links} />
+                        </div>
+                    ) : null}
+                </div>
             </div>
         </AuthenticatedLayout>
     );

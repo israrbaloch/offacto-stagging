@@ -171,6 +171,15 @@ const APP_ONLY_ICONS = {
     whatsapp: (
         <path d="M12 2a10 10 0 0 0-8.7 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2z" />
     ),
+    minus: <path d="M5 12h14" />,
+    repeat: (
+        <>
+            <path d="M17 1l4 4-4 4" />
+            <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+            <path d="M7 23l-4-4 4-4" />
+            <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+        </>
+    ),
 };
 
 function resolveKey(name) {

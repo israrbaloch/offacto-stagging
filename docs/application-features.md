@@ -442,20 +442,41 @@ The company user plays the voice note on the quote and can download the file.
 
 ### List (`/invoices`)
 
-Stats:
+Demo-style index: page header, KPI strip, tabbed table card.
 
+**Header actions**
+
+- **Credit note** — explains that credit notes are created from a sent invoice (toast). Uses the **invoice** document icon (not a minus sign: credit notes are a document type, not a generic “subtract” action).
+- **Recurring** — starts a new invoice template (`/invoices/create?recurring=1`).
+- **New invoice** — primary pill to `/invoices/create`.
+
+**Stats (KPI cards)**
+
+- Paid in the current calendar month.
 - Outstanding (amount still due).
-- Overdue (due date passed and not paid).
-- Paid year to date.
-- Count of invoices sent through Peppol.
+- Overdue (unpaid with due date in the past).
+- Recurring templates (sum of template totals).
 
-Filters: all, paid, unpaid.
+**Table toolbar**
 
-Table: number, customer, issue date, due date (highlighted when overdue), type, status, amount. Drafts open the editor. Other invoices open the detail page.
+- Tabs: All (excludes recurring templates), Open, Paid, Overdue, Credit notes, Recurring, Draft.
+- Period filter (quarter / year) via `date_filter`.
+- **ZIP (PDF)** export for the current filters.
+- **UBL** export (placeholder toast until implemented).
 
-Type is **credit** when the number starts with the credit-note series or the total is negative, otherwise **standard**.
+**Table columns**
+
+Number (with “for {original}” subline on credit notes), customer with initials avatar, issue date, due date (or next run on the Recurring tab), delivery channel badge (Peppol, Postbode, Email when sent), amount (negative amounts in red), status badge.
+
+Row click: drafts open the editor; other rows open the detail page.
+
+Credit notes are rows with a `parent_invoice_id`; numbering uses the credit-note series (often a `CRN` prefix). Negative totals also indicate credit.
 
 **Export** downloads a zip of invoice PDFs for the current filter.
+
+### UI icon convention: credit notes
+
+Use an **invoice / document** icon for “create credit note” and credit-note navigation. Do **not** use a bare **minus** icon for credit notes — minus reads as remove line, collapse, or quantity decrease. Reserve minus for in-editor numeric actions only. Pair the document icon with the label **Credit note** (and negative amount styling in lists where helpful).
 
 ### Editor (`/invoices/create` and `/invoices/{id}/edit`)
 
@@ -480,7 +501,7 @@ Actions:
 - Edit.
 - Send.
 - Payment reminder, when the invoice is not a draft, not fully paid, and the customer has an email.
-- Credit note, when the invoice is not a draft and not fully paid.
+- Credit note (invoice icon + label), when the invoice is not a draft and not fully paid — creates a linked credit-note draft from the sent invoice.
 - Delete, drafts only.
 
 **Recurring**
