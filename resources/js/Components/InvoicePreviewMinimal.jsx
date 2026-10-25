@@ -1,5 +1,5 @@
 import Logo from './Logo';
-import { DEFAULT_BRAND_PRIMARY } from '../lib/brand';
+import { DEFAULT_BRAND_PRIMARY, themeCssVars } from '../lib/brand';
 import { money } from '../lib/utils';
 import { t } from '../lib/i18n';
 
@@ -18,6 +18,7 @@ export default function InvoicePreviewMinimal({
     number,
     date,
     dueDate,
+    validUntil,
     from = {},
     to = {},
     items = [],
@@ -33,8 +34,10 @@ export default function InvoicePreviewMinimal({
     showMollieLink = false,
     fromVatNumber = '',
     toVatNumber = '',
+    paperClassName = 'offacto-demo-paper',
 }) {
     const brand = theme.primary || DEFAULT_BRAND_PRIMARY;
+    const cssVars = themeCssVars(theme);
     const isCredit = documentType === 'credit';
     const sign = isCredit ? -1 : 1;
 
@@ -49,10 +52,10 @@ export default function InvoicePreviewMinimal({
     const amountDue = intraEu ? subtotal : total;
 
     const title =
-        documentType === 'credit'
-            ? t('invoices.doc_credit')
-            : documentType === 'recurring'
-              ? t('invoices.doc_standard')
+        documentType === 'quote'
+            ? t('offers.doc_quotation')
+            : documentType === 'credit'
+              ? t('invoices.doc_credit')
               : t('invoices.doc_standard');
 
     const fromLine = [from.street, from.house].filter(Boolean).join(' ');
@@ -62,7 +65,7 @@ export default function InvoicePreviewMinimal({
     const lineTotal = (item) => Number(item.quantity || 0) * Number(item.price || item.unit_price || 0);
 
     return (
-        <div className="offacto-demo-paper" style={{ '--brand': brand }}>
+        <div className={paperClassName} style={cssVars}>
             <div className="offacto-demo-paper-head row">
                 <div>
                     {logoUrl ? (
@@ -93,6 +96,12 @@ export default function InvoicePreviewMinimal({
                         {number || '—'}
                         <br />
                         {demoDate(date)}
+                        {documentType === 'quote' && validUntil ? (
+                            <>
+                                <br />
+                                {t('offers.valid_until_label')}: {demoDate(validUntil)}
+                            </>
+                        ) : null}
                     </div>
                 </div>
             </div>

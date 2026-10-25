@@ -810,7 +810,7 @@ class InvoiceController extends Controller
                 $legalIds = $request->validated()['legal_document_ids'] ?? null;
                 $legalQuery = CompanyLegalDocument::where('company_id', $activeCompany->id);
                 $legalDocs = $legalIds === null
-                    ? $legalQuery->where('attach_to_quotes_default', true)->get()
+                    ? \App\Support\CompanyLegalDocuments::defaultsForInvoice($legalQuery, $invoice->customer, $invoice->id)
                     : $legalQuery->whereIn('id', $legalIds)->get();
 
                 $mailable = new InvoiceSent(
@@ -1005,12 +1005,12 @@ class InvoiceController extends Controller
     {
         $invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer', 'blocks']);
 
-        $template = $invoice->company?->companySetting?->invoice_template ?? 'classic';
-        $view = $template === 'minimal' ? 'pdf.invoice-minimal' : 'pdf.invoice';
+        $pdf = \App\Support\CompanyDocumentTemplate::invoicePdf($invoice->company);
 
-        return Pdf::loadView($view, [
+        return Pdf::loadView($pdf['view'], [
             'invoice' => $invoice,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'layout' => $pdf['layout'],
         ])->setPaper('a4');
     }
 

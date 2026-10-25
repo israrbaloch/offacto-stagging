@@ -83,6 +83,7 @@ class HandleInertiaRequests extends Middleware
                 ],
                 'invoice_logo_url' => PublicStorage::url($settings?->invoice_logo),
                 'invoice_template' => $settings?->invoice_template ?? 'classic',
+                'document_font' => $settings?->document_font ?? 'inter',
                 'logo_in_emails' => $settings?->logo_in_emails ?? true,
                 'is_active' => (bool) $active->is_active,
                 'pending_approval' => $active->isPendingApproval(),

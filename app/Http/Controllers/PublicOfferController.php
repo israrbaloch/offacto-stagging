@@ -91,10 +91,7 @@ class PublicOfferController extends Controller
             ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation'])
             ->firstOrFail();
 
-        $pdf = Pdf::loadView('pdf.offer', [
-            'offer' => $offer,
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
-        ])->setPaper('a4');
+        $pdf = $this->offerPdfDocument($offer);
 
         $filename = 'quotation-'.($offer->offer_number ?? $offer->id).'.pdf';
 
@@ -107,14 +104,22 @@ class PublicOfferController extends Controller
             ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation'])
             ->firstOrFail();
 
-        $pdf = Pdf::loadView('pdf.offer', [
-            'offer' => $offer,
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
-        ])->setPaper('a4');
+        $pdf = $this->offerPdfDocument($offer);
 
         $filename = 'quotation-'.($offer->offer_number ?? $offer->id).'.pdf';
 
         return $pdf->download($filename);
+    }
+
+    private function offerPdfDocument(Offer $offer): \Barryvdh\DomPDF\PDF
+    {
+        $pdf = \App\Support\CompanyDocumentTemplate::offerPdf($offer->company);
+
+        return Pdf::loadView($pdf['view'], [
+            'offer' => $offer,
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'layout' => $pdf['layout'],
+        ])->setPaper('a4');
     }
 
     private function payload(Offer $offer): array
@@ -149,6 +154,7 @@ class PublicOfferController extends Controller
                     'primary' => $theme['primary'] ?? '#4054b2',
                     'secondary' => $theme['secondary'] ?? '#0f172a',
                 ],
+                'invoice_template' => $settings?->invoice_template ?? 'classic',
             ],
             'customer' => [
                 'name' => $offer->customer?->org_name

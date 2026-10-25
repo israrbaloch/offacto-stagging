@@ -34,7 +34,12 @@ class PostbodeSendService
     public function sendOffer(Offer $offer, CompanySetting $settings, bool $registeredOverride = null): array
     {
         $offer->loadMissing(['customer', 'items.service', 'company.companySetting', 'statusRelation', 'blocks']);
-        $pdfBytes = Pdf::loadView('pdf.offer', ['offer' => $offer])->output();
+        $pdfMeta = \App\Support\CompanyDocumentTemplate::offerPdf($offer->company);
+        $pdfBytes = Pdf::loadView($pdfMeta['view'], [
+            'offer' => $offer,
+            'vatRate' => \App\Models\SiteSetting::getInteger('default_vat_rate', 21),
+            'layout' => $pdfMeta['layout'],
+        ])->output();
         $filename = Str::slug($offer->offer_number ?: 'offer-'.$offer->id).'.pdf';
         $reference = $offer->offer_number ?: 'OFF-'.$offer->id;
 

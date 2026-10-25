@@ -37,6 +37,7 @@ class UpdateCompanyRequest extends FormRequest
             'city' => ['required', 'string', 'max:255'],
             'language' => ['required', 'exists:languages,id'],
             'self_employed_activity' => ['nullable', 'in:main_profession,secondary_profession'],
+            'iban' => ['nullable', 'string', 'max:64'],
         ];
     }
 }

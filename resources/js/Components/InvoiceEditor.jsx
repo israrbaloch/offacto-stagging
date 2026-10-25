@@ -2,6 +2,7 @@ import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './Icon';
 import InvoiceDocumentPreview, { invoiceTemplateLabel, normalizeInvoiceTemplate } from './InvoiceDocumentPreview';
+import { companyInvoiceLogoUrl } from '../lib/brand';
 import LineItemsEditor from './LineItemsEditor';
 import InvoiceAcknowledgmentPanel from './InvoiceAcknowledgmentPanel';
 import InvoiceReminderModal from './InvoiceReminderModal';
@@ -133,7 +134,7 @@ export default function InvoiceEditor({
             'Hi #CLIENTNAME#,\n\nPlease find invoice #INVOICENUMBER# from #COMPANY# attached.\n\nPay online: #PAYLINK#\n\nThank you,\n#COMPANY#',
     );
     const [selectedLegal] = useState(() =>
-        legalDocuments.filter((doc) => doc.attach_to_quotes_default).map((doc) => doc.id),
+        legalDocuments.filter((doc) => doc.attach_to_invoices_default).map((doc) => doc.id),
     );
     const [savedAt, setSavedAt] = useState(invoice?.updated_at || null);
     const [saving, setSaving] = useState(false);

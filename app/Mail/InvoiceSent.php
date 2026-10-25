@@ -4,6 +4,8 @@ namespace App\Mail;
 
 use App\Models\CompanyLegalDocument;
 use App\Models\Invoice;
+use App\Support\BrandColors;
+use App\Support\CompanyBranding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
@@ -58,11 +60,18 @@ class InvoiceSent extends Mailable
      */
     public function content(): Content
     {
+        $this->invoice->loadMissing('company.companySetting');
+        $settings = $this->invoice->company?->companySetting;
+        $theme = BrandColors::resolve(is_array($settings?->theme) ? $settings->theme : null);
+
         return new Content(
             view: 'emails.invoice-sent',
             with: [
                 'invoice' => $this->invoice,
                 'customMessage' => $this->customMessage,
+                'primaryColor' => $theme['primary'],
+                'secondaryColor' => $theme['secondary'],
+                'companyLogoUrl' => CompanyBranding::emailLogoAbsoluteUrl($settings),
             ],
         );
     }

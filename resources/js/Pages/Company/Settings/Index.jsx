@@ -1,62 +1,104 @@
-import { Link, router, useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import Icon from '../../../Components/Icon';
 import CompanyIntegrationsPanel from '../../../Components/CompanyIntegrationsPanel';
+import CompanySettingsBrandingPanel from '../../../Components/CompanySettingsBrandingPanel';
+import CompanySettingsLegalDocumentsPanel from '../../../Components/CompanySettingsLegalDocumentsPanel';
+import CompanySettingsRemindersPanel from '../../../Components/CompanySettingsRemindersPanel';
+import CompanySettingsVatPanel from '../../../Components/CompanySettingsVatPanel';
 import NumberingSeriesEditor from '../../../Components/NumberingSeriesEditor';
 import SelectMenu from '../../../Components/SelectMenu';
 import AuthenticatedLayout from '../../../Layouts/AuthenticatedLayout';
+import { useUi } from '../../../context/UiContext';
 import { t } from '../../../lib/i18n';
 import { optionsFromMap } from '../../../lib/utils';
 
-const fieldClass =
-    'w-full rounded-xl border border-indigo-100 bg-indigo-50/80 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100';
-const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
-const textareaClass =
-    'w-full min-h-[140px] resize-y rounded-xl border border-indigo-100 bg-indigo-50/80 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100';
+function xsrfToken() {
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
+const fieldClass = 'offacto-time-inp';
+const labelClass = 'offacto-settings-lbl';
+const textareaClass = 'offacto-time-inp offacto-settings-textarea';
+
+function formatStreetLine(street, house) {
+    const h = house && house !== '-' ? house : '';
+    return [street, h].filter(Boolean).join(' ').trim();
+}
+
+function parseStreetLine(line) {
+    const trimmed = (line || '').trim();
+    if (!trimmed) {
+        return { street: '-', house: '-' };
+    }
+    const match = trimmed.match(/^(.+?)\s+(\S+)$/);
+    if (match && /\d/.test(match[2])) {
+        return { street: match[1].trim(), house: match[2] };
+    }
+    return { street: trimmed, house: '-' };
+}
+
+function formatPostalCity(postal, city) {
+    return [postal, city].filter(Boolean).join(' ').trim();
+}
+
+function parsePostalCity(line) {
+    const trimmed = (line || '').trim();
+    const match = trimmed.match(/^(\S+)\s+(.+)$/);
+    if (match) {
+        return { postal_code: match[1], city: match[2].trim() };
+    }
+    return { postal_code: trimmed || '-', city: trimmed || '-' };
+}
 
 const NAV = [
     { id: 'company', icon: 'building', labelKey: 'company_settings.nav_company' },
-    { id: 'branding', icon: 'palette', labelKey: 'company_settings.nav_branding' },
-    { id: 'numbering', icon: 'document', labelKey: 'company_settings.nav_numbering' },
-    { id: 'integrations', icon: 'settings', labelKey: 'company_settings.nav_integrations' },
-    { id: 'reminders', icon: 'clock', labelKey: 'company_settings.nav_reminders' },
-    { id: 'legal', icon: 'scale', labelKey: 'company_settings.nav_legal' },
-    { id: 'terms', icon: 'document', labelKey: 'company_settings.nav_terms' },
+    { id: 'branding', icon: 'spark', labelKey: 'company_settings.nav_branding' },
+    { id: 'legal', icon: 'file', labelKey: 'company_settings.nav_legal' },
+    { id: 'vat', icon: 'euro', labelKey: 'company_settings.nav_vat' },
+    { id: 'numbering', icon: 'flag', labelKey: 'company_settings.nav_numbering' },
+    { id: 'integrations', icon: 'link', labelKey: 'company_settings.nav_integrations' },
+    { id: 'reminders', icon: 'bell', labelKey: 'company_settings.nav_reminders' },
+    { id: 'team', icon: 'users', labelKey: 'company_settings.nav_team', comingSoon: true },
+    { id: 'plan', icon: 'shield', labelKey: 'company_settings.nav_plan', comingSoon: true },
 ];
 
 function Field({ label, error, children }) {
     return (
-        <label className="block">
+        <label className="offacto-time-field">
             <span className={labelClass}>{label}</span>
             {children}
-            {error && <span className="mt-1 block text-xs text-rose-600">{error}</span>}
+            {error ? <span className="offacto-drawer-hint bad">{error}</span> : null}
         </label>
     );
 }
 
-function Panel({ title, description, children }) {
+function Panel({ title, description, headerExtra, children }) {
     return (
-        <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
-            <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-6 py-5 sm:px-8">
-                <h2 className="text-lg font-semibold tracking-tight text-slate-900">{title}</h2>
-                {description && <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">{description}</p>}
+        <div className="offacto-dash-card offacto-settings-card">
+            <div className="offacto-dash-card-head">
+                <div>
+                    <h3>{title}</h3>
+                    {description ? <p className="offacto-settings-hint">{description}</p> : null}
+                </div>
+                {headerExtra || null}
             </div>
-            <div className="px-6 py-6 sm:px-8">{children}</div>
+            <div className="offacto-dash-card-body offacto-settings-body">{children}</div>
         </div>
     );
 }
 
-function Toggle({ checked, onChange }) {
+function Toggle({ checked, onChange, label }) {
     return (
         <button
             type="button"
             role="switch"
             aria-checked={checked}
+            aria-label={label}
             onClick={() => onChange(!checked)}
-            className={`relative h-6 w-11 rounded-full transition ${checked ? 'bg-indigo-600' : 'bg-slate-300'}`}
-        >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${checked ? 'left-5' : 'left-0.5'}`} />
-        </button>
+            className={`offacto-invoice-toggle${checked ? ' on' : ''}`}
+        />
     );
 }
 
@@ -72,19 +114,38 @@ export default function CompanySettingsIndex({
     integrations = {},
     integrationLinks = {},
     reminders = {},
-    termsContent = { en: '', fr: '', nl: '' },
     settingsBasePath = '/company/settings',
 }) {
     const [section, setSection] = useState(initialSection);
     const [logoPreview, setLogoPreview] = useState(invoiceLogoUrl || null);
+    const [streetLine, setStreetLine] = useState(() => formatStreetLine(company?.street, company?.house));
+    const [postalCityLine, setPostalCityLine] = useState(() => formatPostalCity(company?.postal_code, company?.city));
+    const [viesState, setViesState] = useState(null);
+    const { toast } = useUi();
 
     useEffect(() => {
         setSection(initialSection);
     }, [initialSection]);
 
     useEffect(() => {
+        if (invoiceLogoUrl) {
+            setLogoPreview(invoiceLogoUrl);
+        } else if (companySettings?.invoice_logo) {
+            setLogoPreview(`/storage/${String(companySettings.invoice_logo).replace(/^\/+/, '')}`);
+        }
+    }, [invoiceLogoUrl, companySettings?.invoice_logo]);
+
+    useEffect(() => {
         setLogoPreview(invoiceLogoUrl || null);
-    }, [invoiceLogoUrl]);
+    }, [company?.id]);
+
+    useEffect(() => {
+        if (!company) {
+            return;
+        }
+        setStreetLine(formatStreetLine(company.street, company.house));
+        setPostalCityLine(formatPostalCity(company.postal_code, company.city));
+    }, [company?.id, company?.street, company?.house, company?.postal_code, company?.city]);
 
     const goSection = (id) => {
         setSection(id);
@@ -104,6 +165,7 @@ export default function CompanySettingsIndex({
         city: company?.city || '',
         language: company?.language || '',
         self_employed_activity: company?.self_employed_activity || '',
+        iban: companySettings?.iban || '',
     });
 
     const brandingForm = useForm({
@@ -112,128 +174,219 @@ export default function CompanySettingsIndex({
             secondary: companySettings?.theme?.secondary || '#94a3b8',
         },
         invoice_template: companySettings?.invoice_template || 'classic',
+        document_font: companySettings?.document_font || 'inter',
         invoice_logo: null,
         logo_in_emails: companySettings?.logo_in_emails ?? true,
     });
 
-    const remindersForm = useForm({
-        automated_reminders_enabled: reminders.automated_reminders_enabled ?? true,
-        schedule: (reminders.schedule || [7, 14, 30]).join(', '),
-        grace_days: reminders.grace_days ?? 0,
-        escalation: reminders.escalation || '',
-    });
+    const runCompanyVies = async () => {
+        const vat = companyForm.data.vat_number?.trim();
+        if (!vat) {
+            setViesState('invalid');
+            toast.error(t('customers.vies_invalid'));
+            return;
+        }
 
-    const termsForm = useForm({
-        terms_content: { ...termsContent },
-    });
+        setViesState('checking');
+
+        try {
+            const res = await fetch('/customers/vies-validate', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': xsrfToken(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ vat_number: vat }),
+            });
+
+            const payload = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                setViesState('invalid');
+                toast.error(
+                    payload?.errors?.vat_number?.[0] || payload?.message || t('customers.vies_service_unavailable'),
+                );
+                return;
+            }
+
+            const result = payload?.data;
+            if (!result?.valid) {
+                setViesState('invalid');
+                toast.error(t('customers.vies_not_registered'));
+                return;
+            }
+
+            setViesState('valid');
+            if (result.vat_number) {
+                companyForm.setData('vat_number', result.vat_number);
+            }
+            toast.success(t('company_settings.vies_valid_kbo'));
+        } catch {
+            setViesState('invalid');
+            toast.error(t('customers.vies_service_unavailable'));
+        }
+    };
 
     const saveCompany = (e) => {
         e.preventDefault();
+        const streetParts = parseStreetLine(streetLine);
+        const postalParts = parsePostalCity(postalCityLine);
         companyForm.transform((data) => ({
             ...data,
-            house: data.house?.trim() || '-',
+            ...streetParts,
+            ...postalParts,
+            house: streetParts.house?.trim() || '-',
         }));
         companyForm.patch(`${settingsBasePath}/company`);
     };
 
-    const saveBranding = (extra = {}) => {
-        const uploadFile = extra.invoice_logo instanceof File ? extra.invoice_logo : null;
-        if (uploadFile) {
-            brandingForm.setData('invoice_logo', uploadFile);
-        } else {
-            Object.entries(extra).forEach(([key, value]) => brandingForm.setData(key, value));
+    const brandingThemePayload = (theme) => {
+        const primary = theme?.primary || '#4054b2';
+        return { primary, secondary: primary };
+    };
+
+    const buildBrandingFormData = (next, file = null) => {
+        const theme = brandingThemePayload(next.theme);
+        const fd = new FormData();
+        fd.append('theme[primary]', theme.primary);
+        fd.append('theme[secondary]', theme.secondary);
+        fd.append('invoice_template', next.invoice_template || 'classic');
+        fd.append('document_font', next.document_font || 'inter');
+        fd.append('logo_in_emails', next.logo_in_emails ? '1' : '0');
+        if (file instanceof File) {
+            fd.append('invoice_logo', file, file.name);
         }
-        const hasFile = uploadFile instanceof File || brandingForm.data.invoice_logo instanceof File;
+        return fd;
+    };
+
+    const saveBranding = (extra = {}) => {
+        const next = { ...brandingForm.data, ...extra };
+        brandingForm.setData(next);
+        const uploadFile = extra.invoice_logo instanceof File ? extra.invoice_logo : null;
+
+        if (extra.remove_invoice_logo) {
+            brandingForm.transform(() => ({
+                theme: brandingThemePayload(next.theme),
+                invoice_template: next.invoice_template,
+                document_font: next.document_font,
+                logo_in_emails: next.logo_in_emails,
+                remove_invoice_logo: true,
+            }));
+            brandingForm.patch(`${settingsBasePath}/branding`, {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => {
+                    setLogoPreview(null);
+                },
+            });
+            return;
+        }
+
+        if (uploadFile) {
+            router.post(`${settingsBasePath}/branding`, buildBrandingFormData(next, uploadFile), {
+                forceFormData: true,
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: (page) => {
+                    brandingForm.setData('invoice_logo', null);
+                    const savedUrl = page?.props?.invoiceLogoUrl;
+                    if (savedUrl) {
+                        setLogoPreview(savedUrl);
+                    }
+                },
+                onError: (errors) => {
+                    const first = Object.values(errors || {})[0];
+                    toast.error(typeof first === 'string' ? first : Array.isArray(first) ? first[0] : 'Could not save logo.');
+                },
+            });
+            return;
+        }
+
+        brandingForm.transform(() => ({
+            theme: brandingThemePayload(next.theme),
+            invoice_template: next.invoice_template,
+            document_font: next.document_font,
+            logo_in_emails: next.logo_in_emails,
+        }));
         brandingForm.patch(`${settingsBasePath}/branding`, {
-            forceFormData: hasFile,
             preserveScroll: true,
             onSuccess: () => {
                 brandingForm.setData('invoice_logo', null);
-                router.reload({ preserveScroll: true });
             },
         });
-    };
-
-    const saveReminders = (e) => {
-        e.preventDefault();
-        const days = remindersForm.data.schedule
-            .split(',')
-            .map((s) => parseInt(s.trim(), 10))
-            .filter((n) => !Number.isNaN(n) && n > 0);
-        router.patch(
-            `${settingsBasePath}/reminders`,
-            {
-                automated_reminders_enabled: remindersForm.data.automated_reminders_enabled,
-                schedule: days.length ? days : [7, 14, 30],
-                grace_days: Number(remindersForm.data.grace_days) || 0,
-                escalation: remindersForm.data.escalation,
-            },
-            { preserveScroll: true },
-        );
-    };
-
-    const saveTerms = (e) => {
-        e.preventDefault();
-        termsForm.patch(`${settingsBasePath}/terms`, { preserveScroll: true });
-    };
-
-    const typeLabel = {
-        terms: t('profile.terms'),
-        contract: t('profile.contract'),
-        other: t('profile.other'),
     };
 
     const legalBase = `${settingsBasePath}/legal-documents`;
 
     return (
         <AuthenticatedLayout title={t('company_settings.title')}>
-            <div className="mx-auto max-w-6xl">
-                <header className="mb-8 flex flex-col gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="offacto-briefings offacto-dash offacto-settings-page">
+                <header className="offacto-brief-edit-ph">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">{company?.company_name || t('company_settings.eyebrow')}</p>
-                        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{t('company_settings.title')}</h1>
-                        <p className="mt-2 max-w-xl text-sm text-slate-500">{t('company_settings.subtitle')}</p>
+                        <h1>{t('company_settings.title')}</h1>
+                        <p>{company?.company_name || t('company_settings.subtitle')}</p>
                     </div>
-                    <Link href="/profile" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
-                        ← {t('company_settings.back_profile')}
-                    </Link>
                 </header>
 
-                <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-                    <nav className="lg:w-56 lg:shrink-0">
-                        <div className="sticky top-6 space-y-1 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm">
-                            {NAV.map((item) => (
-                                <button
-                                    key={item.id}
-                                    type="button"
-                                    onClick={() => goSection(item.id)}
-                                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-                                        section === item.id ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <Icon name={item.icon} className="h-4 w-4 shrink-0 opacity-80" />
-                                    {t(item.labelKey)}
-                                </button>
-                            ))}
-                        </div>
+                <div className="offacto-settings-grid">
+                    <nav className="offacto-dash-card offacto-setnav" aria-label={t('company_settings.title')}>
+                        {NAV.map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                    if (item.comingSoon) {
+                                        toast.info(t('nav.coming_soon'));
+                                        return;
+                                    }
+                                    goSection(item.id);
+                                }}
+                                className={section === item.id ? 'on' : ''}
+                            >
+                                <Icon name={item.icon} />
+                                {t(item.labelKey)}
+                            </button>
+                        ))}
                     </nav>
 
-                    <div className="min-w-0 flex-1 space-y-8">
+                    <div className="offacto-settings-main">
                         {section === 'company' && (
-                            <Panel title={t('profile.company_info')} description={t('company_settings.company_desc')}>
-                                <form onSubmit={saveCompany} className="space-y-5">
-                                    <Field label={t('companies.name')} error={companyForm.errors.company_name}>
-                                        <input className={fieldClass} value={companyForm.data.company_name} onChange={(e) => companyForm.setData('company_name', e.target.value)} />
-                                    </Field>
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <Field label={t('companies.first_name')} error={companyForm.errors.first_name}>
-                                            <input className={fieldClass} value={companyForm.data.first_name} onChange={(e) => companyForm.setData('first_name', e.target.value)} />
+                            <Panel title={t('company_settings.nav_company')} description={t('company_settings.company_desc')}>
+                                <form onSubmit={saveCompany} className="offacto-settings-fg">
+                                    <div className="offacto-settings-fg2">
+                                        <Field label={t('company_settings.org_name')} error={companyForm.errors.company_name}>
+                                            <input className={fieldClass} value={companyForm.data.company_name} onChange={(e) => companyForm.setData('company_name', e.target.value)} />
                                         </Field>
-                                        <Field label={t('companies.surname')} error={companyForm.errors.surname}>
-                                            <input className={fieldClass} value={companyForm.data.surname} onChange={(e) => companyForm.setData('surname', e.target.value)} />
+                                        <Field label={t('companies.vat')} error={companyForm.errors.vat_number}>
+                                            <div className="offacto-settings-inrow">
+                                                <div className={`offacto-settings-inp-wrap${viesState === 'valid' ? ' is-valid' : ''}`}>
+                                                    <input
+                                                        className={fieldClass}
+                                                        value={companyForm.data.vat_number}
+                                                        onChange={(e) => {
+                                                            companyForm.setData('vat_number', e.target.value);
+                                                            setViesState(null);
+                                                        }}
+                                                        aria-invalid={viesState === 'invalid'}
+                                                    />
+                                                    {viesState === 'valid' ? (
+                                                        <Icon name="check" className="offacto-settings-inp-check" aria-hidden />
+                                                    ) : null}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="offacto-settings-vies-btn"
+                                                    onClick={runCompanyVies}
+                                                    disabled={viesState === 'checking'}
+                                                >
+                                                    {viesState === 'checking' ? t('customers.vies_checking') : 'VIES'}
+                                                </button>
+                                            </div>
                                         </Field>
                                     </div>
-                                    <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="offacto-settings-fg2">
                                         <Field label={t('profile.company_email')} error={companyForm.errors.email}>
                                             <input type="email" className={fieldClass} value={companyForm.data.email} onChange={(e) => companyForm.setData('email', e.target.value)} />
                                         </Field>
@@ -241,42 +394,36 @@ export default function CompanySettingsIndex({
                                             <input className={fieldClass} value={companyForm.data.phone} onChange={(e) => companyForm.setData('phone', e.target.value)} />
                                         </Field>
                                     </div>
-                                    <Field label={t('companies.vat')} error={companyForm.errors.vat_number}>
-                                        <input className={fieldClass} value={companyForm.data.vat_number} onChange={(e) => companyForm.setData('vat_number', e.target.value)} />
-                                    </Field>
-                                    <div className="border-t border-slate-100 pt-4">
-                                        <p className="mb-3 text-sm font-medium text-slate-800">{t('companies.address')}</p>
-                                        <div className="space-y-4">
-                                            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem]">
-                                                <Field label={t('companies.street')} error={companyForm.errors.street}>
-                                                    <input className={fieldClass} value={companyForm.data.street} onChange={(e) => companyForm.setData('street', e.target.value)} />
-                                                </Field>
-                                                <Field label={t('companies.house')} error={companyForm.errors.house}>
-                                                    <input className={fieldClass} value={companyForm.data.house} onChange={(e) => companyForm.setData('house', e.target.value)} />
-                                                </Field>
-                                            </div>
-                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                <Field label={t('companies.postal')} error={companyForm.errors.postal_code}>
-                                                    <input className={fieldClass} value={companyForm.data.postal_code} onChange={(e) => companyForm.setData('postal_code', e.target.value)} />
-                                                </Field>
-                                                <Field label={t('companies.city')} error={companyForm.errors.city}>
-                                                    <input className={fieldClass} value={companyForm.data.city} onChange={(e) => companyForm.setData('city', e.target.value)} />
-                                                </Field>
-                                            </div>
-                                            <Field label={t('companies.language')} error={companyForm.errors.language}>
-                                                <SelectMenu
-                                                    value={companyForm.data.language}
-                                                    onChange={(e) => companyForm.setData('language', e.target.value)}
-                                                    options={optionsFromMap(languages)}
-                                                    placeholder={t('common.select')}
-                                                    className={fieldClass}
-                                                />
-                                            </Field>
-                                        </div>
+                                    <div className="offacto-settings-fg2">
+                                        <Field label={t('company_settings.street_and_number')} error={companyForm.errors.street || companyForm.errors.house}>
+                                            <input className={fieldClass} value={streetLine} onChange={(e) => setStreetLine(e.target.value)} />
+                                        </Field>
+                                        <Field label={t('company_settings.postcode_and_city')} error={companyForm.errors.postal_code || companyForm.errors.city}>
+                                            <input className={fieldClass} value={postalCityLine} onChange={(e) => setPostalCityLine(e.target.value)} />
+                                        </Field>
                                     </div>
-                                    <div className="flex justify-end border-t border-slate-100 pt-4">
-                                        <button type="submit" disabled={companyForm.processing} className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                                            {t('profile.save_company')}
+                                    <div className="offacto-settings-fg2">
+                                        <Field label={t('company_settings.iban')} error={companyForm.errors.iban}>
+                                            <input
+                                                className={fieldClass}
+                                                value={companyForm.data.iban}
+                                                onChange={(e) => companyForm.setData('iban', e.target.value)}
+                                                placeholder="BE68 5390 0754 7034"
+                                            />
+                                        </Field>
+                                        <Field label={t('company_settings.document_language')} error={companyForm.errors.language}>
+                                            <SelectMenu
+                                                value={companyForm.data.language}
+                                                onChange={(e) => companyForm.setData('language', e.target.value)}
+                                                options={optionsFromMap(languages)}
+                                                placeholder={t('common.select')}
+                                                variant="demo"
+                                            />
+                                        </Field>
+                                    </div>
+                                    <div className="offacto-settings-save">
+                                        <button type="submit" disabled={companyForm.processing} className="offacto-btn-p">
+                                            {companyForm.processing ? t('common.saving') : t('common.save')}
                                         </button>
                                     </div>
                                 </form>
@@ -284,257 +431,61 @@ export default function CompanySettingsIndex({
                         )}
 
                         {section === 'branding' && (
-                            <Panel title={t('profile.branding')} description={t('company_settings.branding_desc')}>
-                                <div className="space-y-5">
-                                    <div>
-                                        <span className={labelClass}>{t('profile.logo')}</span>
-                                        <label className="mt-1 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 px-4 py-8 text-center hover:border-indigo-300">
-                                            {logoPreview ? (
-                                                <img src={logoPreview} alt="" className="mb-3 max-h-16 w-auto object-contain" />
-                                            ) : (
-                                                <Icon name="upload" className="mb-2 h-8 w-8 text-indigo-500" />
-                                            )}
-                                            <span className="text-sm font-medium text-indigo-700">{t('profile.upload')}</span>
-                                            <input
-                                                type="file"
-                                                accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif"
-                                                className="hidden"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (!file) return;
-                                                    setLogoPreview(URL.createObjectURL(file));
-                                                    saveBranding({ invoice_logo: file });
-                                                }}
-                                            />
-                                        </label>
-                                        <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                                            <input
-                                                type="checkbox"
-                                                checked={!!brandingForm.data.logo_in_emails}
-                                                onChange={(e) => {
-                                                    brandingForm.setData('logo_in_emails', e.target.checked);
-                                                    saveBranding({ logo_in_emails: e.target.checked });
-                                                }}
-                                            />
-                                            {t('profile.logo_in_emails')}
-                                        </label>
-                                    </div>
-                                    <div>
-                                        <span className={labelClass}>{t('invoices.template_picker_label')}</span>
-                                        <div className="mt-2 inline-flex flex-wrap gap-2 rounded-xl bg-slate-100 p-1">
-                                            {[
-                                                { id: 'classic', label: t('invoices.template_classic') },
-                                                { id: 'minimal', label: t('invoices.template_minimal') },
-                                            ].map((option) => (
-                                                <button
-                                                    key={option.id}
-                                                    type="button"
-                                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                                                        brandingForm.data.invoice_template === option.id
-                                                            ? 'bg-white text-indigo-700 shadow-sm'
-                                                            : 'text-slate-600 hover:text-slate-900'
-                                                    }`}
-                                                    onClick={() => {
-                                                        brandingForm.setData('invoice_template', option.id);
-                                                        saveBranding({ invoice_template: option.id });
-                                                    }}
-                                                >
-                                                    {option.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <p className="mt-2 text-xs text-slate-500">{t('company_settings.invoice_template_hint')}</p>
-                                    </div>
-                                    <div>
-                                        <span className={labelClass}>{t('profile.theme_colors')}</span>
-                                        <div className="mt-2 space-y-3">
-                                            {['primary', 'secondary'].map((key) => (
-                                                <label key={key} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-                                                    <span className="text-sm text-slate-700">{key === 'primary' ? t('profile.primary') : t('profile.accent')}</span>
-                                                    <input
-                                                        type="color"
-                                                        className="h-8 w-8 cursor-pointer rounded-full border-0"
-                                                        value={brandingForm.data.theme[key]}
-                                                        onChange={(e) => brandingForm.setData('theme', { ...brandingForm.data.theme, [key]: e.target.value })}
-                                                        onBlur={() => saveBranding()}
-                                                    />
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                            <Panel
+                                title={t('company_settings.nav_branding')}
+                                description={t('company_settings.branding_desc')}
+                                headerExtra={
+                                    <span className="offacto-settings-live-badge">
+                                        <Icon name="eye" />
+                                        {t('company_settings.live_preview')}
+                                    </span>
+                                }
+                            >
+                                <CompanySettingsBrandingPanel
+                                    brandingForm={brandingForm}
+                                    logoPreview={logoPreview}
+                                    setLogoPreview={setLogoPreview}
+                                    saveBranding={saveBranding}
+                                    company={company}
+                                    companySettings={companySettings}
+                                    invoiceLogoUrl={invoiceLogoUrl}
+                                />
                             </Panel>
                         )}
 
                         {section === 'numbering' && (
                             <Panel title={t('numbering.title')} description={t('company_settings.numbering_desc')}>
-                                <NumberingSeriesEditor series={numberingSeriesList} activeSeriesId={activeNumberingSeriesId} company={company} settingsBasePath={settingsBasePath} />
+                                <div className="offacto-settings-embed">
+                                    <NumberingSeriesEditor series={numberingSeriesList} activeSeriesId={activeNumberingSeriesId} company={company} settingsBasePath={settingsBasePath} />
+                                </div>
                             </Panel>
                         )}
 
                         {section === 'integrations' && (
-                            <Panel title={t('integrations.title')} description={t('company_settings.integrations_desc')}>
+                            <Panel title={t('integrations.title')}>
                                 <CompanyIntegrationsPanel integrations={integrations} links={integrationLinks} settingsBasePath={settingsBasePath} />
                             </Panel>
                         )}
 
                         {section === 'reminders' && (
-                            <Panel title={t('company_settings.reminders_title')} description={t('company_settings.reminders_desc')}>
-                                <form onSubmit={saveReminders} className="space-y-5">
-                                    <div className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3">
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-800">{t('company_settings.reminders_enabled')}</p>
-                                            <p className="text-xs text-slate-500">{t('company_settings.reminders_enabled_hint')}</p>
-                                        </div>
-                                        <Toggle
-                                            checked={!!remindersForm.data.automated_reminders_enabled}
-                                            onChange={(v) => remindersForm.setData('automated_reminders_enabled', v)}
-                                        />
-                                    </div>
-                                    <Field label={t('company_settings.reminder_schedule')} error={remindersForm.errors.schedule}>
-                                        <input className={fieldClass} value={remindersForm.data.schedule} onChange={(e) => remindersForm.setData('schedule', e.target.value)} placeholder="7, 14, 30" />
-                                        <p className="mt-1 text-xs text-slate-500">{t('company_settings.reminder_schedule_hint')}</p>
-                                    </Field>
-                                    <Field label={t('company_settings.reminder_grace')} error={remindersForm.errors.grace_days}>
-                                        <input type="number" min={0} max={90} className={fieldClass} value={remindersForm.data.grace_days} onChange={(e) => remindersForm.setData('grace_days', e.target.value)} />
-                                    </Field>
-                                    <Field label={t('company_settings.reminder_escalation')} error={remindersForm.errors.escalation}>
-                                        <textarea className={textareaClass} value={remindersForm.data.escalation} onChange={(e) => remindersForm.setData('escalation', e.target.value)} />
-                                    </Field>
-                                    <div className="flex justify-end border-t border-slate-100 pt-4">
-                                        <button type="submit" className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500">
-                                            {t('company_settings.save_reminders')}
-                                        </button>
-                                    </div>
-                                </form>
-                            </Panel>
+                            <CompanySettingsRemindersPanel reminders={reminders} settingsBasePath={settingsBasePath} />
                         )}
 
                         {section === 'legal' && (
                             <Panel title={t('company_settings.legal_title')} description={t('company_settings.legal_desc')}>
-                                <p className="mb-4 text-sm text-slate-600">
-                                    {t('company_settings.legal_unlimited', { count: legalDocuments.length })}
-                                </p>
-                                <ul className="space-y-3">
-                                    {legalDocuments.length === 0 && (
-                                        <li className="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
-                                            {t('company_settings.legal_empty')}
-                                        </li>
-                                    )}
-                                    {legalDocuments.map((doc) => (
-                                        <li key={doc.id} className="rounded-2xl border border-indigo-100 bg-indigo-50/50 px-4 py-3">
-                                            <div className="flex flex-wrap items-start justify-between gap-3">
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="font-medium text-slate-900">
-                                                        {doc.title || typeLabel[doc.type] || doc.original_name}
-                                                    </div>
-                                                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                                                        <span className="rounded-md bg-white px-1.5 py-0.5">{typeLabel[doc.type] || doc.type}</span>
-                                                        <span className="truncate">{doc.original_name}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <a
-                                                        href={`${legalBase}/${doc.id}/download`}
-                                                        className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 shadow-sm hover:bg-indigo-50"
-                                                    >
-                                                        {t('company_settings.legal_download')}
-                                                    </a>
-                                                    <button
-                                                        type="button"
-                                                        className="rounded-full p-2 text-slate-400 hover:bg-white hover:text-rose-600"
-                                                        onClick={() => router.delete(`${legalBase}/${doc.id}`, { preserveScroll: true })}
-                                                        aria-label={t('common.delete')}
-                                                    >
-                                                        <Icon name="trash" className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="mt-3 flex items-center justify-between border-t border-indigo-100/80 pt-3">
-                                                <span className="text-xs font-medium text-slate-600">{t('profile.attach_quotes')}</span>
-                                                <Toggle
-                                                    checked={!!doc.attach_to_quotes_default}
-                                                    onChange={(checked) => router.patch(`${legalBase}/${doc.id}`, { attach_to_quotes_default: checked }, { preserveScroll: true })}
-                                                />
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                                    <h3 className="text-sm font-semibold text-slate-900">
-                                        {legalDocuments.length === 0 ? t('profile.add_legal') : t('company_settings.legal_add_another')}
-                                    </h3>
-                                    <form
-                                        className="mt-4 space-y-3"
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            const formEl = e.currentTarget;
-                                            const data = new FormData(formEl);
-                                            if (formEl.attach_to_quotes_default?.checked) {
-                                                data.set('attach_to_quotes_default', '1');
-                                            }
-                                            router.post(legalBase, data, {
-                                                forceFormData: true,
-                                                preserveScroll: true,
-                                                onSuccess: () => formEl.reset(),
-                                            });
-                                        }}
-                                    >
-                                        <Field label={t('company_settings.legal_title_field')}>
-                                            <input name="title" className={fieldClass} placeholder={t('company_settings.legal_title_placeholder')} />
-                                        </Field>
-                                        <Field label={t('company_settings.legal_type')}>
-                                            <select name="type" className={fieldClass} defaultValue="terms">
-                                                <option value="terms">{t('profile.terms')}</option>
-                                                <option value="contract">{t('profile.contract')}</option>
-                                                <option value="other">{t('profile.other')}</option>
-                                            </select>
-                                        </Field>
-                                        <Field label={t('company_settings.legal_file')}>
-                                            <input name="file" type="file" accept="application/pdf" required className={fieldClass} />
-                                        </Field>
-                                        <label className="flex items-center gap-2 text-sm text-slate-600">
-                                            <input type="checkbox" name="attach_to_quotes_default" value="1" />
-                                            {t('profile.attach_default')}
-                                        </label>
-                                        <button type="submit" className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
-                                            {t('profile.upload_pdf')}
-                                        </button>
-                                    </form>
-                                </div>
+                                <CompanySettingsLegalDocumentsPanel legalDocuments={legalDocuments} legalBase={legalBase} />
                             </Panel>
                         )}
 
-                        {section === 'terms' && (
-                            <Panel title={t('company_settings.terms_title')} description={t('company_settings.terms_desc')}>
-                                <form onSubmit={saveTerms} className="space-y-6">
-                                    {['en', 'nl', 'fr'].map((locale) => (
-                                        <label key={locale} className="block">
-                                            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
-                                                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs uppercase">{locale}</span>
-                                                {t('company_settings.terms_body')}
-                                            </span>
-                                            <textarea
-                                                className={textareaClass}
-                                                value={termsForm.data.terms_content[locale] || ''}
-                                                onChange={(e) =>
-                                                    termsForm.setData('terms_content', {
-                                                        ...termsForm.data.terms_content,
-                                                        [locale]: e.target.value,
-                                                    })
-                                                }
-                                            />
-                                        </label>
-                                    ))}
-                                    <p className="text-xs text-slate-500">{t('company_settings.terms_hint')}</p>
-                                    <div className="flex justify-end border-t border-slate-100 pt-4">
-                                        <button type="submit" disabled={termsForm.processing} className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                                            {t('company_settings.save_terms')}
-                                        </button>
-                                    </div>
-                                </form>
+                        {section === 'vat' && (
+                            <Panel title={t('company_settings.nav_vat')}>
+                                <CompanySettingsVatPanel
+                                    vatRegime={company?.vat_regime}
+                                    settingsBasePath={settingsBasePath}
+                                />
                             </Panel>
                         )}
+
                     </div>
                 </div>
             </div>

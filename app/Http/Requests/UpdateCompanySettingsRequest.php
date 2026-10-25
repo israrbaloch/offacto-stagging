@@ -24,11 +24,13 @@ class UpdateCompanySettingsRequest extends FormRequest
     {
         return [
             'invoice_logo' => ['nullable', 'file', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
+            'remove_invoice_logo' => ['sometimes', 'boolean'],
             'logo_in_emails' => ['sometimes', 'boolean'],
             'theme' => ['nullable', 'array'],
             'theme.primary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'theme.secondary' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'invoice_template' => ['sometimes', 'string', Rule::in(['classic', 'minimal'])],
+            'invoice_template' => ['sometimes', 'string', Rule::in(['classic', 'minimal', 'modern'])],
+            'document_font' => ['sometimes', 'string', Rule::in(['inter', 'georgia', 'helvetica', 'courier_new'])],
             'numbering_series' => ['sometimes', 'nullable', 'exists:numbering_series,id'],
         ];
     }

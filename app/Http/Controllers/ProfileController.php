@@ -149,7 +149,16 @@ class ProfileController extends Controller
                 Mail::to($user->email)->send(new CompanySubmittedConfirmation($company));
             }
         } else {
-            $company->update($request->validated());
+            $validated = $request->validated();
+            $iban = $validated['iban'] ?? null;
+            unset($validated['iban']);
+            $company->update($validated);
+            if ($request->has('iban')) {
+                $settings = $company->companySetting;
+                if ($settings) {
+                    $settings->update(['iban' => $iban ?: null]);
+                }
+            }
         }
 
         if ($request->expectsJson()) {
@@ -190,9 +199,7 @@ class ProfileController extends Controller
         }
 
         $data = $request->validated();
-        if ($request->has('logo_in_emails')) {
-            $data['logo_in_emails'] = $request->boolean('logo_in_emails');
-        }
+        $data['logo_in_emails'] = $request->boolean('logo_in_emails');
 
         if ($request->hasFile('invoice_logo')) {
             if ($companySettings->invoice_logo) {
@@ -201,9 +208,16 @@ class ProfileController extends Controller
 
             $path = $request->file('invoice_logo')->store('logos', 'public');
             $data['invoice_logo'] = $path;
+        } elseif ($request->boolean('remove_invoice_logo')) {
+            if ($companySettings->invoice_logo) {
+                Storage::disk('public')->delete($companySettings->invoice_logo);
+            }
+            $data['invoice_logo'] = null;
         } else {
             unset($data['invoice_logo']);
         }
+
+        unset($data['remove_invoice_logo']);
 
         if (isset($data['theme'])) {
             if (empty($data['theme']['primary']) || empty($data['theme']['secondary'])) {
@@ -226,7 +240,9 @@ class ProfileController extends Controller
             ]);
         }
 
-        return back()->with('status', 'company-settings-updated');
+        return redirect()
+            ->route('company.settings.index', ['section' => 'branding'])
+            ->with('status', 'company-settings-updated');
     }
 
     public function destroy(Request $request): RedirectResponse

@@ -111,7 +111,15 @@ class CustomerController extends Controller
             ],
             'creditsafeConfigured' => CompanyIntegrations::creditsafeConfigured($activeCompany),
             'peppolConfigured' => $peppolConfigured,
-            'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(['id', 'title', 'original_name', 'attach_to_quotes_default']),
+            'legalDocuments' => $activeCompany->legalDocuments()->latest()->get([
+                'id',
+                'title',
+                'original_name',
+                'type',
+                'attach_to_quotes_default',
+                'attach_to_invoices_default',
+                'attach_new_customers_only',
+            ]),
             'drawerCreditCheck' => $drawerCreditCheck,
         ]);
     }

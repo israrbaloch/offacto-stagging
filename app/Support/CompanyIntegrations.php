@@ -252,6 +252,8 @@ class CompanyIntegrations
             'creditsafe_live_api_key_set' => filled($settings?->creditsafe_live_api_key),
             'creditsafe_configured' => $company ? self::creditsafeConfigured($company) : false,
             'creditsafe_platform_enabled' => IntegrationPolicy::creditsafeEnabled(),
+            'vies_platform_enabled' => true,
+            'intervat_platform_enabled' => true,
         ];
     }
 }

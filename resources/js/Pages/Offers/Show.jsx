@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Button from '../../Components/Button';
 import SendOfferModal from '../../Components/SendOfferModal';
 import OfferAcceptancePanel from '../../Components/OfferAcceptancePanel';
-import OfferPreview from '../../Components/OfferPreview';
+import { OfferDocumentPreview, normalizeInvoiceTemplate } from '../../Components/InvoiceDocumentPreview';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { useUi } from '../../context/UiContext';
 import { t } from '../../lib/i18n';
@@ -75,8 +75,9 @@ export default function Show({
                 </p>
             )}
             <OfferAcceptancePanel offer={offer} />
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <OfferPreview
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <OfferDocumentPreview
+                    template={normalizeInvoiceTemplate(activeCompany?.invoice_template)}
                     number={offer.offer_number}
                     date={offer.offer_date}
                     validUntil={offer.valid_until}
@@ -94,15 +95,12 @@ export default function Show({
                         address: customer.office_address,
                         email: customer.email,
                     }}
-                    scope={offer.desc || offer.intro}
                     items={(offer.items || []).map((item) => ({
                         service_name: item.service?.name,
                         description: item.description,
                         quantity: item.quantity,
                         price: item.price,
                     }))}
-                    notes={offer.notes}
-                    paymentTerms={offer.payment_terms}
                     totalsOverride={{
                         subtotal: offer.subtotal,
                         tax: offer.tax_amount,

@@ -216,7 +216,12 @@
 </head>
 <body>
     <div class="email-container">
-        <div class="header">
+        <div class="header" style="background: linear-gradient(135deg, {{ $primaryColor ?? '#11134E' }}, {{ $secondaryColor ?? '#4054B2' }});">
+            @if($companyLogoUrl ?? null)
+                <div style="margin-bottom:16px;">
+                    @include('emails.partials.logo', ['width' => 140, 'companyLogo' => $companyLogoUrl])
+                </div>
+            @endif
             <h1>{{ $invoice->company->company_name }}</h1>
             <p>{{ $invoice->company->street }} {{ $invoice->company->house }}, {{ $invoice->company->postal_code }} {{ $invoice->company->city }}</p>
         </div>
@@ -377,7 +382,9 @@
         </div>
 
         <div class="footer">
-            <div style="margin-bottom:12px;display:inline-block;">@include('emails.partials.logo', ['width' => 120])</div>
+            @if(!($companyLogoUrl ?? null))
+                <div style="margin-bottom:12px;display:inline-block;">@include('emails.partials.logo', ['width' => 120])</div>
+            @endif
             <p>This invoice was sent by <strong>{{ $invoice->company->company_name }}</strong></p>
             @if($invoice->company->email)
             <p>For questions, please contact: <a href="mailto:{{ $invoice->company->email }}">{{ $invoice->company->email }}</a></p>

@@ -17,9 +17,11 @@ class CompanySetting extends Model
     protected $fillable = [
         'company_id',
         'invoice_logo',
+        'iban',
         'logo_in_emails',
         'theme',
         'invoice_template',
+        'document_font',
         'numbering_series',
         'integrations_mode',
         'mollie_test_key',
@@ -56,6 +58,7 @@ class CompanySetting extends Model
         'reminder_schedule',
         'reminder_grace_days',
         'reminder_escalation_text',
+        'reminder_stages',
         'terms_content',
     ];
 
@@ -92,6 +95,7 @@ class CompanySetting extends Model
             'automated_reminders_enabled' => 'boolean',
             'reminder_schedule' => 'array',
             'reminder_grace_days' => 'integer',
+            'reminder_stages' => 'array',
             'terms_content' => 'array',
         ];
     }

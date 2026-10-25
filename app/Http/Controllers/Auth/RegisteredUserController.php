@@ -149,9 +149,9 @@ class RegisteredUserController extends Controller
     private function storeRegistrationLegalDocuments(StoreRegistrationWithCompanyRequest $request, Company $company): void
     {
         $map = [
-            'legal_document_privacy' => ['type' => 'other', 'title_key' => 'auth.legal_doc_privacy'],
+            'legal_document_privacy' => ['type' => 'privacy', 'title_key' => 'auth.legal_doc_privacy'],
             'legal_document_terms' => ['type' => 'terms', 'title_key' => 'profile.terms'],
-            'legal_document_dpa' => ['type' => 'contract', 'title_key' => 'auth.legal_doc_dpa'],
+            'legal_document_dpa' => ['type' => 'dpa', 'title_key' => 'auth.legal_doc_dpa'],
             'legal_document_other' => ['type' => 'other', 'title_key' => 'profile.other'],
         ];
 
@@ -169,7 +169,7 @@ class RegisteredUserController extends Controller
                 'title' => trans($meta['title_key']),
                 'file_path' => $path,
                 'original_name' => $file->getClientOriginalName(),
-                'attach_to_quotes_default' => in_array($meta['type'], ['terms', 'contract'], true),
+                'attach_to_quotes_default' => in_array($meta['type'], ['terms', 'dpa'], true),
             ]);
         }
     }

@@ -1,6 +1,7 @@
 @php
     use App\Models\Invoice;
     use App\Support\BrandColors;
+    use App\Support\CompanyBranding;
 
     $company = $invoice->company;
     $settings = $company?->companySetting;
@@ -17,11 +18,10 @@
     $total = $invoice->total;
     $isCredit = filled($invoice->parent_invoice_id);
     $sign = $isCredit ? -1 : 1;
-    $companyLogo = $settings?->invoice_logo ? public_path('storage/'.$settings->invoice_logo) : null;
-    $logo = ($companyLogo && is_file($companyLogo))
-        ? $companyLogo
-        : public_path('assets/images/logo-offacto.svg');
+    $logo = CompanyBranding::pdfLogoOrDefault($settings);
     $fmt = fn ($d) => $d ? $d->format('d/m/Y') : '—';
+    $accent = $theme['secondary'];
+    $modern = ($layout ?? '') === 'modern';
 @endphp
 <!DOCTYPE html>
 <html>
@@ -32,6 +32,9 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 10pt; color: #1A1F3C; line-height: 1.45; }
         .paper { padding: 28px 32px; }
+        .hero { padding: 18px 22px; margin: -28px -32px 18px; color: #fff; background: {{ $brand }}; }
+        .hero h4 { color: #fff; }
+        .hero .muted { color: #eef1ff; }
         .row { width: 100%; }
         .row td { vertical-align: top; }
         .muted { color: #5C6488; font-size: 9pt; }
@@ -42,7 +45,7 @@
         .billto-lbl { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.06em; font-weight: bold; color: #5C6488; margin-bottom: 4px; }
         table.lines { width: 100%; border-collapse: collapse; margin-top: 8px; }
         table.lines th, table.lines td { padding: 6px 0; border-bottom: 1px solid #EEF1FF; font-size: 9pt; }
-        table.lines th { color: #5C6488; font-weight: bold; text-align: left; }
+        table.lines th { color: {{ $accent }}; font-weight: bold; text-align: left; }
         table.lines td.num, table.lines th.num { text-align: right; }
         .totals { width: 220px; margin-left: auto; margin-top: 10px; }
         .totals table { width: 100%; border-collapse: collapse; }
@@ -55,26 +58,51 @@
 </head>
 <body>
 <div class="paper">
-    <table class="row">
-        <tr>
-            <td style="width: 55%;">
-                <img src="{{ $logo }}" class="logo" alt="">
-                <div class="from-name">{{ $fromName }}</div>
-                <div class="muted">
-                    @if($fromLine){{ $fromLine }}<br>@endif
-                    {{ $fromCity }}
-                    @if($company?->vat_number)<br>{{ $company->vat_number }}@endif
-                </div>
-            </td>
-            <td style="width: 45%; text-align: right;">
-                <h4>{{ $isCredit ? 'Credit note' : 'Invoice' }}</h4>
-                <div class="muted">
-                    {{ $invoice->invoice_number }}<br>
-                    {{ $fmt($invoice->invoice_date) }}
-                </div>
-            </td>
-        </tr>
-    </table>
+    @if($modern)
+        <div class="hero">
+            <table class="row">
+                <tr>
+                    <td style="width: 55%;">
+                        <img src="{{ $logo }}" class="logo" alt="">
+                        <div class="from-name">{{ $fromName }}</div>
+                        <div class="muted">
+                            @if($fromLine){{ $fromLine }}<br>@endif
+                            {{ $fromCity }}
+                            @if($company?->vat_number)<br>{{ $company->vat_number }}@endif
+                        </div>
+                    </td>
+                    <td style="width: 45%; text-align: right;">
+                        <h4>{{ $isCredit ? 'Credit note' : 'Invoice' }}</h4>
+                        <div class="muted">
+                            {{ $invoice->invoice_number }}<br>
+                            {{ $fmt($invoice->invoice_date) }}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    @else
+        <table class="row">
+            <tr>
+                <td style="width: 55%;">
+                    <img src="{{ $logo }}" class="logo" alt="">
+                    <div class="from-name">{{ $fromName }}</div>
+                    <div class="muted">
+                        @if($fromLine){{ $fromLine }}<br>@endif
+                        {{ $fromCity }}
+                        @if($company?->vat_number)<br>{{ $company->vat_number }}@endif
+                    </div>
+                </td>
+                <td style="width: 45%; text-align: right;">
+                    <h4>{{ $isCredit ? 'Credit note' : 'Invoice' }}</h4>
+                    <div class="muted">
+                        {{ $invoice->invoice_number }}<br>
+                        {{ $fmt($invoice->invoice_date) }}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    @endif
 
     <div class="billto">
         <div class="billto-lbl">Bill to</div>

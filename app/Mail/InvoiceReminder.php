@@ -4,6 +4,9 @@ namespace App\Mail;
 
 use App\Models\Invoice;
 use App\Models\SiteSetting;
+use App\Support\BrandColors;
+use App\Support\CompanyBranding;
+use App\Support\CompanyDocumentTemplate;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -36,11 +39,17 @@ class InvoiceReminder extends Mailable
 
     public function content(): Content
     {
+        $this->invoice->loadMissing('company.companySetting');
+        $settings = $this->invoice->company?->companySetting;
+        $theme = BrandColors::resolve(is_array($settings?->theme) ? $settings->theme : null);
+
         return new Content(
             view: 'emails.invoice-reminder',
             with: [
                 'invoice' => $this->invoice,
                 'customMessage' => $this->bodyHtml,
+                'primaryColor' => $theme['primary'],
+                'companyLogoUrl' => CompanyBranding::emailLogoAbsoluteUrl($settings),
             ],
         );
     }
@@ -48,9 +57,11 @@ class InvoiceReminder extends Mailable
     public function attachments(): array
     {
         $this->invoice->loadMissing(['customer', 'items.service', 'company.companySetting', 'offer', 'blocks']);
-        $pdf = Pdf::loadView('pdf.invoice', [
+        $pdfMeta = CompanyDocumentTemplate::invoicePdf($this->invoice->company);
+        $pdf = Pdf::loadView($pdfMeta['view'], [
             'invoice' => $this->invoice,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'layout' => $pdfMeta['layout'],
         ])->setPaper('a4')->output();
 
         return [

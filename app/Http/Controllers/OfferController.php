@@ -620,7 +620,7 @@ class OfferController extends Controller
                 $legalIds = $request->validated()['legal_document_ids'] ?? null;
                 $legalQuery = CompanyLegalDocument::where('company_id', $activeCompany->id);
                 $legalDocs = $legalIds === null
-                    ? $legalQuery->where('attach_to_quotes_default', true)->get()
+                    ? \App\Support\CompanyLegalDocuments::defaultsForQuote($legalQuery, $offer->customer, $offer->id)
                     : $legalQuery->whereIn('id', $legalIds)->get();
 
                 $recipients = array_values(array_unique($request->validated()['emails'] ?? []));
@@ -896,9 +896,14 @@ class OfferController extends Controller
 
     private function offerPdfDocument(Offer $offer): \Barryvdh\DomPDF\PDF
     {
-        return Pdf::loadView('pdf.offer', [
+        $offer->loadMissing(['customer', 'items.service', 'company.companySetting']);
+
+        $pdf = \App\Support\CompanyDocumentTemplate::offerPdf($offer->company);
+
+        return Pdf::loadView($pdf['view'], [
             'offer' => $offer,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'layout' => $pdf['layout'],
         ])->setPaper('a4');
     }
 

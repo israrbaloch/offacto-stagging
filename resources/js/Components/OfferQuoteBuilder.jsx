@@ -5,7 +5,7 @@ import { AuthDiamond } from '../Layouts/AuthSplitLayout';
 import CopyLinkButton from './CopyLinkButton';
 import Icon from './Icon';
 import OfferAcceptancePanel from './OfferAcceptancePanel';
-import OfferPreview from './OfferPreview';
+import { OfferDocumentPreview, normalizeInvoiceTemplate } from './InvoiceDocumentPreview';
 import QuoteBuilderBlockBody from './QuoteBuilderBlockBody';
 import SendOfferModal from './SendOfferModal';
 import { useUi } from '../context/UiContext';
@@ -110,7 +110,7 @@ export default function OfferQuoteBuilder({
         offer_date: dateValue(offer?.offer_date) || new Date().toISOString().slice(0, 10),
         valid_until: dateValue(offer?.valid_until),
         status: offer?.status || defaultStatusId || '',
-        quote_template: offer?.quote_template || 'modern',
+        quote_template: normalizeInvoiceTemplate(activeCompany?.invoice_template || offer?.quote_template || 'classic'),
         require_nda_before_open: offer?.require_nda_before_open ?? false,
         mollie_deposit_enabled: offer?.mollie_deposit_enabled ?? false,
         on_acceptance_invoice: offer?.on_acceptance_invoice || 'draft',
@@ -138,7 +138,7 @@ export default function OfferQuoteBuilder({
             notes: null,
             payment_terms: null,
             status: form.data.status,
-            quote_template: form.data.quote_template,
+            quote_template: normalizeInvoiceTemplate(activeCompany?.invoice_template || form.data.quote_template),
             require_nda_before_open: form.data.require_nda_before_open,
             mollie_deposit_enabled: form.data.mollie_deposit_enabled,
             on_acceptance_invoice: form.data.on_acceptance_invoice,
@@ -626,18 +626,12 @@ export default function OfferQuoteBuilder({
                                         ))}
                                     </select>
                                 </label>
-                                <label>
-                                    <span className="offacto-brief-edit-lbl">{t('offers.builder_template')}</span>
-                                    <select
-                                        className="offacto-brief-inp"
-                                        value={form.data.quote_template}
-                                        onChange={(e) => form.setData('quote_template', e.target.value)}
-                                    >
-                                        <option value="modern">{t('offers.template_modern')}</option>
-                                        <option value="classic">{t('offers.template_classic')}</option>
-                                        <option value="minimal">{t('offers.template_minimal')}</option>
-                                    </select>
-                                </label>
+                                <p className="offacto-quote-hint">
+                                    {t('company_settings.template_company_hint')}{' '}
+                                    <Link href="/company/settings?section=branding" className="text-indigo-600 underline">
+                                        {t('company_settings.nav_branding')}
+                                    </Link>
+                                </p>
                                 <label>
                                     <span className="offacto-brief-edit-lbl">{t('offers.valid_until_label')}</span>
                                     <input
@@ -794,16 +788,14 @@ export default function OfferQuoteBuilder({
                                             <p className="offacto-quote-hint">{b.content?.body}</p>
                                         </div>
                                     ))}
-                                <OfferPreview
+                                <OfferDocumentPreview
+                                    template={normalizeInvoiceTemplate(activeCompany?.invoice_template)}
                                     number={offer?.offer_number || nextOfferNumber}
                                     date={form.data.offer_date}
                                     validUntil={form.data.valid_until}
                                     from={{ name: activeCompany?.company_name }}
                                     to={{ name: selectedCustomer?.org_name || '' }}
-                                    scope=""
                                     items={items}
-                                    notes=""
-                                    paymentTerms=""
                                     vatRate={vatRate}
                                     theme={activeCompany?.theme}
                                     logoUrl={activeCompany?.invoice_logo_url}

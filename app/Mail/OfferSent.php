@@ -3,7 +3,7 @@
 namespace App\Mail;
 
 use App\Models\CompanyLegalDocument;
-use App\Support\PublicStorage;
+use App\Support\CompanyBranding;
 use App\Models\Offer;
 use App\Models\SiteSetting;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -40,9 +40,6 @@ class OfferSent extends Mailable
     {
         $settings = $this->offer->company?->companySetting;
         $theme = is_array($settings?->theme) ? $settings->theme : [];
-        $showLogo = (bool) ($settings?->logo_in_emails ?? true)
-            && filled($settings?->invoice_logo);
-
         return new Content(
             view: 'emails.offer-sent',
             with: [
@@ -50,7 +47,7 @@ class OfferSent extends Mailable
                 'customMessage' => $this->message,
                 'primaryColor' => $theme['primary'] ?? '#4054b2',
                 'secondaryColor' => $theme['secondary'] ?? '#0f172a',
-                'companyLogoUrl' => $showLogo ? PublicStorage::absoluteUrl($settings->invoice_logo) : null,
+                'companyLogoUrl' => CompanyBranding::emailLogoAbsoluteUrl($settings),
             ],
         );
     }
@@ -62,9 +59,11 @@ class OfferSent extends Mailable
     {
         $this->offer->loadMissing(['customer', 'items.service', 'company.companySetting', 'attachments']);
 
-        $pdf = Pdf::loadView('pdf.offer', [
+        $pdfMeta = \App\Support\CompanyDocumentTemplate::offerPdf($this->offer->company);
+        $pdf = Pdf::loadView($pdfMeta['view'], [
             'offer' => $this->offer,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'layout' => $pdfMeta['layout'],
         ])->setPaper('a4')->output();
 
         $files = [

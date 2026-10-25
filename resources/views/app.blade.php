@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title inertia>{{ config('app.name', 'Offacto') }}</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800|inter:400,500,600,700|urbanist:600,700,800" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=dm-sans:400,500,600,700|figtree:400,500,600,700,800|inter:400,500,600,700|montserrat:500,600,700|source-sans-3:400,500,600,700|urbanist:600,700,800" rel="stylesheet" />
         @php
             $viteManifest = file_exists(public_path('build/manifest.json'));
             $viteHot = app()->environment('local') && file_exists(public_path('hot'));

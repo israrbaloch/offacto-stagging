@@ -12,6 +12,7 @@ export default function SelectMenu({
     searchable,
     allowEmpty = true,
     variant = 'default',
+    style,
 }) {
     const demo = variant === 'demo';
     const [open, setOpen] = useState(false);
@@ -79,7 +80,8 @@ export default function SelectMenu({
             <button
                 type="button"
                 onClick={() => setOpen((current) => !current)}
-                className={`flex w-full items-center gap-2 text-left ${demo ? 'offacto-select-menu-trigger' : ''} ${className} ${error ? 'border-rose-400' : ''}`}
+                className={`${demo ? 'offacto-select-menu-trigger' : 'flex w-full items-center gap-2 text-left'} ${className} ${error ? 'border-rose-400' : ''}`}
+                style={style}
             >
                 <span
                     className={
@@ -94,7 +96,7 @@ export default function SelectMenu({
                     name="chevron"
                     className={
                         demo
-                            ? `offacto-select-menu-chevron shrink-0 transition ${open ? 'rotate-180' : ''}`
+                            ? `offacto-select-menu-chevron h-4 w-4 shrink-0 transition ${open ? 'rotate-180' : ''}`
                             : `h-4 w-4 shrink-0 text-slate-400 transition ${open ? 'rotate-180' : ''}`
                     }
                 />
@@ -135,6 +137,7 @@ export default function SelectMenu({
                                     key={option.value}
                                     type="button"
                                     onClick={() => emit(option.value)}
+                                    style={option.fontFamily ? { fontFamily: option.fontFamily } : undefined}
                                     className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm ${
                                         active ? 'bg-indigo-50 font-medium text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
                                     }`}

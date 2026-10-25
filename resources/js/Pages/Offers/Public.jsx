@@ -5,7 +5,7 @@ import FlashToaster from '../../Components/FlashToaster';
 import Logo from '../../Components/Logo';
 import Modal from '../../Components/Modal';
 import OfferBlockView from '../../Components/OfferBlockView';
-import OfferPreview from '../../Components/OfferPreview';
+import { OfferDocumentPreview, normalizeInvoiceTemplate } from '../../Components/InvoiceDocumentPreview';
 import PdfPreviewModal from '../../Components/PdfPreviewModal';
 import SignatureField from '../../Components/SignatureField';
 import VoiceNoteField from '../../Components/VoiceNoteField';
@@ -112,7 +112,9 @@ export default function Public({ offer, token, canRespond }) {
                 )}
 
                 <div className="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
-                    <OfferPreview
+                    {blocksContent ? <div className="px-6 pt-6">{blocksContent}</div> : null}
+                    <OfferDocumentPreview
+                        template={normalizeInvoiceTemplate(offer.company?.invoice_template)}
                         number={offer.offer_number}
                         date={offer.offer_date}
                         validUntil={offer.valid_until}
@@ -141,7 +143,6 @@ export default function Public({ offer, token, canRespond }) {
                         }}
                         theme={offer.company?.theme}
                         logoUrl={offer.company?.logo_url}
-                        middleContent={blocksContent}
                     />
                 </div>
             </main>

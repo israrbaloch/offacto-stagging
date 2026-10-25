@@ -122,7 +122,8 @@ class InvoiceOverdueReminderService
         }
 
         $isFinal = $stage === count($milestones) - 1;
-        $this->deliver($invoice, $email, null, $isFinal);
+        $stageBody = CompanyReminderPolicy::stageBody($invoice->company, $stage);
+        $this->deliver($invoice, $email, $stageBody, $isFinal && $stageBody === null);
         $invoice->update(['reminder_auto_stage' => $stage + 1]);
 
         return true;
@@ -146,8 +147,15 @@ class InvoiceOverdueReminderService
 
     public function deliver(Invoice $invoice, string $email, ?string $customMessage, bool $appendEscalation): void
     {
-        $resolved = InvoiceReminderMessage::resolve($invoice, $customMessage);
-        $body = $resolved['body'];
+        if (filled($customMessage)) {
+            $resolved = InvoiceReminderMessage::resolve($invoice, null);
+            $body = \App\Support\InvoiceReminderTemplate::merge($customMessage, $invoice);
+            $subject = $resolved['subject'];
+        } else {
+            $resolved = InvoiceReminderMessage::resolve($invoice, null);
+            $body = $resolved['body'];
+            $subject = $resolved['subject'];
+        }
 
         if ($appendEscalation) {
             $extra = CompanyReminderPolicy::escalationSuffix($invoice->company);
@@ -159,14 +167,14 @@ class InvoiceOverdueReminderService
         Mail::to($email)->send(new InvoiceReminder(
             $invoice,
             $body,
-            $resolved['subject'],
+            $subject,
         ));
 
         CommunicationDeliveryLogger::emailSent(
             'payment_reminder',
             $email,
             $invoice->company_id,
-            $resolved['subject'],
+            $subject,
             'invoice_overdue_auto',
         );
 

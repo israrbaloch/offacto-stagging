@@ -23,6 +23,11 @@ final class CompanyReminderPolicy
     public static function milestoneDaysAfterDue(?Company $company): array
     {
         if ($company && InvoiceOverdueReminderPolicy::useCompanySchedule()) {
+            $stageDays = array_column(self::stageDefinitions($company), 'days');
+            if ($stageDays !== []) {
+                return self::normalizeDays($stageDays);
+            }
+
             $custom = $company->companySetting?->reminder_schedule;
             if (is_string($custom)) {
                 $custom = json_decode($custom, true);
@@ -33,6 +38,52 @@ final class CompanyReminderPolicy
         }
 
         return InvoiceOverdueReminderPolicy::platformMilestoneDays();
+    }
+
+    /**
+     * @return list<array{days: int, body: string}>
+     */
+    public static function stageDefinitions(?Company $company): array
+    {
+        if (! $company) {
+            return InvoiceReminderTemplate::defaultStages();
+        }
+
+        $raw = $company->companySetting?->reminder_stages;
+        if (is_string($raw)) {
+            $raw = json_decode($raw, true);
+        }
+        if (is_array($raw) && $raw !== []) {
+            return InvoiceReminderTemplate::normalizeStages($raw);
+        }
+
+        $schedule = $company->companySetting?->reminder_schedule;
+        if (is_string($schedule)) {
+            $schedule = json_decode($schedule, true);
+        }
+        if (is_array($schedule) && $schedule !== []) {
+            $defaults = InvoiceReminderTemplate::defaultStages();
+            $days = self::normalizeDays($schedule);
+            $stages = [];
+            foreach ($days as $i => $day) {
+                $stages[] = [
+                    'days' => $day,
+                    'body' => $defaults[$i]['body'] ?? '',
+                ];
+            }
+
+            return InvoiceReminderTemplate::normalizeStages($stages);
+        }
+
+        return InvoiceReminderTemplate::defaultStages();
+    }
+
+    public static function stageBody(?Company $company, int $stageIndex): ?string
+    {
+        $stages = self::stageDefinitions($company);
+        $body = trim((string) ($stages[$stageIndex]['body'] ?? ''));
+
+        return $body !== '' ? $body : null;
     }
 
     public static function graceDays(?Company $company): int
@@ -64,9 +115,12 @@ final class CompanyReminderPolicy
      */
     public static function formDefaults(?Company $company): array
     {
+        $stages = self::stageDefinitions($company);
+
         return [
             'automated_reminders_enabled' => $company?->companySetting?->automated_reminders_enabled ?? true,
-            'schedule' => self::milestoneDaysAfterDue($company),
+            'schedule' => array_column($stages, 'days'),
+            'stages' => $stages,
             'grace_days' => self::graceDays($company),
             'escalation' => self::escalationSuffix($company),
             'uses_platform_fallback' => ! self::hasCustomSchedule($company),

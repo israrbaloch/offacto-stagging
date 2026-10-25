@@ -1,5 +1,6 @@
 @php
     use App\Support\BrandColors;
+    use App\Support\CompanyBranding;
 
     $company = $offer->company;
     $settings = $company?->companySetting;
@@ -12,10 +13,7 @@
     $toName = $customer?->org_name ?: trim(($customer?->first_name.' '.$customer?->surname)) ?: 'Client to be selected';
     $client = trim(($customer?->first_name.' '.$customer?->surname));
     $vatRate = $vatRate ?? 21;
-    $companyLogo = $settings?->invoice_logo ? public_path('storage/'.$settings->invoice_logo) : null;
-    $logo = ($companyLogo && is_file($companyLogo))
-        ? $companyLogo
-        : public_path('assets/images/logo-offacto.svg');
+    $logo = CompanyBranding::pdfLogoOrDefault($settings);
     $scope = $offer->desc ?: $offer->intro;
 @endphp
 <!DOCTYPE html>

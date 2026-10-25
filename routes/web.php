@@ -135,11 +135,10 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     Route::get('/company/settings', [CompanySettingsController::class, 'index'])->name('company.settings.index');
     Route::patch('/company/settings/company', [ProfileController::class, 'updateCompany'])->name('company.settings.company.update');
     Route::patch('/company/settings/branding', [ProfileController::class, 'updateCompanySettings'])->name('company.settings.branding.update');
+    Route::post('/company/settings/branding', [ProfileController::class, 'updateCompanySettings'])->name('company.settings.branding.store');
     Route::patch('/company/settings/reminders', [CompanySettingsController::class, 'updateReminders'])->name('company.settings.reminders.update');
-    Route::patch('/company/settings/terms', [CompanySettingsController::class, 'updateTerms'])->name('company.settings.terms.update');
-    Route::post('/company/settings/legal-documents', [CompanySettingsController::class, 'storeLegalDocument'])->name('company.settings.legal.store');
+    Route::patch('/company/settings/vat', [CompanySettingsController::class, 'updateVatRegime'])->name('company.settings.vat.update');
     Route::patch('/company/settings/legal-documents/{document}', [CompanySettingsController::class, 'updateLegalDocument'])->name('company.settings.legal.update');
-    Route::delete('/company/settings/legal-documents/{document}', [CompanySettingsController::class, 'destroyLegalDocument'])->name('company.settings.legal.destroy');
     Route::get('/company/settings/legal-documents/{document}/download', [CompanySettingsController::class, 'downloadLegalDocument'])->name('company.settings.legal.download');
     Route::post('/company/settings/numbering-series', [NumberingSeriesController::class, 'store'])->name('company.settings.numbering.store');
     Route::patch('/company/settings/numbering-series/{series}', [NumberingSeriesController::class, 'update'])->name('company.settings.numbering.update');
@@ -152,9 +151,7 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     Route::redirect('/profile/company-settings', '/company/settings?section=branding');
     Route::patch('/profile/company', [ProfileController::class, 'updateCompany'])->name('profile.company.update');
     Route::patch('/profile/company-settings', [ProfileController::class, 'updateCompanySettings'])->name('profile.company-settings.update');
-    Route::post('/profile/legal-documents', [CompanySettingsController::class, 'storeLegalDocument'])->name('profile.legal.store');
     Route::patch('/profile/legal-documents/{document}', [CompanySettingsController::class, 'updateLegalDocument'])->name('profile.legal.update');
-    Route::delete('/profile/legal-documents/{document}', [CompanySettingsController::class, 'destroyLegalDocument'])->name('profile.legal.destroy');
 
     Route::get('/support', [SupportTicketController::class, 'index'])->name('support');
     Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
