@@ -5024,6 +5024,17 @@ html.dark .auth-doc-note {
     opacity: 0.5;
 }
 
+.auth-form .auth-register-outline-btn.is-loading {
+    gap: 10px;
+    min-width: 7.5rem;
+    cursor: wait;
+}
+
+.auth-form .auth-register-outline-btn:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+
 .auth-shell {
     padding: 32px 16px;
 }

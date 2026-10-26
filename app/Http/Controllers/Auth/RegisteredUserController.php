@@ -14,6 +14,8 @@ use App\Models\Status;
 use App\Models\User;
 use App\Http\Requests\StoreRegistrationWithCompanyRequest;
 use App\Http\Controllers\Controller;
+use App\Services\ViesValidationService;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Hash;
@@ -37,13 +39,26 @@ class RegisteredUserController extends Controller
         ]);
     }
 
-    public function store(StoreRegistrationWithCompanyRequest $request): RedirectResponse
+    public function store(StoreRegistrationWithCompanyRequest $request, ViesValidationService $vies): RedirectResponse
     {
         if (!SiteSetting::getBoolean('allow_user_registration', true)) {
             return redirect()->route('login')->with('error', 'User registration is currently disabled.');
         }
 
+        try {
+            $viesResult = $vies->validate($request->string('vat_number')->toString());
+        } catch (ValidationException $e) {
+            throw $e;
+        }
+
+        if (! $viesResult['valid']) {
+            throw ValidationException::withMessages([
+                'vat_number' => [__('customers.vies_not_registered')],
+            ]);
+        }
+
         $data = $request->validated();
+        $data['vat_number'] = $viesResult['vat_number'];
 
         $user = User::create([
             'name' => $data['name'],

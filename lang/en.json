@@ -1454,6 +1454,7 @@
     "auth.register_vat_lookup_demo_name": "Makani vzw",
     "auth.register_vat_lookup_demo_city": "Antwerp",
     "auth.register_vat_lookup_ok": "Valid in VIES · :company, :city",
+    "auth.register_vat_vies_required": "Look up your VAT number in VIES before continuing.",
     "auth.legal_form": "Legal form",
     "auth.legal_form_vzw": "Non-profit (vzw)",
     "auth.legal_form_bv": "Private limited (BV)",

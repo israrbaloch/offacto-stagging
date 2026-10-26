@@ -691,6 +691,7 @@
     "auth.register_vat_lookup_demo_name": "Makani vzw",
     "auth.register_vat_lookup_demo_city": "Antwerpen",
     "auth.register_vat_lookup_ok": "Geldig in VIES · :company, :city",
+    "auth.register_vat_vies_required": "Controleer je btw-nummer in VIES voordat je verdergaat.",
     "auth.legal_form": "Rechtsvorm",
     "auth.legal_form_vzw": "Vzw",
     "auth.legal_form_bv": "BV",

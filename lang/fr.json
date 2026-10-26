@@ -691,6 +691,7 @@
     "auth.register_vat_lookup_demo_name": "Makani vzw",
     "auth.register_vat_lookup_demo_city": "Anvers",
     "auth.register_vat_lookup_ok": "Valide dans VIES · :company, :city",
+    "auth.register_vat_vies_required": "Vérifiez votre numéro de TVA dans VIES avant de continuer.",
     "auth.legal_form": "Forme juridique",
     "auth.legal_form_vzw": "ASBL (vzw)",
     "auth.legal_form_bv": "SPRL (BV)",
