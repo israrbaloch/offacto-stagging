@@ -4,7 +4,8 @@ const inputClass =
     'w-full min-w-[4rem] rounded border border-transparent bg-white px-2 py-1.5 text-sm outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-100';
 
 export default function OfferBlockTableEditor({ content, onChange }) {
-    const rows = tableRowsFromContent(content);
+    const storedRows = tableRowsFromContent(content);
+    const rows = storedRows.length ? storedRows : emptyTableRows();
 
     const setRows = (next) => {
         onChange({ ...content, rows: next, markdown: undefined, text: undefined });

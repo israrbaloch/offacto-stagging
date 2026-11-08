@@ -36,10 +36,7 @@ export function tableRowsFromContent(content) {
                 return parts.length ? parts : [line.trim()];
             });
     }
-    return [
-        ['Column 1', 'Column 2'],
-        ['', ''],
-    ];
+    return [];
 }
 
 export function emptyTableRows(cols = 2, bodyRows = 2) {

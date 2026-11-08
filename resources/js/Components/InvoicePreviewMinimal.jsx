@@ -139,7 +139,7 @@ export default function InvoicePreviewMinimal({
                         priced.map((item, index) => (
                             <tr key={index}>
                                 <td>
-                                    <InvoiceLineLabel item={item} />
+                                    <InvoiceLineLabel item={item} preferDescription={documentType === 'quote'} />
                                 </td>
                                 <td className="num">{item.quantity ?? '—'}</td>
                                 <td className="num">{money(sign * lineTotal(item))}</td>

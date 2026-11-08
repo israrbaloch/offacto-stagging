@@ -9,11 +9,11 @@ export function visiblePreviewLines(items = []) {
     });
 }
 
-export default function InvoiceLineLabel({ item }) {
+export default function InvoiceLineLabel({ item, preferDescription = false }) {
     const description = String(item?.description || '').trim();
     const serviceName = String(item?.service_name || '').trim();
-    const title = serviceName || description || '—';
-    const detail = serviceName && description && description !== serviceName ? description : '';
+    const title = preferDescription ? description || serviceName || '—' : serviceName || description || '—';
+    const detail = !preferDescription && serviceName && description && description !== serviceName ? description : '';
 
     return (
         <span className="offacto-demo-line-label">

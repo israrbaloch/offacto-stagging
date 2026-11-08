@@ -88,7 +88,7 @@ class PublicOfferController extends Controller
     public function preview(string $token): Response
     {
         $offer = Offer::where('share_token', $token)
-            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation'])
+            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation', 'blocks'])
             ->firstOrFail();
 
         $pdf = $this->offerPdfDocument($offer);
@@ -101,7 +101,7 @@ class PublicOfferController extends Controller
     public function download(string $token): Response
     {
         $offer = Offer::where('share_token', $token)
-            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation'])
+            ->with(['customer', 'items.service', 'company.companySetting', 'statusRelation', 'blocks'])
             ->firstOrFail();
 
         $pdf = $this->offerPdfDocument($offer);

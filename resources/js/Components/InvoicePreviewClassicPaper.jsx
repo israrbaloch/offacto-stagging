@@ -151,7 +151,7 @@ export default function InvoicePreviewClassicPaper({
                             priced.map((item, index) => (
                                 <tr key={index}>
                                     <td>
-                                        <InvoiceLineLabel item={item} />
+                                        <InvoiceLineLabel item={item} preferDescription={documentType === 'quote'} />
                                     </td>
                                     <td className="num">{formatQuantityDisplay(item, [])}</td>
                                     <td className="num">

@@ -11,6 +11,30 @@ import SignatureField from '../../Components/SignatureField';
 import VoiceNoteField from '../../Components/VoiceNoteField';
 import { DEFAULT_BRAND_PRIMARY, DEFAULT_BRAND_SECONDARY } from '../../lib/brand';
 import { t } from '../../lib/i18n';
+import { blockDocumentUrl, blockImageUrl, tableRowsFromContent } from '../../lib/offerBlocks';
+
+function publicBlockVisible(block) {
+    const content = block?.content || {};
+    if (block.type === 'text') {
+        return Boolean(String(content.heading || '').trim() || String(content.body || content.text || '').trim());
+    }
+    if (block.type === 'image') {
+        return Boolean(blockImageUrl(content));
+    }
+    if (block.type === 'video') {
+        return Boolean(String(content.url || '').trim());
+    }
+    if (block.type === 'attachments') {
+        return Boolean(blockDocumentUrl(content));
+    }
+    if (block.type === 'table') {
+        if (content.mode === 'lines') {
+            return false;
+        }
+        return tableRowsFromContent(content).some((row) => row.some((cell) => String(cell).trim()));
+    }
+    return block.type === 'sign' || block.type === 'voice';
+}
 
 export default function Public({ offer, token, canRespond }) {
     const [signature, setSignature] = useState('');
@@ -36,14 +60,19 @@ export default function Public({ offer, token, canRespond }) {
         });
     };
 
+    const visibleBlocks = (offer.blocks || []).filter(publicBlockVisible);
     const blocksContent =
-        (offer.blocks || []).length > 0 ? (
+        visibleBlocks.length > 0 ? (
             <div className="mt-8 space-y-4">
-                {offer.blocks.map((block) => (
-                    <div key={block.id} className="rounded-lg border border-slate-100 bg-slate-50/80 p-4 text-sm">
-                        <OfferBlockView block={block} primary={primary} />
-                    </div>
-                ))}
+                {visibleBlocks.map((block) =>
+                    block.type === 'text' ? (
+                        <OfferBlockView key={block.id} block={block} primary={primary} />
+                    ) : (
+                        <div key={block.id} className="rounded-lg border border-slate-100 bg-slate-50/80 p-4 text-sm">
+                            <OfferBlockView block={block} primary={primary} />
+                        </div>
+                    ),
+                )}
             </div>
         ) : null;
 

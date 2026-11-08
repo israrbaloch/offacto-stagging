@@ -115,10 +115,7 @@
             @forelse($offer->items as $item)
                 <tr>
                     <td>
-                        <div class="item-title">{{ $item->service->name ?? ($item->description ?: 'Line item') }}</div>
-                        @if($item->service?->name && $item->description && $item->description !== $item->service->name)
-                            <div class="item-desc">{{ $item->description }}</div>
-                        @endif
+                        <div class="item-title">{{ $item->description ?: ($item->service->name ?? 'Line item') }}</div>
                     </td>
                     <td class="num">
                         @if(\App\Support\ServiceBilling::isHourly($item->service))

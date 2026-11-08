@@ -8,7 +8,17 @@ export default function OfferBlockView({ block, primary = '#4054b2' }) {
     }
 
     if (block.type === 'text') {
-        return <p className="whitespace-pre-wrap">{block.content?.text}</p>;
+        const heading = String(block.content?.heading || '').trim();
+        const body = String(block.content?.body || block.content?.text || '').trim();
+        if (!heading && !body) {
+            return null;
+        }
+        return (
+            <div>
+                {heading ? <h2 className="text-xl font-semibold text-slate-900">{heading}</h2> : null}
+                {body ? <p className={`whitespace-pre-wrap text-slate-600${heading ? ' mt-2' : ''}`}>{body}</p> : null}
+            </div>
+        );
     }
 
     if (block.type === 'image') {

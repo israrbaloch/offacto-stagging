@@ -37,7 +37,7 @@ export default function LineItemsEditor({
                     kind: 'service',
                     service_id: service.id,
                     service_name: service.name,
-                    description: service.description || '',
+                    description: '',
                     quantity: 1,
                     price: Number(service.price || 0),
                 },
@@ -50,13 +50,12 @@ export default function LineItemsEditor({
         if (readOnly) {
             return;
         }
-        const first = services[0];
         setItems([
             ...items,
             {
                 kind: 'custom',
-                service_id: first?.id || '',
-                service_name: first?.name || 'Custom line',
+                service_id: '',
+                service_name: '',
                 description: '',
                 quantity: 1,
                 price: 0,
@@ -89,39 +88,6 @@ export default function LineItemsEditor({
         setItems(items.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
     };
 
-    const linePrimaryLabel = (item) => {
-        const desc = String(item.description || '').trim();
-        if (desc) {
-            return desc;
-        }
-        return item.service_name || '';
-    };
-
-    const updateLinePrimaryLabel = (index, value) => {
-        if (readOnly) {
-            return;
-        }
-        const service = services.find((s) => {
-            const name = String(s.name || '');
-            return name && (name.includes(value) || value.includes(name));
-        });
-        setItems(
-            items.map((item, i) => {
-                if (i !== index) {
-                    return item;
-                }
-                const next = { ...item, description: value };
-                if (service) {
-                    next.service_id = service.id;
-                    next.service_name = service.name;
-                    next.price = Number(service.price || 0);
-                    return attachServiceFields(next, service);
-                }
-                return next;
-            }),
-        );
-    };
-
     const changeService = (index, serviceId) => {
         if (readOnly) {
             return;
@@ -136,7 +102,7 @@ export default function LineItemsEditor({
                     ...item,
                     service_id: service?.id || '',
                     service_name: service?.name || '',
-                    description: invoiceLines ? item.description || '' : item.description || service?.description || '',
+                    description: item.description || '',
                     price: service ? Number(service.price || 0) : 0,
                 };
                 if (!service) {
@@ -249,11 +215,11 @@ export default function LineItemsEditor({
                             return (
                                 <tr key={index} className={builder ? 'offacto-quote-line-row' : 'border-b border-slate-100'}>
                                     <td {...(builder ? { 'data-label': 'Description' } : {})}>
-                                        {!isText && invoiceLines ? (
-                                            <div className="offacto-quote-line-svc">
+                                        {!isText ? (
+                                            <div className={builder ? 'offacto-quote-line-svc' : 'mb-2'}>
                                                 <SelectMenu
-                                                    className={`${inpClass} offacto-select-menu-trigger`}
-                                                    variant="demo"
+                                                    className={builder ? `${inpClass} offacto-select-menu-trigger` : selectClass}
+                                                    variant={builder ? 'demo' : 'default'}
                                                     searchable
                                                     value={item.service_id || ''}
                                                     onChange={(e) => changeService(index, e.target.value)}
@@ -263,30 +229,11 @@ export default function LineItemsEditor({
                                                 />
                                             </div>
                                         ) : null}
-                                        {!isText && !invoiceLines && !builder && (
-                                            <div className="mb-2">
-                                                <SelectMenu
-                                                    className={selectClass}
-                                                    variant="default"
-                                                    searchable
-                                                    value={item.service_id}
-                                                    onChange={(e) => changeService(index, e.target.value)}
-                                                    placeholder={t('invoices.select_service')}
-                                                    disabled={readOnly}
-                                                    options={services.map((service) => ({ value: String(service.id), label: service.name }))}
-                                                />
-                                            </div>
-                                        )}
                                         <input
                                             className={inpClass}
-                                            list={!isText && !invoiceLines && !readOnly && builder ? 'offacto-quote-svc-list' : undefined}
                                             placeholder={isText ? 'Add a note for the client' : t('invoices.line_placeholder')}
-                                            value={invoiceLines || !builder || isText ? item.description || '' : linePrimaryLabel(item)}
-                                            onChange={(e) =>
-                                                !invoiceLines && builder && !isText
-                                                    ? updateLinePrimaryLabel(index, e.target.value)
-                                                    : update(index, 'description', e.target.value)
-                                            }
+                                            value={item.description || ''}
+                                            onChange={(e) => update(index, 'description', e.target.value)}
                                             readOnly={readOnly}
                                         />
                                     </td>
@@ -365,14 +312,6 @@ export default function LineItemsEditor({
                     </tbody>
                 </table>
             </div>
-
-            {builder && !readOnly ? (
-                <datalist id="offacto-quote-svc-list">
-                    {services.map((service) => (
-                        <option key={service.id} value={service.name} />
-                    ))}
-                </datalist>
-            ) : null}
 
             {!builder ? toolbar : null}
 
