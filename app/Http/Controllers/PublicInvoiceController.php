@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\SiteSetting;
+use App\Support\BelgianPaymentReference;
+use App\Support\CompanyDocumentTemplate;
 use App\Support\OfferSignature;
 use App\Support\PublicStorage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -73,10 +75,7 @@ class PublicInvoiceController extends Controller
     public function preview(string $token): Response
     {
         $invoice = $this->invoiceForPdf($token);
-        $pdf = Pdf::loadView('pdf.invoice', [
-            'invoice' => $invoice,
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
-        ])->setPaper('a4');
+        $pdf = $this->pdf($invoice);
 
         $filename = 'invoice-'.($invoice->invoice_number ?? $invoice->id).'.pdf';
 
@@ -86,14 +85,22 @@ class PublicInvoiceController extends Controller
     public function download(string $token): Response
     {
         $invoice = $this->invoiceForPdf($token);
-        $pdf = Pdf::loadView('pdf.invoice', [
-            'invoice' => $invoice,
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
-        ])->setPaper('a4');
+        $pdf = $this->pdf($invoice);
 
         $filename = 'invoice-'.($invoice->invoice_number ?? $invoice->id).'.pdf';
 
         return $pdf->download($filename);
+    }
+
+    private function pdf(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    {
+        $template = CompanyDocumentTemplate::invoicePdf($invoice->company);
+
+        return Pdf::loadView($template['view'], [
+            'invoice' => $invoice,
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'layout' => $template['layout'],
+        ])->setPaper('a4');
     }
 
     private function invoiceForPdf(string $token): Invoice
@@ -139,7 +146,10 @@ class PublicInvoiceController extends Controller
                     'secondary' => $theme['secondary'] ?? '#0f172a',
                 ],
                 'invoice_template' => $settings?->invoice_template ?? 'classic',
+                'vat_number' => $invoice->company?->vat_number,
+                'iban' => BelgianPaymentReference::formatIban($settings?->iban),
             ],
+            'structured_reference' => BelgianPaymentReference::fromDocument($invoice->invoice_number, $invoice->id),
             'customer' => [
                 'name' => $invoice->customer?->org_name
                     ?: trim(($invoice->customer?->first_name.' '.$invoice->customer?->surname)),
@@ -148,6 +158,7 @@ class PublicInvoiceController extends Controller
                     : null,
                 'email' => $invoice->customer?->email,
                 'address' => $invoice->customer?->office_address,
+                'vat_number' => $invoice->customer?->vat_number,
             ],
             'items' => $invoice->items->map(fn ($item) => [
                 'description' => $item->description,

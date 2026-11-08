@@ -70,6 +70,15 @@ export default function Public({ invoice, token, canAcknowledge }) {
                                 {t('invoices.acknowledge_receipt')}
                             </button>
                         )}
+                        {invoice.payment_status !== 'paid' && invoice.company?.iban && (
+                            <a
+                                href="#invoice-payment"
+                                className="rounded-full px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
+                                style={{ background: primary }}
+                            >
+                                {t('invoices.pay_by_transfer')}
+                            </a>
+                        )}
                         {invoice.mollie_checkout_url && invoice.payment_status !== 'paid' && (
                             <a
                                 href={invoice.mollie_checkout_url}
@@ -107,6 +116,10 @@ export default function Public({ invoice, token, canAcknowledge }) {
                         date={invoice.invoice_date}
                         dueDate={invoice.due_date}
                         showMollieLink={Boolean(invoice.mollie_checkout_url)}
+                        mollieUrl={invoice.mollie_checkout_url || ''}
+                        iban={invoice.company?.iban || ''}
+                        structuredReference={invoice.structured_reference || ''}
+                        paymentAnchor="invoice-payment"
                         totalsOverride={{
                             subtotal: invoice.subtotal,
                             tax: invoice.tax_amount,
@@ -120,6 +133,8 @@ export default function Public({ invoice, token, canAcknowledge }) {
                             city: invoice.company?.city,
                             email: invoice.company?.email,
                         }}
+                        fromVatNumber={invoice.company?.vat_number || ''}
+                        toVatNumber={invoice.customer?.vat_number || ''}
                         to={{
                             name: invoice.customer?.name,
                             attn: invoice.customer?.attn,

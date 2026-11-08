@@ -3,6 +3,8 @@ import { DEFAULT_BRAND_PRIMARY, DEFAULT_BRAND_SECONDARY, themeCssVars } from '..
 import { formatCalendarDate, money } from '../lib/utils';
 import { t } from '../lib/i18n';
 import InvoiceLineLabel, { visiblePreviewLines } from './InvoiceLineLabel';
+import InvoicePaymentBlock from './InvoicePaymentBlock';
+import { formatVatNumber } from '../lib/belgianPayment';
 
 function demoDate(value) {
     return formatCalendarDate(value);
@@ -25,6 +27,8 @@ export default function InvoicePreviewModern({
     iban = '',
     structuredReference = '',
     showMollieLink = false,
+    mollieUrl = '',
+    paymentAnchor,
     fromVatNumber = '',
     toVatNumber = '',
 }) {
@@ -71,10 +75,10 @@ export default function InvoicePreviewModern({
                             </>
                         )}
                         {fromCity}
-                        {fromVatNumber ? (
+                        {formatVatNumber(fromVatNumber) ? (
                             <>
                                 <br />
-                                {fromVatNumber}
+                                {formatVatNumber(fromVatNumber)}
                             </>
                         ) : null}
                     </div>
@@ -100,10 +104,10 @@ export default function InvoicePreviewModern({
                         <span className="whitespace-pre-line">{to.address}</span>
                     </>
                 ) : null}
-                {toVatNumber ? (
+                {formatVatNumber(toVatNumber) ? (
                     <>
                         <br />
-                        {toVatNumber}
+                        {formatVatNumber(toVatNumber)}
                     </>
                 ) : null}
             </div>
@@ -157,22 +161,15 @@ export default function InvoicePreviewModern({
             </div>
 
             {!isCredit && documentType === 'invoice' ? (
-                <div className="offacto-demo-modern-pay row">
-                    <div>
-                        {t('invoices.preview_pay_before')} <b>{demoDate(dueDate)}</b>
-                        <br />
-                        {iban || '—'}
-                        <br />
-                        <b>{structuredReference || '—'}</b>
-                        {showMollieLink ? (
-                            <>
-                                <br />
-                                <span className="offacto-demo-paper-mollie">{t('invoices.preview_mollie_cta')}</span>
-                            </>
-                        ) : null}
-                    </div>
-                    <div className="offacto-demo-paper-qr" aria-hidden="true" />
-                </div>
+                <InvoicePaymentBlock
+                    dueDate={dueDate}
+                    iban={iban}
+                    structuredReference={structuredReference}
+                    showMollieLink={showMollieLink}
+                    mollieUrl={mollieUrl}
+                    anchorId={paymentAnchor}
+                    className="offacto-demo-modern-pay"
+                />
             ) : null}
         </div>
     );

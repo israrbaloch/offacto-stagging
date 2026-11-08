@@ -68,7 +68,7 @@
                         <div class="muted">
                             @if($fromLine){{ $fromLine }}<br>@endif
                             {{ $fromCity }}
-                            @if($company?->vat_number)<br>{{ $company->vat_number }}@endif
+                            @if($company?->vat_number)<br>VAT: {{ $company->vat_number }}@endif
                         </div>
                     </td>
                     <td style="width: 45%; text-align: right;">
@@ -90,7 +90,7 @@
                     <div class="muted">
                         @if($fromLine){{ $fromLine }}<br>@endif
                         {{ $fromCity }}
-                        @if($company?->vat_number)<br>{{ $company->vat_number }}@endif
+                        @if($company?->vat_number)<br>VAT: {{ $company->vat_number }}@endif
                     </div>
                 </td>
                 <td style="width: 45%; text-align: right;">
@@ -108,7 +108,7 @@
         <div class="billto-lbl">Bill to</div>
         <strong>{{ $toName }}</strong>
         @if($customer?->office_address)<br><span class="muted">{!! nl2br(e($customer->office_address)) !!}</span>@endif
-        @if($customer?->vat_number)<br>{{ $customer->vat_number }}@endif
+        @if($customer?->vat_number)<br>VAT: {{ $customer->vat_number }}@endif
     </div>
 
     <table class="lines">
@@ -140,19 +140,7 @@
         </table>
     </div>
 
-    @if(!$isCredit)
-        <table class="pay row" style="margin-top:14px;">
-            <tr>
-                <td>
-                    Pay before <strong>{{ $fmt($invoice->due_date) }}</strong><br>
-                    @if($settings?->iban ?? false){{ $settings->iban }}<br>@endif
-                    <strong>—</strong>
-                    @if($invoice->mollie_checkout_url)<br><span style="color:{{ $brand }};font-weight:bold;">Or pay online via Mollie →</span>@endif
-                </td>
-                <td style="width: 60px; text-align: right;"><div class="qr"></div></td>
-            </tr>
-        </table>
-    @endif
+    @include('partials.invoice-payment')
 </div>
 </body>
 </html>

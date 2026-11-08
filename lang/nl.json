@@ -1771,6 +1771,7 @@
     "invoices.acknowledgment_subtitle": "Bevestigd op {date}",
     "invoices.acknowledgment_no_artifacts": "Bevestigd zonder handtekening of spraakbericht.",
     "invoices.pay_online": "Online betalen",
+    "invoices.pay_by_transfer": "Betalen via overschrijving",
     "invoices.paid_banner": "Deze factuur is gemarkeerd als betaald.",
     "invoices.amount_due_label": "Openstaand bedrag",
     "invoices.reminder_message_placeholder": "Optioneel eigen bericht…",

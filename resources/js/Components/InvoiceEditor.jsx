@@ -10,6 +10,7 @@ import SendInvoiceModal from './SendInvoiceModal';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useUi } from '../context/UiContext';
 import { t } from '../lib/i18n';
+import { belgianStructuredReference } from '../lib/belgianPayment';
 import { calendarDate, customerName, formatDate, money, optionsFromMap } from '../lib/utils';
 
 function dateValue(value) {
@@ -936,7 +937,11 @@ export default function InvoiceEditor({
                                     intraEu={intraEu}
                                     attachments={previewAttachments}
                                     showMollieLink={molliePaymentToggle && mollieConfigured}
-                                    structuredReference="—"
+                                    iban={activeCompany?.iban || ''}
+                                    structuredReference={belgianStructuredReference(
+                                        invoice?.invoice_number || nextInvoiceNumber,
+                                        invoice?.id,
+                                    )}
                                     from={{
                                         name: activeCompany?.company_name,
                                         street: activeCompany?.street,

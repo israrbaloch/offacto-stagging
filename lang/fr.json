@@ -1771,6 +1771,7 @@
     "invoices.acknowledgment_subtitle": "Confirmé le {date}",
     "invoices.acknowledgment_no_artifacts": "Confirmé sans signature ni note vocale.",
     "invoices.pay_online": "Payer en ligne",
+    "invoices.pay_by_transfer": "Payer par virement",
     "invoices.paid_banner": "Cette facture est marquée comme payée.",
     "invoices.amount_due_label": "Montant dû",
     "invoices.reminder_message_placeholder": "Message personnalisé facultatif…",

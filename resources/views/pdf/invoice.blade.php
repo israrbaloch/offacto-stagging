@@ -87,6 +87,7 @@
                 @endif
                 {{ $customer?->office_address ?: '' }}<br>
                 {{ $customer?->email }}
+                @if($customer?->vat_number)<br>VAT: {{ $customer->vat_number }}@endif
             </td>
             <td class="right">
                 <div class="party-heading">From:</div>
@@ -94,6 +95,7 @@
                 {{ trim(($company?->street.' '.$company?->house)) }}<br>
                 {{ trim(($company?->postal_code.' '.$company?->city)) }}<br>
                 {{ $company?->email }}
+                @if($company?->vat_number)<br>VAT: {{ $company->vat_number }}@endif
             </td>
         </tr>
     </table>
@@ -160,6 +162,8 @@
             </tr>
         </tfoot>
     </table>
+
+    @include('partials.invoice-payment')
 
     @if(filled($copyrightLabel) || filled($invoice->notes))
         <div class="footer-notes" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0;">

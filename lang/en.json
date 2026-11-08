@@ -1803,6 +1803,7 @@
     "invoices.acknowledgment_subtitle": "Confirmed on {date}",
     "invoices.acknowledgment_no_artifacts": "Confirmed without signature or voice note.",
     "invoices.pay_online": "Pay online",
+    "invoices.pay_by_transfer": "Pay by bank transfer",
     "invoices.paid_banner": "This invoice is marked as paid.",
     "invoices.amount_due_label": "Amount due",
     "invoices.reminder_message_placeholder": "Optional custom message…",

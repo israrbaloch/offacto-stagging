@@ -85,6 +85,7 @@ class HandleInertiaRequests extends Middleware
                 'city' => $active->city,
                 'email' => $active->email,
                 'vat_number' => $active->vat_number,
+                'iban' => $settings?->iban,
                 'self_employed_activity' => $active->self_employed_activity,
                 'theme' => [
                     'primary' => $theme['primary'] ?? '#4054b2',

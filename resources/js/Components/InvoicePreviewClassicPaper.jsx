@@ -5,6 +5,8 @@ import { formatQuantityDisplay, lineIsHourly, priceColumnLabel, quantityColumnLa
 import { formatCalendarDate, money } from '../lib/utils';
 import { t } from '../lib/i18n';
 import InvoiceLineLabel, { visiblePreviewLines } from './InvoiceLineLabel';
+import InvoicePaymentBlock from './InvoicePaymentBlock';
+import { formatVatNumber } from '../lib/belgianPayment';
 
 function demoDate(value) {
     return formatCalendarDate(value);
@@ -25,6 +27,11 @@ export default function InvoicePreviewClassicPaper({
     documentType = 'invoice',
     fromVatNumber = '',
     toVatNumber = '',
+    iban = '',
+    structuredReference = '',
+    showMollieLink = false,
+    mollieUrl = '',
+    paymentAnchor,
 }) {
     const primary = theme.primary || DEFAULT_BRAND_PRIMARY;
     const accent = theme.secondary || DEFAULT_BRAND_SECONDARY;
@@ -96,10 +103,10 @@ export default function InvoicePreviewClassicPaper({
                                 <span className="whitespace-pre-line offacto-demo-paper-muted">{to.address}</span>
                             </>
                         ) : null}
-                        {toVatNumber ? (
+                        {formatVatNumber(toVatNumber) ? (
                             <>
                                 <br />
-                                <span className="offacto-demo-paper-muted">{toVatNumber}</span>
+                                <span className="offacto-demo-paper-muted">{formatVatNumber(toVatNumber)}</span>
                             </>
                         ) : null}
                     </div>
@@ -114,10 +121,10 @@ export default function InvoicePreviewClassicPaper({
                                 </>
                             )}
                             {fromCity}
-                            {fromVatNumber ? (
+                            {formatVatNumber(fromVatNumber) ? (
                                 <>
                                     <br />
-                                    {fromVatNumber}
+                                    {formatVatNumber(fromVatNumber)}
                                 </>
                             ) : null}
                         </div>
@@ -173,6 +180,17 @@ export default function InvoicePreviewClassicPaper({
                         <span>{money(total)}</span>
                     </div>
                 </div>
+                {documentType === 'invoice' ? (
+                    <InvoicePaymentBlock
+                        dueDate={dueDate}
+                        iban={iban}
+                        structuredReference={structuredReference}
+                        showMollieLink={showMollieLink}
+                        mollieUrl={mollieUrl}
+                        anchorId={paymentAnchor}
+                        className="offacto-demo-paper-pt"
+                    />
+                ) : null}
             </div>
             <DocumentPaperWave primary={primary} secondary={accent} />
         </div>
