@@ -44,6 +44,7 @@ class Offer extends Model
         'accepted_at',
         'declined_at',
         'signature_data',
+        'signer_name',
         'voice_note_path',
         'postbode_sent_at',
         'postbode_postal_uuid',

@@ -38,6 +38,9 @@ export default function OfferAcceptancePanel({ offer, compact = false }) {
                 <div>
                     <h2 className="text-sm font-semibold text-slate-900">{t('offers.acceptance_title')}</h2>
                     <p className="mt-0.5 text-xs text-slate-500">{t('offers.acceptance_subtitle', { date: formatDate(offer.accepted_at) })}</p>
+                    {offer.signer_name ? (
+                        <p className="mt-1 text-sm text-slate-700">{t('offers.signed_by', { name: offer.signer_name })}</p>
+                    ) : null}
                 </div>
                 {!compact && offer.id && hasVoice && (
                     <Link

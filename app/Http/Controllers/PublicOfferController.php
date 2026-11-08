@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -42,7 +43,8 @@ class PublicOfferController extends Controller
             return back()->with('error', 'This quotation was already declined.');
         }
 
-        $request->validate([
+        $validated = $request->validate([
+            'signer_name' => ['required', 'string', 'max:120'],
             'signature' => ['nullable', 'string', 'max:3500000'],
             'signature_file' => ['nullable', 'file', 'mimes:png', 'max:2048'],
             'voice_note' => ['nullable', 'file', 'mimes:mp3,wav,webm,ogg,m4a', 'max:5120'],
@@ -61,11 +63,18 @@ class PublicOfferController extends Controller
             $request->file('signature_file'),
         );
 
+        if (! filled($signatureData) && ! $request->hasFile('voice_note')) {
+            throw ValidationException::withMessages([
+                'signature' => __('offers.signature_required'),
+            ]);
+        }
+
         $accepted = Status::forTable('offers')->where('name', 'Accepted')->first();
         $offer->update([
             'status' => $accepted?->id ?? $offer->status,
             'accepted_at' => now(),
             'signature_data' => $signatureData,
+            'signer_name' => trim($validated['signer_name']),
             'voice_note_path' => $voicePath,
         ]);
 
@@ -137,6 +146,7 @@ class PublicOfferController extends Controller
             'status' => $offer->statusRelation?->name,
             'accepted_at' => $offer->accepted_at?->toIso8601String(),
             'declined_at' => $offer->declined_at?->toIso8601String(),
+            'signer_name' => $offer->signer_name,
             'total' => $offer->total,
             'subtotal' => $offer->subtotal,
             'tax_amount' => $offer->tax_amount,

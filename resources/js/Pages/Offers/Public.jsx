@@ -41,7 +41,7 @@ export default function Public({ offer, token, canRespond }) {
     const [pdfOpen, setPdfOpen] = useState(false);
     const [acceptOpen, setAcceptOpen] = useState(false);
     const [acceptTab, setAcceptTab] = useState('sign');
-    const accept = useForm({ signature: '', signature_file: null, voice_note: null });
+    const accept = useForm({ signer_name: '', signature: '', signature_file: null, voice_note: null });
     const primary = offer.company?.theme?.primary || DEFAULT_BRAND_PRIMARY;
     const secondary = offer.company?.theme?.secondary || DEFAULT_BRAND_SECONDARY;
 
@@ -50,10 +50,23 @@ export default function Public({ offer, token, canRespond }) {
         document.documentElement.style.setProperty('--company-secondary', secondary);
     }, [primary, secondary]);
 
+    const signerName = String(accept.data.signer_name || '').trim();
+    const hasSignature = typeof signature === 'string' && signature.startsWith('data:image/png');
+    const hasVoice = accept.data.voice_note instanceof File;
+    const canConfirm = signerName.length > 0 && (acceptTab === 'sign' ? hasSignature : hasVoice);
+
     const submitAcceptance = () => {
+        if (!canConfirm) {
+            return;
+        }
         accept.clearErrors();
-        accept.setData('signature', signature);
-        accept.setData('signature_file', null);
+        accept.transform((data) => ({
+            ...data,
+            signer_name: signerName,
+            signature: acceptTab === 'sign' ? signature : '',
+            signature_file: null,
+            voice_note: acceptTab === 'voice' ? data.voice_note : null,
+        }));
         accept.post(`/q/${token}/accept`, {
             forceFormData: true,
             onSuccess: () => setAcceptOpen(false),
@@ -131,7 +144,8 @@ export default function Public({ offer, token, canRespond }) {
             <main className="mx-auto max-w-4xl px-4 py-8">
                 {offer.accepted_at && (
                     <div className="mb-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                        Accepted on {new Date(offer.accepted_at).toLocaleString()}
+                        <p>Accepted on {new Date(offer.accepted_at).toLocaleString()}</p>
+                        {offer.signer_name ? <p className="mt-1">{t('offers.signed_by', { name: offer.signer_name })}</p> : null}
                     </div>
                 )}
                 {offer.declined_at && (
@@ -186,13 +200,23 @@ export default function Public({ offer, token, canRespond }) {
                         <Button variant="secondary" onClick={() => setAcceptOpen(false)}>
                             {t('common.cancel')}
                         </Button>
-                        <Button disabled={accept.processing} onClick={submitAcceptance}>
+                        <Button disabled={!canConfirm || accept.processing} onClick={submitAcceptance}>
                             {t('offers.accept_modal_confirm')}
                         </Button>
                     </>
                 }
             >
                 <p className="text-sm text-slate-600">{t('offers.accept_modal_hint')}</p>
+                <label className="mt-4 block text-sm font-medium text-slate-800">
+                    {t('offers.block_signer_name')}
+                    <input
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+                        value={accept.data.signer_name}
+                        onChange={(event) => accept.setData('signer_name', event.target.value)}
+                        autoComplete="name"
+                    />
+                </label>
+                {accept.errors.signer_name ? <p className="mt-1 text-xs text-rose-600">{accept.errors.signer_name}</p> : null}
 
                 <div className="mt-5">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('offers.accept_step_choose')}</p>
