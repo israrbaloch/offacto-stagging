@@ -117,21 +117,24 @@ export default function SendInvoiceModal({
 
     const channelDefs = buildInvoiceChannels({ postbodeConfigured, peppolConfigured, mollieConfigured, whatsappConfigured });
 
+    const selectedChannels = () => (Array.isArray(form.data.channels) ? form.data.channels : []);
+
     const toggleChannel = (id) => {
-        setChannelError('');
-        const current = form.data.channels;
+        const current = selectedChannels();
         if (current.includes(id)) {
             if (current.length === 1) {
-                setChannelError(t('offers.channel_required'));
+                setChannelError('');
                 return;
             }
+            setChannelError('');
             form.setData(
                 'channels',
-                current.filter((c) => c !== id),
+                current.filter((channel) => channel !== id),
             );
-        } else {
-            form.setData('channels', [...current, id]);
+            return;
         }
+        setChannelError('');
+        form.setData('channels', [...current, id]);
     };
 
     const emailError =
@@ -141,16 +144,20 @@ export default function SendInvoiceModal({
 
     const submit = () => {
         if (!invoiceId) return;
-        if (form.data.channels.length === 0) {
+        const channels = selectedChannels();
+        if (channels.length === 0) {
             setChannelError(t('offers.channel_required'));
             return;
         }
-        if (form.data.channels.includes('email') && form.data.emails.length === 0) {
+        setChannelError('');
+        const emails = Array.isArray(form.data.emails) ? form.data.emails : [];
+        if (channels.includes('email') && emails.length === 0) {
             form.setError('emails', t('offers.send_emails_required'));
             return;
         }
+        form.clearErrors('emails');
 
-        const payload = { ...form.data };
+        const payload = { ...form.data, channels, emails };
 
         const openWhatsapp = payload.channels.includes('whatsapp') && whatsappShareUrl;
 
@@ -158,11 +165,27 @@ export default function SendInvoiceModal({
             form.transform(() => payload);
             form.post(`/invoices/${invoiceId}/send`, {
                 preserveScroll: true,
-                onSuccess: () => {
+                onSuccess: (page) => {
+                    const error = page?.props?.flash?.error;
+                    if (error) {
+                        setChannelError(String(error));
+                        return;
+                    }
                     if (openWhatsapp) {
                         window.open(whatsappShareUrl, '_blank', 'noopener,noreferrer');
                     }
                     onClose();
+                },
+                onError: (errors) => {
+                    const raw = errors?.emails || errors?.['emails.0'] || errors?.email;
+                    if (raw) {
+                        return;
+                    }
+                    const first = Object.values(errors || {})[0];
+                    const message = Array.isArray(first) ? first[0] : first;
+                    if (message) {
+                        setChannelError(String(message));
+                    }
                 },
             });
         };
@@ -174,8 +197,8 @@ export default function SendInvoiceModal({
         }
     };
 
-    const showEmail = form.data.channels.includes('email');
-    const showPostbode = form.data.channels.includes('postbode');
+    const showEmail = selectedChannels().includes('email');
+    const showPostbode = selectedChannels().includes('postbode');
 
     return (
         <SendModalFrame
@@ -221,7 +244,7 @@ export default function SendInvoiceModal({
                             title={t(channel.titleKey)}
                             subtitle={t(channel.subtitleKey)}
                             badge={channel.badgeKey ? t(channel.badgeKey) : null}
-                            checked={form.data.channels.includes(channel.id)}
+                            checked={selectedChannels().includes(channel.id)}
                             disabled={Boolean(channel.disabled)}
                             onToggle={toggleChannel}
                         />
@@ -232,7 +255,12 @@ export default function SendInvoiceModal({
                     <EmailRecipientsField
                         label={t('offers.send_emails_label')}
                         value={form.data.emails}
-                        onChange={(emails) => form.setData('emails', emails)}
+                        onChange={(emails) => {
+                            form.setData('emails', emails);
+                            if (emails.length > 0) {
+                                form.clearErrors('emails');
+                            }
+                        }}
                         error={emailError}
                     />
                     <MessageField

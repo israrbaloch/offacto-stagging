@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\InvoiceSent;
+use App\Models\CommunicationDeliveryLog;
 use App\Models\Company;
 use Database\Seeders\AddCountries;
 use Database\Seeders\AddStatuses;
@@ -165,6 +166,57 @@ class InvoiceNumberingTest extends TestCase
         $this->assertSame('OFF_'.$year.'-0001', $invoice->fresh()->invoice_number);
         $this->assertSame('2', (string) $this->series()->fresh()->next_number);
         Mail::assertSent(InvoiceSent::class);
+        $this->assertSame('sent', CommunicationDeliveryLog::query()->value('status'));
+    }
+
+    public function test_failed_mail_keeps_the_draft_unnumbered_and_records_the_reason(): void
+    {
+        $pending = \Mockery::mock();
+        $pending->shouldReceive('send')->once()->andThrow(new \RuntimeException('Mailbox rejected the recipient'));
+        Mail::shouldReceive('to')->once()->andReturn($pending);
+
+        $invoice = Invoice::create([
+            'company_id' => $this->company->id,
+            'customer_id' => $this->customer->id,
+            'invoice_number' => null,
+            'invoice_date' => now(),
+            'due_date' => now()->addDays(30),
+            'status' => $this->draft->id,
+            'payment_status' => Invoice::PAYMENT_UNPAID,
+        ]);
+
+        InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'service_id' => $this->service->id,
+            'description' => 'Line',
+            'quantity' => 1,
+            'price' => 100,
+            'total' => 100,
+        ]);
+
+        $next = (string) $this->series()->next_number;
+
+        $this->actingAs($this->user)
+            ->from(route('invoices.edit', $invoice))
+            ->post(route('invoices.send', $invoice), [
+                'channels' => ['email'],
+                'emails' => ['client@example.test'],
+                'message' => 'Please find your invoice.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error', 'Failed to send invoice: Mailbox rejected the recipient');
+
+        $invoice->refresh();
+        $this->assertNull($invoice->invoice_number);
+        $this->assertTrue($invoice->isDraft());
+        $this->assertSame($next, (string) $this->series()->fresh()->next_number);
+
+        $log = CommunicationDeliveryLog::query()->first();
+        $this->assertNotNull($log);
+        $this->assertSame('failed', $log->status);
+        $this->assertSame('email_failed', $log->event_type);
+        $this->assertSame('Mailbox rejected the recipient', $log->metadata['reason']);
+        $this->assertSame('c***@example.test', $log->recipient_masked);
     }
 
     public function test_quotes_do_not_consume_an_invoices_only_series(): void

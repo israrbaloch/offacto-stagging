@@ -259,7 +259,7 @@ export default function InvoiceEditor({
     }, [flash?.open_send, invoice?.id, isDraft]);
 
     useEffect(() => {
-        if (!invoice?.id || !ready.current || !isDraft) {
+        if (sendOpen || !invoice?.id || !ready.current || !isDraft) {
             return undefined;
         }
         const timer = setTimeout(() => {
@@ -274,7 +274,7 @@ export default function InvoiceEditor({
         }, 1500);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.data, items, customerRef, paymentTerm, invoice?.id]);
+    }, [form.data, items, customerRef, paymentTerm, invoice?.id, sendOpen]);
 
     const customerOptions = optionsFromMap(customers);
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));

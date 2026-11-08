@@ -25,4 +25,25 @@ final class CommunicationDeliveryLogger
             'sent_at' => now(),
         ]);
     }
+
+    public static function emailFailed(
+        string $templateKey,
+        string $recipientEmail,
+        ?int $companyId,
+        string $reason,
+        string $eventType = 'email_failed',
+    ): void {
+        CommunicationDeliveryLog::create([
+            'template_key' => $templateKey,
+            'event_type' => $eventType,
+            'recipient_masked' => CommunicationDeliveryLog::maskEmail($recipientEmail),
+            'company_id' => $companyId,
+            'status' => 'failed',
+            'provider' => config('mail.default'),
+            'subject_snapshot' => null,
+            'is_test' => false,
+            'metadata' => ['reason' => (string) str($reason)->limit(500)],
+            'sent_at' => null,
+        ]);
+    }
 }

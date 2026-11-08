@@ -20,6 +20,7 @@ use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
 use App\Services\NumberingSeriesService;
+use App\Support\CommunicationDeliveryLogger;
 use App\Support\CompanyAccess;
 use App\Support\InvoiceMessage;
 use App\Support\InvoiceReminderMessage;
@@ -687,6 +688,10 @@ class InvoiceController extends Controller
                 return redirect()->back()->with('error', 'Mollie is not configured for this workspace.');
             }
 
+            $recipients = [];
+            $mailDelivered = false;
+            DB::beginTransaction();
+
             $this->assignIssuedNumber($invoice);
 
             if (($wantsMollie || $wantsEmail) && CompanyIntegrations::mollieConfigured($activeCompany) && ! $invoice->isPaid()) {
@@ -695,6 +700,7 @@ class InvoiceController extends Controller
             }
 
             if ($wantsEmail) {
+                $recipients = array_values(array_unique($request->validated()['emails'] ?? []));
                 $pdf = $this->invoicePdf($invoice);
 
                 $ublXml = null;
@@ -720,16 +726,16 @@ class InvoiceController extends Controller
                     $legalDocs->all(),
                 );
 
-                $recipients = array_values(array_unique($request->validated()['emails'] ?? []));
                 Mail::to($recipients)->send($mailable);
                 foreach ($recipients as $recipientEmail) {
-                    \App\Support\CommunicationDeliveryLogger::emailSent('invoice_sent', $recipientEmail, $activeCompany->id);
+                    CommunicationDeliveryLogger::emailSent('invoice_sent', $recipientEmail, $activeCompany->id);
                 }
+                $mailDelivered = true;
 
                 if ($request->validated()['cc_company'] ?? false) {
                     if ($activeCompany->email) {
                         Mail::to($activeCompany->email)->send($mailable);
-                        \App\Support\CommunicationDeliveryLogger::emailSent('invoice_sent', $activeCompany->email, $activeCompany->id, null, 'invoice_cc_company');
+                        CommunicationDeliveryLogger::emailSent('invoice_sent', $activeCompany->email, $activeCompany->id, null, 'invoice_cc_company');
                     }
                 }
             }
@@ -737,6 +743,8 @@ class InvoiceController extends Controller
             if (in_array('postbode', $channels, true)) {
                 $settings = CompanyIntegrations::settings($activeCompany);
                 if (! $settings || ! CompanyIntegrations::postbodeConfigured($activeCompany)) {
+                    $this->settleInvoiceSend($mailDelivered);
+
                     return redirect()->back()->with('error', 'Postbode is not configured for this workspace.');
                 }
 
@@ -756,6 +764,8 @@ class InvoiceController extends Controller
 
             if (in_array('peppol', $channels, true)) {
                 if (! CompanyIntegrations::peppolConfigured($activeCompany)) {
+                    $this->settleInvoiceSend($mailDelivered);
+
                     return redirect()->back()->with('error', 'Peppol is not enabled or configured for this company.');
                 }
                 $peppol->send($invoice);
@@ -763,6 +773,8 @@ class InvoiceController extends Controller
 
             if (in_array('whatsapp', $channels, true)) {
                 if (! CompanyIntegrations::whatsappAvailable($user, $activeCompany)) {
+                    $this->settleInvoiceSend($mailDelivered);
+
                     return redirect()->back()->with('error', 'WhatsApp is not enabled or configured for this company.');
                 }
 
@@ -782,10 +794,12 @@ class InvoiceController extends Controller
 
             $invoice->update(['needs_resend' => false]);
 
+            $this->settleInvoiceSend(true);
+
             $emailed = in_array('email', $channels, true);
             $postbodeSent = in_array('postbode', $channels, true);
 
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() && ! $request->header('X-Inertia')) {
                 return response()->json([
                     'message' => 'Invoice sent successfully.',
                 ]);
@@ -797,16 +811,25 @@ class InvoiceController extends Controller
 
             return redirect()->back()->with('status', 'invoice-sent');
         } catch (PostbodeApiException $e) {
+            $this->settleInvoiceSend($mailDelivered ?? false);
+
             return redirect()->back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
-            if ($request->expectsJson()) {
+            $this->settleInvoiceSend($mailDelivered ?? false);
+            if (($wantsEmail ?? false) && ! ($mailDelivered ?? false)) {
+                $this->logInvoiceEmailFailure($recipients ?? [], $activeCompany->id, $e->getMessage());
+            }
+
+            $reason = 'Failed to send invoice: '.$e->getMessage();
+
+            if ($request->expectsJson() && ! $request->header('X-Inertia')) {
                 return response()->json([
                     'message' => 'Failed to send invoice.',
                     'errors' => ['email' => [$e->getMessage()]],
                 ], 500);
             }
 
-            return redirect()->back()->with('error', 'Failed to send invoice: ' . $e->getMessage());
+            return redirect()->back()->with('error', $reason);
         }
     }
 
@@ -1580,6 +1603,34 @@ class InvoiceController extends Controller
     /**
      * Give a draft its official number the first time it is issued.
      */
+    private function settleInvoiceSend(bool $mailDelivered): void
+    {
+        if (DB::transactionLevel() === 0) {
+            return;
+        }
+
+        if ($mailDelivered) {
+            DB::commit();
+
+            return;
+        }
+
+        DB::rollBack();
+    }
+
+    /**
+     * @param  list<string>  $recipients
+     */
+    private function logInvoiceEmailFailure(array $recipients, int $companyId, string $reason): void
+    {
+        foreach ($recipients as $recipientEmail) {
+            if (! filled($recipientEmail)) {
+                continue;
+            }
+            CommunicationDeliveryLogger::emailFailed('invoice_sent', $recipientEmail, $companyId, $reason);
+        }
+    }
+
     private function assignIssuedNumber(Invoice $invoice): void
     {
         if (filled($invoice->invoice_number)) {
