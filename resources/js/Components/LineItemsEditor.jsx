@@ -7,6 +7,7 @@ import {
     quantityColumnLabel,
 } from '../lib/serviceBilling';
 import { money } from '../lib/utils';
+import { lineAmount, subtotalFromLines, totalAmount, vatAmount } from '../lib/money';
 import { t } from '../lib/i18n';
 
 export default function LineItemsEditor({
@@ -121,9 +122,9 @@ export default function LineItemsEditor({
         setItems(items.filter((_, i) => i !== index));
     };
 
-    const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
-    const vat = subtotal * (Number(vatRate) / 100);
-    const total = subtotal + vat;
+    const subtotal = subtotalFromLines(items.filter((item) => item.kind !== 'text'));
+    const vat = vatAmount(subtotal, vatRate);
+    const total = totalAmount(subtotal, vat);
     const qtyHeaderLong = quantityColumnLabel(items, services);
     const priceHeaderLong = priceColumnLabel(items, services);
     const pricedLines = items.filter((item) => item.kind !== 'text');
@@ -210,7 +211,7 @@ export default function LineItemsEditor({
                             </tr>
                         )}
                         {items.map((item, index) => {
-                            const line = Number(item.quantity || 0) * Number(item.price || 0);
+                            const line = item.kind === 'text' ? 0 : lineAmount(item.quantity, item.price);
                             const isText = item.kind === 'text';
                             return (
                                 <tr key={index} className={builder ? 'offacto-quote-line-row' : 'border-b border-slate-100'}>

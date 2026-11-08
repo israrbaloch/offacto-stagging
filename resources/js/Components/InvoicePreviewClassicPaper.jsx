@@ -3,6 +3,7 @@ import DocumentPaperWave from './DocumentPaperWave';
 import { DEFAULT_BRAND_PRIMARY, DEFAULT_BRAND_SECONDARY, themeCssVars } from '../lib/brand';
 import { formatQuantityDisplay, lineIsHourly, priceColumnLabel, quantityColumnLabel } from '../lib/serviceBilling';
 import { formatCalendarDate, money } from '../lib/utils';
+import { lineAmount, subtotalFromLines, totalAmount, vatAmount } from '../lib/money';
 import { t } from '../lib/i18n';
 import InvoiceLineLabel, { visiblePreviewLines } from './InvoiceLineLabel';
 import InvoicePaymentBlock from './InvoicePaymentBlock';
@@ -40,13 +41,10 @@ export default function InvoicePreviewClassicPaper({
     const priced = visiblePreviewLines(items);
     const qtyHeader = quantityColumnLabel(items, []);
     const priceHeader = priceColumnLabel(items, []).replace(' (excl. VAT)', '');
-    const calcSubtotal = priced.reduce(
-        (sum, item) => sum + Number(item.quantity || 0) * Number(item.price || item.unit_price || 0),
-        0,
-    );
+    const calcSubtotal = subtotalFromLines(priced);
     const subtotal = totalsOverride?.subtotal ?? calcSubtotal;
-    const vatAmount = totalsOverride?.tax ?? calcSubtotal * (Number(vatRate) / 100);
-    const total = totalsOverride?.total ?? subtotal + vatAmount;
+    const vat = totalsOverride?.tax ?? vatAmount(calcSubtotal, vatRate);
+    const total = totalsOverride?.total ?? totalAmount(subtotal, vat);
 
     const title =
         documentType === 'quote'
@@ -58,7 +56,7 @@ export default function InvoicePreviewClassicPaper({
     const fromLine = [from.street, from.house].filter(Boolean).join(' ');
     const fromCity = [from.postal_code, from.city].filter(Boolean).join(' ');
 
-    const lineAmount = (item) => Number(item.quantity || 0) * Number(item.price ?? item.unit_price ?? 0);
+    const previewLineAmount = (item) => lineAmount(item.quantity, item.price ?? item.unit_price);
 
     return (
         <div className="offacto-demo-paper offacto-demo-paper-classic" style={cssVars}>
@@ -157,7 +155,7 @@ export default function InvoicePreviewClassicPaper({
                                     <td className="num">
                                         {`${money(item.price ?? item.unit_price)}${lineIsHourly(item, []) ? '/h' : ''}`}
                                     </td>
-                                    <td className="num">{money(lineAmount(item))}</td>
+                                    <td className="num">{money(previewLineAmount(item))}</td>
                                 </tr>
                             ))
                         )}
@@ -173,7 +171,7 @@ export default function InvoicePreviewClassicPaper({
                         <span>
                             {t('invoices.vat')} ({vatRate}%)
                         </span>
-                        <span>{money(vatAmount)}</span>
+                        <span>{money(vat)}</span>
                     </div>
                     <div className="row total">
                         <span>{t('invoices.total')}</span>

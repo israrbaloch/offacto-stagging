@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -58,6 +59,6 @@ class OfferItem extends Model
      */
     public function calculateTotal(): void
     {
-        $this->total = $this->quantity * $this->price;
+        $this->total = Money::line($this->quantity, $this->price);
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\SiteSetting;
+use App\Support\Money;
 use Illuminate\Support\Str;
 
 class Invoice extends Model
@@ -184,7 +185,7 @@ class Invoice extends Model
      */
     public function getSubtotalAttribute(): float
     {
-        return $this->items->sum('total');
+        return Money::round((float) $this->items->sum('total'));
     }
 
     /**
@@ -192,8 +193,7 @@ class Invoice extends Model
      */
     public function getTaxAmountAttribute(): float
     {
-        $taxRate = SiteSetting::getInteger('default_vat_rate', 21) / 100;
-        return $this->subtotal * $taxRate;
+        return Money::vat($this->subtotal, SiteSetting::getInteger('default_vat_rate', 21));
     }
 
     /**
@@ -201,7 +201,7 @@ class Invoice extends Model
      */
     public function getTotalAttribute(): float
     {
-        return $this->subtotal + $this->tax_amount;
+        return Money::total($this->subtotal, $this->tax_amount);
     }
 
     /**

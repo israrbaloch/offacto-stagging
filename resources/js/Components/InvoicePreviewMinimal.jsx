@@ -1,6 +1,7 @@
 import Logo from './Logo';
 import { DEFAULT_BRAND_PRIMARY, themeCssVars } from '../lib/brand';
 import { formatCalendarDate, money } from '../lib/utils';
+import { lineAmount, subtotalFromLines, totalAmount, vatAmount } from '../lib/money';
 import { t } from '../lib/i18n';
 import InvoiceLineLabel, { visiblePreviewLines } from './InvoiceLineLabel';
 import InvoicePaymentBlock from './InvoicePaymentBlock';
@@ -40,13 +41,10 @@ export default function InvoicePreviewMinimal({
     const sign = isCredit ? -1 : 1;
 
     const priced = visiblePreviewLines(items);
-    const calcSubtotal = priced.reduce(
-        (sum, item) => sum + Number(item.quantity || 0) * Number(item.price || item.unit_price || 0),
-        0,
-    );
+    const calcSubtotal = subtotalFromLines(priced);
     const subtotal = totalsOverride?.subtotal ?? calcSubtotal;
-    const vatAmount = totalsOverride?.tax ?? (intraEu ? 0 : calcSubtotal * (Number(vatRate) / 100));
-    const total = totalsOverride?.total ?? subtotal + vatAmount;
+    const vat = totalsOverride?.tax ?? (intraEu ? 0 : vatAmount(calcSubtotal, vatRate));
+    const total = totalsOverride?.total ?? totalAmount(subtotal, vat);
     const amountDue = intraEu ? subtotal : total;
 
     const title =
@@ -59,7 +57,7 @@ export default function InvoicePreviewMinimal({
     const fromLine = [from.street, from.house].filter(Boolean).join(' ');
     const fromCity = [from.postal_code, from.city].filter(Boolean).join(' ');
 
-    const lineTotal = (item) => Number(item.quantity || 0) * Number(item.price || item.unit_price || 0);
+    const lineTotal = (item) => lineAmount(item.quantity, item.price || item.unit_price);
 
     return (
         <div className={paperClassName} style={cssVars}>
@@ -158,7 +156,7 @@ export default function InvoicePreviewMinimal({
                     <span>
                         {t('invoices.vat')} ({vatRate}%)
                     </span>
-                    <span>{money(sign * (intraEu ? 0 : vatAmount))}</span>
+                    <span>{money(sign * (intraEu ? 0 : vat))}</span>
                 </div>
                 <div className="row total" style={{ color: brand }}>
                     <span>{isCredit ? t('invoices.preview_to_refund') : t('invoices.preview_amount_due')}</span>

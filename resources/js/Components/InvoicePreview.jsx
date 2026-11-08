@@ -3,6 +3,7 @@ import SafeHtml from './SafeHtml';
 import { DEFAULT_BRAND_PRIMARY, DEFAULT_BRAND_SECONDARY } from '../lib/brand';
 import { formatQuantityDisplay, lineIsHourly, priceColumnLabel, quantityColumnLabel } from '../lib/serviceBilling';
 import { formatCalendarDate, money } from '../lib/utils';
+import { lineAmount, roundCents, subtotalFromLines, totalAmount, vatAmount } from '../lib/money';
 
 function prettyDate(value) {
     return formatCalendarDate(value);
@@ -49,19 +50,19 @@ export default function InvoicePreview({
     const priced = items.filter((item) => item.kind !== 'text');
     const qtyHeader = quantityColumnLabel(items, []);
     const priceHeader = priceColumnLabel(items, []).replace(' (excl. VAT)', '');
-    const calcSubtotal = priced.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || item.unit_price || 0), 0);
+    const calcSubtotal = subtotalFromLines(priced);
     const subtotal = totalsOverride?.subtotal ?? calcSubtotal;
-    const vat = totalsOverride?.tax ?? calcSubtotal * (Number(vatRate) / 100);
-    const total = totalsOverride?.total ?? subtotal + vat;
+    const vat = totalsOverride?.tax ?? vatAmount(calcSubtotal, vatRate);
+    const total = totalsOverride?.total ?? totalAmount(subtotal, vat);
     const effectiveVatRate = totalsOverride?.vatRate ?? vatRate;
 
     const fromLine = [from.street, from.house].filter(Boolean).join(' ');
     const fromCity = [from.postal_code, from.city].filter(Boolean).join(' ');
 
-    const lineAmount = (item) => {
+    const previewLineAmount = (item) => {
         if (item.kind === 'text') return null;
-        if (item.total != null) return Number(item.total);
-        return Number(item.quantity || 0) * Number(item.price ?? item.unit_price ?? 0);
+        if (item.total != null) return roundCents(item.total);
+        return lineAmount(item.quantity, item.price ?? item.unit_price);
     };
 
     const hasFooter = Boolean(copyrightLabel?.trim() || notes);
@@ -145,7 +146,7 @@ export default function InvoicePreview({
                                 </tr>
                             )}
                             {items.map((item, index) => {
-                                const amount = lineAmount(item);
+                                const amount = previewLineAmount(item);
                                 const description = String(item.description || '').trim();
                                 const serviceName = String(item.service_name || '').trim();
                                 const label = serviceName || description || 'Line item';
