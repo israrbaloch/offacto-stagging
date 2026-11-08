@@ -58,7 +58,7 @@ class TimeEntryInvoicingService
             $invoice = Invoice::create([
                 'company_id' => $company->id,
                 'customer_id' => $customer->id,
-                'invoice_number' => $this->nextInvoiceNumber($company->id),
+                'invoice_number' => null,
                 'invoice_date' => now(),
                 'due_date' => now()->addDays(30),
                 'status' => $defaultStatus?->id,
@@ -116,8 +116,4 @@ class TimeEntryInvoicingService
             ]);
     }
 
-    private function nextInvoiceNumber(int $companyId): string
-    {
-        return app(NumberingSeriesService::class)->nextForCompany($companyId, 'invoices');
-    }
 }

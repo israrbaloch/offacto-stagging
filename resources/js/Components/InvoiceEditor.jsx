@@ -107,8 +107,9 @@ export default function InvoiceEditor({
     whatsappConfigured = false,
     whatsappShareUrl = '',
     defaultReminderMessage = '',
+    recurring = false,
 }) {
-    const { activeCompany, defaultReminderMessage: pageReminderMessage = '' } = usePage().props;
+    const { activeCompany, flash, defaultReminderMessage: pageReminderMessage = '' } = usePage().props;
     const reminderDefault = defaultReminderMessage || pageReminderMessage || '';
     const { toast, confirm } = useUi();
     const parsed = parseIntro(invoice?.intro || '');
@@ -220,6 +221,12 @@ export default function InvoiceEditor({
     }, [invoice?.id, isDraft]);
 
     useEffect(() => {
+        if (flash?.open_send && invoice?.id && isDraft) {
+            setSendOpen(true);
+        }
+    }, [flash?.open_send, invoice?.id, isDraft]);
+
+    useEffect(() => {
         if (!invoice?.id || !ready.current || !isDraft) {
             return undefined;
         }
@@ -264,42 +271,55 @@ export default function InvoiceEditor({
     const isMinimalTemplate = invoiceTemplate === 'minimal';
     const previewAttachments = autoAttachments.map(([name]) => name);
 
-    const submit = (event) => {
-        event.preventDefault();
-        if (!invoice?.id || !isDraft) {
+    const persistDraft = (extra = {}, options = {}) => {
+        form.transform(() => ({
+            ...payloadFromState(),
+            is_recurring: Boolean(invoice?.is_recurring) || (!invoice?.id && recurring),
+            recurring_interval: recurringInterval,
+            ...extra,
+        }));
+        if (!invoice?.id) {
+            form.post('/invoices', options);
             return;
         }
-        form.transform(() => payloadFromState());
-        form.put(`/invoices/${invoice.id}`, {
+        form.put(`/invoices/${invoice.id}`, options);
+    };
+
+    const submit = (event) => {
+        event.preventDefault();
+        if (!isDraft) {
+            return;
+        }
+        persistDraft({}, {
             onSuccess: () => toast.success(t('invoices.draft_saved_toast')),
         });
     };
 
     const saveThen = (callback) => {
-        if (!isDraft) {
+        if (!isDraft || !invoice?.id) {
             callback();
             return;
         }
-        form.transform(() => payloadFromState());
-        form.put(`/invoices/${invoice.id}`, {
+        persistDraft({}, {
             preserveScroll: true,
             onSuccess: callback,
         });
     };
 
     const openSendModal = () => {
-        if (!invoice?.id) {
-            return;
-        }
         if (!form.data.customer_id) {
             toast.error(t('offers.send_need_customer'));
+            return;
+        }
+        if (!invoice?.id) {
+            persistDraft({ open_send: true }, { preserveScroll: true });
             return;
         }
         setSendOpen(true);
     };
 
     const deleteDraft = async () => {
-        if (!invoice?.id || !isDraft) {
+        if (!isDraft) {
             return;
         }
         if (
@@ -309,6 +329,10 @@ export default function InvoiceEditor({
                 danger: true,
             }))
         ) {
+            return;
+        }
+        if (!invoice?.id) {
+            router.visit('/invoices');
             return;
         }
         router.delete(`/invoices/${invoice.id}`, {
@@ -376,13 +400,15 @@ export default function InvoiceEditor({
         form.setData('due_date', dueFromTerm(base, term));
     };
 
-    const savedLabel = saving
-        ? t('invoices.saving_draft')
-        : savedAt
-          ? t('invoices.draft_saved_at', {
-                time: new Date(savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            })
-          : t('invoices.draft_created');
+    const savedLabel = !invoice?.id
+        ? t('invoices.not_saved_yet')
+        : saving
+          ? t('invoices.saving_draft')
+          : savedAt
+            ? t('invoices.draft_saved_at', {
+                  time: new Date(savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              })
+            : t('invoices.draft_created');
 
     const headingDoc = resolveHeadingDocType(invoice);
     const docTitle =
@@ -446,6 +472,11 @@ export default function InvoiceEditor({
                         </Link>
                         <h1>{heading}</h1>
                         <p className="offacto-invoice-saved-hint">{metaLine}</p>
+                        {isDraft && !invoice?.invoice_number ? (
+                            <p className="offacto-invoice-hint">
+                                {t('invoices.number_assigned_on_send', { number: nextInvoiceNumber || '—' })}
+                            </p>
+                        ) : null}
                         {readOnly && invoice?.amount_due != null ? (
                             <p className="offacto-invoice-hint">
                                 {t('invoices.amount_due_label')}: <b>{money(invoice.amount_due)}</b>
@@ -484,7 +515,7 @@ export default function InvoiceEditor({
                                 {t('invoices.reminder_send')}
                             </button>
                         ) : null}
-                        {invoice?.id && isDraft ? (
+                        {isDraft ? (
                             <button
                                 type="button"
                                 className="offacto-btn-p"

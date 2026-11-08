@@ -96,6 +96,26 @@ class NumberingSeriesService
         return $this->allocateNext($series);
     }
 
+    /**
+     * Next number in the series, without advancing the counter.
+     */
+    public function previewForCompany(int $companyId, string $context = 'invoices'): string
+    {
+        $company = Company::query()->findOrFail($companyId);
+        $series = $this->resolveForCompany($company, $context);
+
+        if (! $series) {
+            return $this->legacyFallback($companyId, $context);
+        }
+
+        $periodKey = $this->restartPeriodKey($series);
+        if ($this->shouldResetCounter($series, $periodKey)) {
+            $series->next_number = '1';
+        }
+
+        return $this->preview($series);
+    }
+
     protected function restartPeriodKey(NumberingSeries $series): string
     {
         return match ($series->restart_count ?? 'annual') {

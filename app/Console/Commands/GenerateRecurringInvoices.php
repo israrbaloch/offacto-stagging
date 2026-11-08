@@ -34,7 +34,7 @@ class GenerateRecurringInvoices extends Command
                     'company_id' => $template->company_id,
                     'customer_id' => $template->customer_id,
                     'offer_id' => $template->offer_id,
-                    'invoice_number' => $this->nextNumber($template),
+                    'invoice_number' => null,
                     'invoice_date' => $invoiceDate,
                     'due_date' => $invoiceDate->copy()->addDays(30),
                     'intro' => $template->intro,
@@ -84,8 +84,4 @@ class GenerateRecurringInvoices extends Command
         return self::SUCCESS;
     }
 
-    private function nextNumber(Invoice $template): string
-    {
-        return app(\App\Services\NumberingSeriesService::class)->nextForCompany($template->company_id, 'invoices');
-    }
 }

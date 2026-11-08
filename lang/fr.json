@@ -289,6 +289,8 @@
     "invoices.paid": "Payé",
     "invoices.unpaid": "Impayé",
     "invoices.number": "Facture n°",
+    "invoices.not_saved_yet": "Pas encore enregistré",
+    "invoices.number_assigned_on_send": "Le numéro :number est attribué à l'envoi de cette facture.",
     "invoices.issue_date": "Date d’émission",
     "invoices.due_date": "Échéance",
     "invoices.credit_note": "Note de crédit",

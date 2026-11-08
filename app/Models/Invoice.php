@@ -277,6 +277,31 @@ class Invoice extends Model
     }
 
     /**
+     * Credit notes share a parent invoice and use negative line quantities.
+     * Recurring generations also point at a parent, but that parent is the schedule.
+     */
+    public function isCreditNote(): bool
+    {
+        if (! $this->parent_invoice_id) {
+            return false;
+        }
+
+        $hasNegativeLine = $this->relationLoaded('items')
+            ? $this->items->contains(fn ($item) => (float) $item->quantity < 0)
+            : $this->items()->where('quantity', '<', 0)->exists();
+
+        if ($hasNegativeLine) {
+            return true;
+        }
+
+        $parent = $this->relationLoaded('parentInvoice')
+            ? $this->parentInvoice
+            : $this->parentInvoice()->first(['id', 'is_recurring']);
+
+        return ! $parent?->is_recurring;
+    }
+
+    /**
      * Check if the invoice is overdue.
      */
     public function isOverdue(): bool

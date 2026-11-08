@@ -240,8 +240,9 @@ class InvoiceController extends Controller
 
     /**
      * Show the form for creating a new invoice.
+     * Nothing is stored and no invoice number is taken until the user saves or sends.
      */
-    public function create(Request $request): RedirectResponse
+    public function create(Request $request): InertiaResponse|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -254,24 +255,7 @@ class InvoiceController extends Controller
             return $deny;
         }
 
-        $defaultStatus = Status::where('for', 'invoices')->where('name', 'Draft')->first()
-            ?? Status::forTable('invoices')->first();
-
-        $recurring = $request->boolean('recurring');
-
-        $invoice = Invoice::create([
-            'company_id' => $activeCompany->id,
-            'customer_id' => null,
-            'invoice_number' => $this->generateInvoiceNumber($activeCompany->id),
-            'invoice_date' => now(),
-            'due_date' => now()->addDays(30),
-            'status' => $defaultStatus?->id,
-            'payment_status' => Invoice::PAYMENT_UNPAID,
-            'is_recurring' => $recurring,
-            'recurring_interval' => $recurring ? 'monthly' : null,
-        ]);
-
-        return redirect()->route('invoices.edit', $invoice);
+        return $this->invoiceEditorResponse($request, $activeCompany, null);
     }
 
     /**
@@ -302,7 +286,7 @@ class InvoiceController extends Controller
             'company_id' => $activeCompany->id,
             'customer_id' => $offer->customer_id,
             'offer_id' => $offer->id,
-            'invoice_number' => $this->generateInvoiceNumber($activeCompany->id),
+            'invoice_number' => null,
             'invoice_date' => now(),
             'due_date' => now()->addDays(30),
             'intro' => $offer->intro,
@@ -373,31 +357,31 @@ class InvoiceController extends Controller
 
         DB::beginTransaction();
         try {
-            // Generate invoice number
-            $invoiceNumber = $this->generateInvoiceNumber($activeCompany->id);
+            $validated = $request->validated();
+            $recurring = $request->boolean('is_recurring');
+            $interval = $validated['recurring_interval'] ?? 'monthly';
 
-            // Determine status based on action
-            $action = $request->validated()['action'] ?? 'draft';
-            $statusId = $request->validated()['status'];
-
-            // Create invoice
             $invoice = Invoice::create([
                 'company_id' => $activeCompany->id,
-                'customer_id' => $request->validated()['customer_id'],
-                'offer_id' => $request->validated()['offer_id'] ?? null,
-                'invoice_number' => $invoiceNumber,
-                'invoice_date' => $request->validated()['invoice_date'] ?? now(),
-                'due_date' => $request->validated()['due_date'] ?? now()->addDays(30),
-                'intro' => $request->validated()['intro'] ?? null,
-                'desc' => $request->validated()['desc'] ?? null,
-                'notes' => $request->validated()['notes'] ?? null,
-                'status' => $statusId,
+                'customer_id' => $validated['customer_id'] ?? null,
+                'offer_id' => $validated['offer_id'] ?? null,
+                'invoice_number' => null,
+                'invoice_date' => $validated['invoice_date'] ?? now(),
+                'due_date' => $validated['due_date'] ?? now()->addDays(30),
+                'intro' => $validated['intro'] ?? null,
+                'desc' => $validated['desc'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'email_message' => $validated['email_message'] ?? null,
+                'status' => $validated['status'],
                 'payment_status' => Invoice::PAYMENT_UNPAID,
-                'ip_transfer_type' => $request->validated()['ip_transfer_type'] ?? null,
+                'ip_transfer_type' => $validated['ip_transfer_type'] ?? null,
+                'is_recurring' => $recurring,
+                'recurring_interval' => $recurring ? $interval : null,
+                'next_run_at' => $recurring ? RecurringInvoice::initialNextRun($interval) : null,
             ]);
 
             // Create invoice items
-            foreach ($request->validated()['items'] as $itemData) {
+            foreach ($request->validated()['items'] ?? [] as $itemData) {
                 $item = new InvoiceItem([
                     'service_id' => $itemData['service_id'],
                     'description' => $itemData['description'] ?? null,
@@ -420,7 +404,12 @@ class InvoiceController extends Controller
                 ], 201);
             }
 
-            return redirect()->route('invoices.show', $invoice->id)->with('status', 'invoice-created');
+            $redirect = redirect()->route('invoices.edit', $invoice->id)->with('status', 'invoice-created');
+            if ($request->boolean('open_send')) {
+                $redirect->with('open_send', true);
+            }
+
+            return $redirect;
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -499,80 +488,7 @@ class InvoiceController extends Controller
             $invoice->makeVisible(['signature_data']);
         }
 
-        $customers = Customer::where('company_id', $activeCompany->id)
-            ->orderBy('first_name')
-            ->get()
-            ->mapWithKeys(function ($customer) {
-                return [$customer->id => $customer->first_name . ' ' . $customer->surname . ($customer->org_name ? ' (' . $customer->org_name . ')' : '')];
-            });
-
-        $services = Service::where('company_id', $activeCompany->id)
-            ->orderBy('name')
-            ->get();
-
-        $statuses = Status::forTable('invoices')->pluck('name', 'id');
-
-        // Prepare services data for JavaScript
-        $servicesData = $services->map(function($service) {
-            return [
-                'id' => $service->id,
-                'name' => $service->name,
-                'description' => $service->description ?? '',
-                'price' => (float)$service->price,
-                'unit' => $service->unit ?? '',
-                'billing_mode' => $service->billing_mode ?? 'fixed',
-            ];
-        })->values();
-
-        // Prepare existing items data for JavaScript
-        $existingItems = $invoice->items->map(function($item, $index) {
-            return [
-                'id' => $index,
-                'service_id' => $item->service_id,
-                'service_name' => $item->service->name ?? 'N/A',
-                'description' => $item->description ?? '',
-                'kind' => $item->service_id ? 'product' : 'custom',
-                'quantity' => $item->quantity,
-                'price' => (float)$item->price,
-                'total' => (float)$item->total,
-                'billing_mode' => $item->service->billing_mode ?? 'fixed',
-                'unit' => $item->service->unit ?? '',
-            ];
-        })->values();
-
-        return Inertia::render('Invoices/Create', [
-            'invoice' => $invoice->loadMissing(['offer', 'customer.documents']),
-            'defaultReminderMessage' => InvoiceReminderMessage::resolve($invoice)['body'],
-            'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
-            'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
-            'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),
-            'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
-            'whatsappConfigured' => CompanyIntegrations::whatsappConfigured($activeCompany, $user),
-            'whatsappShareUrl' => WhatsAppShare::shareUrlForInvoice($invoice) ?? '',
-            'customers' => $customers,
-            'services' => $services,
-            'statuses' => $statuses,
-            'defaultStatusId' => $invoice->status,
-            'servicesData' => $servicesData,
-            'existingItems' => $existingItems,
-            'ipTransferTypes' => Invoice::getIpTransferTypes(),
-            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
-            'nextInvoiceNumber' => $invoice->invoice_number,
-            'customersData' => Customer::where('company_id', $activeCompany->id)
-                ->with('country:id,code')
-                ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email', 'vat_number', 'country_id'])
-                ->map(fn (Customer $customer) => [
-                    'id' => $customer->id,
-                    'first_name' => $customer->first_name,
-                    'surname' => $customer->surname,
-                    'org_name' => $customer->org_name,
-                    'office_address' => $customer->office_address,
-                    'email' => $customer->email,
-                    'vat_number' => $customer->vat_number,
-                    'country_code' => $customer->country?->code,
-                ])
-                ->values(),
-        ]);
+        return $this->invoiceEditorResponse($request, $activeCompany, $invoice);
     }
 
     /**
@@ -789,6 +705,8 @@ class InvoiceController extends Controller
             if ($wantsMollie && ! CompanyIntegrations::mollieConfigured($activeCompany)) {
                 return redirect()->back()->with('error', 'Mollie is not configured for this workspace.');
             }
+
+            $this->assignIssuedNumber($invoice);
 
             if (($wantsMollie || $wantsEmail) && CompanyIntegrations::mollieConfigured($activeCompany) && ! $invoice->isPaid()) {
                 $mollie->ensureCheckoutForSend($invoice, $activeCompany, $wantsMollie);
@@ -1219,7 +1137,7 @@ class InvoiceController extends Controller
                 'company_id' => $activeCompany->id,
                 'customer_id' => $source->customer_id,
                 'offer_id' => $source->offer_id,
-                'invoice_number' => $this->generateCreditNoteNumber($activeCompany->id),
+                'invoice_number' => null,
                 'invoice_date' => now(),
                 'due_date' => now(),
                 'intro' => $source->intro,
@@ -1277,7 +1195,7 @@ class InvoiceController extends Controller
                 'company_id' => $activeCompany->id,
                 'customer_id' => $source->customer_id,
                 'offer_id' => $source->offer_id,
-                'invoice_number' => $this->generateInvoiceNumber($activeCompany->id),
+                'invoice_number' => null,
                 'invoice_date' => now(),
                 'due_date' => now()->addDays(30),
                 'intro' => $source->intro,
@@ -1373,6 +1291,11 @@ class InvoiceController extends Controller
             ->with(['customer', 'items.service', 'company.companySetting'])
             ->firstOrFail();
 
+        if (! CompanyIntegrations::peppolConfigured($activeCompany)) {
+            return back()->with('error', 'Peppol is not enabled or configured for this company.');
+        }
+
+        $this->assignIssuedNumber($invoice);
         $peppol->send($invoice);
 
         return back()->with('status', 'peppol-sent');
@@ -1400,6 +1323,7 @@ class InvoiceController extends Controller
         ]);
 
         try {
+            $this->assignIssuedNumber($invoice);
             $result = $postbode->sendInvoice(
                 $invoice,
                 $settings,
@@ -1558,17 +1482,115 @@ class InvoiceController extends Controller
         return redirect()->back()->with('error', $message);
     }
 
+    private function invoiceEditorResponse(Request $request, $activeCompany, ?Invoice $invoice): InertiaResponse
+    {
+        $user = $request->user();
+
+        $customers = Customer::where('company_id', $activeCompany->id)
+            ->orderBy('first_name')
+            ->get()
+            ->mapWithKeys(function ($customer) {
+                return [$customer->id => $customer->first_name . ' ' . $customer->surname . ($customer->org_name ? ' (' . $customer->org_name . ')' : '')];
+            });
+
+        $services = Service::where('company_id', $activeCompany->id)
+            ->orderBy('name')
+            ->get();
+
+        $statuses = Status::forTable('invoices')->pluck('name', 'id');
+
+        $servicesData = $services->map(function ($service) {
+            return [
+                'id' => $service->id,
+                'name' => $service->name,
+                'description' => $service->description ?? '',
+                'price' => (float) $service->price,
+                'unit' => $service->unit ?? '',
+                'billing_mode' => $service->billing_mode ?? 'fixed',
+            ];
+        })->values();
+
+        $existingItems = $invoice
+            ? $invoice->items->map(function ($item, $index) {
+                return [
+                    'id' => $index,
+                    'service_id' => $item->service_id,
+                    'service_name' => $item->service->name ?? 'N/A',
+                    'description' => $item->description ?? '',
+                    'kind' => $item->service_id ? 'product' : 'custom',
+                    'quantity' => $item->quantity,
+                    'price' => (float) $item->price,
+                    'total' => (float) $item->total,
+                    'billing_mode' => $item->service->billing_mode ?? 'fixed',
+                    'unit' => $item->service->unit ?? '',
+                ];
+            })->values()
+            : collect();
+
+        $defaultStatusId = $invoice?->status
+            ?? Status::where('for', 'invoices')->where('name', 'Draft')->value('id')
+            ?? Status::where('for', 'invoices')->value('id');
+
+        $numberContext = $invoice?->isCreditNote() ? 'credit_notes' : 'invoices';
+        $previewNumber = app(NumberingSeriesService::class)->previewForCompany($activeCompany->id, $numberContext);
+
+        return Inertia::render('Invoices/Create', [
+            'invoice' => $invoice?->loadMissing(['offer', 'customer.documents']),
+            'defaultReminderMessage' => $invoice ? InvoiceReminderMessage::resolve($invoice)['body'] : '',
+            'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
+            'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
+            'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),
+            'mollieConfigured' => CompanyIntegrations::mollieConfigured($activeCompany),
+            'whatsappConfigured' => CompanyIntegrations::whatsappConfigured($activeCompany, $user),
+            'whatsappShareUrl' => $invoice ? (WhatsAppShare::shareUrlForInvoice($invoice) ?? '') : '',
+            'customers' => $customers,
+            'services' => $services,
+            'statuses' => $statuses,
+            'defaultStatusId' => $defaultStatusId,
+            'servicesData' => $servicesData,
+            'existingItems' => $existingItems,
+            'ipTransferTypes' => Invoice::getIpTransferTypes(),
+            'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
+            'nextInvoiceNumber' => $invoice?->invoice_number ?: $previewNumber,
+            'recurring' => $invoice ? (bool) $invoice->is_recurring : $request->boolean('recurring'),
+            'customersData' => Customer::where('company_id', $activeCompany->id)
+                ->with('country:id,code')
+                ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email', 'vat_number', 'country_id'])
+                ->map(fn (Customer $customer) => [
+                    'id' => $customer->id,
+                    'first_name' => $customer->first_name,
+                    'surname' => $customer->surname,
+                    'org_name' => $customer->org_name,
+                    'office_address' => $customer->office_address,
+                    'email' => $customer->email,
+                    'vat_number' => $customer->vat_number,
+                    'country_code' => $customer->country?->code,
+                ])
+                ->values(),
+        ]);
+    }
+
+    /**
+     * Give a draft its official number the first time it is issued.
+     */
+    private function assignIssuedNumber(Invoice $invoice): void
+    {
+        if (filled($invoice->invoice_number)) {
+            return;
+        }
+
+        $invoice->loadMissing('items');
+        $context = $invoice->isCreditNote() ? 'credit_notes' : 'invoices';
+        $invoice->invoice_number = $this->generateInvoiceNumber($invoice->company_id, $context);
+        $invoice->save();
+    }
+
     /**
      * Generate invoice number automatically.
      */
-    private function generateInvoiceNumber(int $companyId): string
+    private function generateInvoiceNumber(int $companyId, string $context = 'invoices'): string
     {
-        return app(NumberingSeriesService::class)->nextForCompany($companyId, 'invoices');
-    }
-
-    private function generateCreditNoteNumber(int $companyId): string
-    {
-        return app(NumberingSeriesService::class)->nextForCompany($companyId, 'credit_notes');
+        return app(NumberingSeriesService::class)->nextForCompany($companyId, $context);
     }
 
 }

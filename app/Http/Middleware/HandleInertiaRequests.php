@@ -116,6 +116,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'status' => $request->session()->get('status'),
                 'error' => $request->session()->get('error'),
+                'open_send' => (bool) $request->session()->get('open_send'),
             ],
             'adminWorkspace' => $this->adminWorkspace($request, $active),
             'adminShell' => $user && $user->hasRole('admin')

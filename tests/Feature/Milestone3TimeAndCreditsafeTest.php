@@ -168,6 +168,8 @@ class Milestone3TimeAndCreditsafeTest extends TestCase
         $entry->refresh();
         $this->assertSame(TimeEntry::STATUS_INVOICED, $entry->status);
         $this->assertNotNull($entry->invoice_id);
+        $this->assertNull($entry->invoice->invoice_number);
+        $this->assertSame('1', (string) $this->company->numberingSeries()->first()->next_number);
 
         $item = InvoiceItem::where('invoice_id', $entry->invoice_id)->first();
         $this->assertNotNull($item);

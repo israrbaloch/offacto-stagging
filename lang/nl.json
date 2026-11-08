@@ -289,6 +289,8 @@
     "invoices.paid": "Betaald",
     "invoices.unpaid": "Onbetaald",
     "invoices.number": "Factuur #",
+    "invoices.not_saved_yet": "Nog niet opgeslagen",
+    "invoices.number_assigned_on_send": "Nummer :number wordt toegekend wanneer je deze factuur verzendt.",
     "invoices.issue_date": "Uitgiftedatum",
     "invoices.due_date": "Vervaldatum",
     "invoices.credit_note": "Creditnota",

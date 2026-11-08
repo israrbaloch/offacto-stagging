@@ -664,6 +664,8 @@
     "invoices.saving_draft": "Saving draft…",
     "invoices.draft_saved_at": "Draft saved :time",
     "invoices.draft_created": "Draft created",
+    "invoices.not_saved_yet": "Not saved yet",
+    "invoices.number_assigned_on_send": "Number :number is assigned when you send this invoice.",
     "invoices.draft_saved_toast": "Draft saved",
     "invoices.pdf_after_send_hint": "Send the invoice first to download the final PDF.",
     "invoices.doc_standard": "Invoice",
