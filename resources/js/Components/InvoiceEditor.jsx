@@ -7,10 +7,12 @@ import LineItemsEditor from './LineItemsEditor';
 import InvoiceAcknowledgmentPanel from './InvoiceAcknowledgmentPanel';
 import InvoiceReminderModal from './InvoiceReminderModal';
 import SendInvoiceModal from './SendInvoiceModal';
+import SentInvoicePicker from './SentInvoicePicker';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useUi } from '../context/UiContext';
 import { t } from '../lib/i18n';
 import { belgianStructuredReference } from '../lib/belgianPayment';
+import { lookupPeppolParticipant } from '../lib/peppolLookup';
 import { calendarDate, customerName, formatDate, money, optionsFromMap } from '../lib/utils';
 
 function dateValue(value) {
@@ -43,12 +45,18 @@ function parseIntro(value = '') {
 function parseNotes(value = '') {
     let notes = String(value || '');
     let conditions = '';
+    let creditReason = '';
+    const reasonMatch = notes.match(/^Credit reason:\s*(.+)$/m);
+    if (reasonMatch) {
+        creditReason = reasonMatch[1].trim();
+        notes = notes.replace(reasonMatch[0], '').trim();
+    }
     const condMatch = notes.match(/^Special conditions:\s*([\s\S]*)$/m);
     if (condMatch) {
         conditions = condMatch[1].trim();
         notes = notes.replace(condMatch[0], '').trim();
     }
-    return { conditions, comments: notes };
+    return { conditions, comments: notes, creditReason };
 }
 
 function dueFromTerm(invoiceDate, term) {
@@ -154,10 +162,12 @@ export default function InvoiceEditor({
     const [items, setItems] = useState(existingItems);
     const isDraft = String(invoice?.status_relation?.name || 'draft').toLowerCase() === 'draft';
     const readOnly = !isDraft;
-    const [typeTab, setTypeTab] = useState(() => initialTypeTab(invoice, isDraft));
+    const [typeTab, setTypeTab] = useState(() => (!invoice?.id && recurring ? 'rec' : initialTypeTab(invoice, isDraft)));
     const [paymentTerm, setPaymentTerm] = useState(() => inferPaymentTerm(invoice));
     const [customerRef, setCustomerRef] = useState(invoice?.customer_reference || '');
-    const [creditReason, setCreditReason] = useState('');
+    const [creditReason, setCreditReason] = useState(parsedNotes.creditReason || '');
+    const [sourcePicker, setSourcePicker] = useState(null);
+    const [customerPeppol, setCustomerPeppol] = useState(null);
     const [recurringInterval, setRecurringInterval] = useState(invoice?.recurring_interval || 'monthly');
     const [molliePaymentToggle, setMolliePaymentToggle] = useState(Boolean(mollieConfigured));
     const [mollieDirectDebitToggle, setMollieDirectDebitToggle] = useState(Boolean(mollieConfigured));
@@ -195,6 +205,10 @@ export default function InvoiceEditor({
 
     const payloadFromState = () => {
         const invoiceDate = form.data.invoice_date || todayISO();
+        const recurringDraft = typeTab === 'rec' && !invoice?.parent_invoice_id;
+        const reasonLine = invoice?.parent_invoice_id && creditReason.trim()
+            ? `Credit reason: ${creditReason.trim()}`
+            : '';
         return {
             customer_id: form.data.customer_id || null,
             offer_id: form.data.offer_id || null,
@@ -204,10 +218,12 @@ export default function InvoiceEditor({
             customer_reference: customerRef || null,
             intro: title ? `${title}\n\n${form.data.intro || ''}`.trim() : form.data.intro,
             desc: form.data.desc,
-            notes: [conditions && `Special conditions: ${conditions}`, form.data.notes].filter(Boolean).join('\n\n'),
+            notes: [reasonLine, conditions && `Special conditions: ${conditions}`, form.data.notes].filter(Boolean).join('\n\n'),
             status: form.data.status,
             ip_transfer_type: form.data.ip_transfer_type || null,
             email_message: emailMessage,
+            is_recurring: recurringDraft,
+            recurring_interval: recurringDraft ? recurringInterval : null,
             items: items
                 .filter(lineShouldPersist)
                 .map((item) => ({
@@ -275,7 +291,7 @@ export default function InvoiceEditor({
         }, 1500);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.data, items, customerRef, paymentTerm, invoice?.id, sendOpen]);
+    }, [form.data, items, customerRef, paymentTerm, invoice?.id, sendOpen, typeTab, recurringInterval, creditReason]);
 
     const customerOptions = optionsFromMap(customers);
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
@@ -283,6 +299,32 @@ export default function InvoiceEditor({
     const issueDate = dateValue(form.data.invoice_date) || todayISO();
     const copyrightLabel = ipTransferTypes[form.data.ip_transfer_type] || '';
     const brand = activeCompany?.theme?.primary || '#6B59DC';
+
+    useEffect(() => {
+        const vat = selectedCustomer?.vat_number;
+        if (!vat) {
+            setCustomerPeppol(null);
+            return undefined;
+        }
+        let cancelled = false;
+        setCustomerPeppol({ checking: true });
+        const timer = setTimeout(async () => {
+            try {
+                const result = await lookupPeppolParticipant(vat, selectedCustomer?.country_code);
+                if (!cancelled) {
+                    setCustomerPeppol(result);
+                }
+            } catch {
+                if (!cancelled) {
+                    setCustomerPeppol({ found: false, error: 'unavailable' });
+                }
+            }
+        }, 300);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [selectedCustomer?.vat_number, selectedCustomer?.country_code]);
 
     const intraEu =
         selectedCustomer?.vat_number &&
@@ -307,8 +349,6 @@ export default function InvoiceEditor({
     const persistDraft = (extra = {}, options = {}) => {
         form.transform(() => ({
             ...payloadFromState(),
-            is_recurring: Boolean(invoice?.is_recurring) || (!invoice?.id && recurring),
-            recurring_interval: recurringInterval,
             ...extra,
         }));
         const visit = {
@@ -635,7 +675,13 @@ export default function InvoiceEditor({
                                                 </button>
                                             </div>
                                         ) : (
-                                            <p className="offacto-invoice-hint">{t('invoices.credit_note_hint')}</p>
+                                            <div className="offacto-invoice-type-cta">
+                                                <p className="offacto-invoice-hint">{t('invoices.credit_pick_hint')}</p>
+                                                <button type="button" className="offacto-btn-p" onClick={() => setSourcePicker('credit')}>
+                                                    <Icon name="invoice" />
+                                                    {t('invoices.credit_note')}
+                                                </button>
+                                            </div>
                                         )}
                                         {!readOnly ? (
                                             <div className="offacto-invoice-note warn">
@@ -679,6 +725,7 @@ export default function InvoiceEditor({
                                                         </select>
                                                     </label>
                                                 </div>
+                                                <p className="offacto-invoice-hint">{t('invoices.recurring_draft_hint')}</p>
                                                 <div className="offacto-invoice-toggle-row">
                                                     <span>{t('invoices.mollie_direct_debit')}</span>
                                                     <DemoToggle
@@ -699,13 +746,21 @@ export default function InvoiceEditor({
                             <div className="offacto-brief-edit-card-h">
                                 <h3>{t('dashboard.customer')}</h3>
                                 <div className="offacto-invoice-card-acts">
-                                    {peppolConfigured && selectedCustomer?.vat_number ? (
+                                    {customerPeppol?.found ? (
                                         <span className="offacto-demo-badge ok nd">
                                             <Icon name="check" />
-                                            Peppol
+                                            {customerPeppol.name
+                                                ? t('customers.peppol_found', { name: customerPeppol.name })
+                                                : t('customers.peppol_found_id', { id: customerPeppol.participant_id || '' })}
                                         </span>
                                     ) : (
-                                        <span className="offacto-demo-badge warn nd">{t('invoices.not_on_peppol')}</span>
+                                        <span className="offacto-demo-badge warn nd">
+                                            {customerPeppol?.checking
+                                                ? t('customers.peppol_checking')
+                                                : customerPeppol?.error
+                                                  ? t('customers.peppol_unavailable')
+                                                  : t('invoices.not_on_peppol')}
+                                        </span>
                                     )}
                                 </div>
                             </div>
@@ -995,6 +1050,11 @@ export default function InvoiceEditor({
                 whatsappConfigured={whatsappConfigured}
                 whatsappShareUrl={whatsappShareUrl || ''}
                 onBeforeSend={isDraft ? (runSend) => saveThen(runSend) : undefined}
+            />
+            <SentInvoicePicker
+                open={sourcePicker !== null}
+                mode={sourcePicker || 'credit'}
+                onClose={() => setSourcePicker(null)}
             />
             <InvoiceReminderModal
                 open={reminderOpen}

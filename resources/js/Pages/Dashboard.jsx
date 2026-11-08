@@ -79,6 +79,7 @@ export default function Dashboard({
     recentResponses = [],
     recentActivity = [],
     hasCompany = true,
+    peppolConfigured = false,
 }) {
     const { auth } = usePage().props;
     const { toast } = useUi();
@@ -357,7 +358,11 @@ export default function Dashboard({
                             <span className="offacto-dash-ficon">
                                 <Icon name="shield" />
                             </span>
-                            <span className="offacto-dash-badge ok">{t('dashboard.peppol_connected')}</span>
+                            {peppolConfigured ? (
+                                <span className="offacto-dash-badge ok">{t('dashboard.peppol_connected')}</span>
+                            ) : (
+                                <span className="offacto-dash-badge warn">{t('integrations.connect')}</span>
+                            )}
                         </div>
                         <h3>{t('dashboard.peppol_title')}</h3>
                         <p>{t('dashboard.peppol_blurb')}</p>

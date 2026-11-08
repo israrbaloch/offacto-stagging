@@ -73,6 +73,8 @@ class UpdateInvoiceRequest extends FormRequest
                 Rule::in([Invoice::IP_FULL_TRANSFER, Invoice::IP_LICENSE_TO_USE]),
             ],
             'autosave' => ['sometimes', 'boolean'],
+            'is_recurring' => ['sometimes', 'boolean'],
+            'recurring_interval' => ['nullable', 'in:weekly,monthly,yearly'],
             'items' => ['nullable', 'array'],
             'items.*.service_id' => [
                 'nullable',

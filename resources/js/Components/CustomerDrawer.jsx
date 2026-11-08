@@ -4,6 +4,7 @@ import Icon from './Icon';
 import { useUi } from '../context/UiContext';
 import { customerTypeLabel, customerTypeOptions, isOrgLikeType } from '../lib/customerTypes';
 import { t } from '../lib/i18n';
+import { lookupPeppolParticipant } from '../lib/peppolLookup';
 import { customerName, optionsFromMap } from '../lib/utils';
 
 function xsrfToken() {
@@ -102,6 +103,7 @@ export default function CustomerDrawer({
     const { toast, confirm } = useUi();
     const editing = Boolean(customer?.id);
     const fileInputRef = useRef(null);
+    const [peppolLookup, setPeppolLookup] = useState(null);
     const [viesState, setViesState] = useState(null);
     const [viesResult, setViesResult] = useState(null);
     const [viesError, setViesError] = useState('');
@@ -180,15 +182,47 @@ export default function CustomerDrawer({
         return Boolean(code);
     }, [countryCodes, customer?.country?.code, data.country_id, data.vat_number, peppolConfigured]);
 
-    const peppolDetail = useMemo(() => {
-        if (!peppolConfigured || !peppolEligible) {
-            return t('customers.peppol_not_found');
+    useEffect(() => {
+        if (!open) {
+            return undefined;
         }
-        const vat = String(data.vat_number || customer?.vat_number || '')
-            .replace(/[\s.]+/g, '')
-            .toUpperCase();
-        return vat || t('customers.peppol_not_found');
-    }, [customer?.vat_number, data.vat_number, peppolConfigured, peppolEligible]);
+        const vat = String(data.vat_number || '').trim();
+        if (!vat) {
+            setPeppolLookup(null);
+            return undefined;
+        }
+        const countryCode = data.country_id ? countryCodes[data.country_id] : customer?.country?.code;
+        let cancelled = false;
+        setPeppolLookup({ checking: true });
+        const timer = setTimeout(async () => {
+            try {
+                const result = await lookupPeppolParticipant(vat, countryCode);
+                if (!cancelled) {
+                    setPeppolLookup(result);
+                }
+            } catch {
+                if (!cancelled) {
+                    setPeppolLookup({ found: false, error: 'unavailable' });
+                }
+            }
+        }, 400);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [open, data.vat_number, data.country_id, countryCodes, customer?.country?.code]);
+
+    const peppolDetail = !String(data.vat_number || '').trim()
+        ? t('customers.peppol_enter_vat')
+        : peppolLookup?.checking
+          ? t('customers.peppol_checking')
+          : peppolLookup?.error
+            ? t('customers.peppol_unavailable')
+            : peppolLookup?.found
+              ? (peppolLookup.name
+                  ? t('customers.peppol_found', { name: peppolLookup.name })
+                  : t('customers.peppol_found_id', { id: peppolLookup.participant_id || '' }))
+              : t('customers.peppol_not_found');
 
     const creditRating = latestCreditCheck?.rating || customer?.creditsafe_rating || null;
 
@@ -593,17 +627,17 @@ export default function CustomerDrawer({
                             {errors.country_id ? <p className="offacto-drawer-hint bad">{errors.country_id}</p> : null}
                         </div>
 
-                        {editing ? (
-                            <div className="offacto-drawer-integ-grid">
-                                <div className="offacto-drawer-integ">
-                                    <span className="offacto-drawer-integ-logo peppol" aria-hidden="true">
-                                        P
-                                    </span>
-                                    <div className="grow">
-                                        <b>Peppol</b>
-                                        <div className="offacto-drawer-integ-hint">{peppolDetail}</div>
-                                    </div>
+                        <div className="offacto-drawer-integ-grid">
+                            <div className="offacto-drawer-integ">
+                                <span className="offacto-drawer-integ-logo peppol" aria-hidden="true">
+                                    P
+                                </span>
+                                <div className="grow">
+                                    <b>Peppol</b>
+                                    <div className="offacto-drawer-integ-hint">{peppolDetail}</div>
                                 </div>
+                            </div>
+                            {editing ? (
                                 <div className="offacto-drawer-integ">
                                     <span className="offacto-drawer-integ-logo creditsafe" aria-hidden="true">
                                         C
@@ -625,8 +659,8 @@ export default function CustomerDrawer({
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : null}
+                            ) : null}
+                        </div>
 
                         <div className="offacto-drawer-field">
                             <div className="offacto-drawer-vault-head">

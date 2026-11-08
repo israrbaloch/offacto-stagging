@@ -1,7 +1,9 @@
 import { Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import CountUpMoney from '../../Components/CountUpMoney';
 import Icon from '../../Components/Icon';
 import Pagination from '../../Components/Pagination';
+import SentInvoicePicker from '../../Components/SentInvoicePicker';
 import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout';
 import { useUi } from '../../context/UiContext';
 import { localeTag, t } from '../../lib/i18n';
@@ -195,6 +197,7 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
     }
 
     const dueColumnLabel = statusTab === 'rec' ? t('invoices.next_run') : t('invoices.due_or_next');
+    const [sourcePicker, setSourcePicker] = useState(null);
 
     return (
         <AuthenticatedLayout title={t('invoices.title')}>
@@ -208,7 +211,7 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
                         <button
                             type="button"
                             className="offacto-brief-btn"
-                            onClick={() => toast.info(t('invoices.create_from_sent_hint'))}
+                            onClick={() => setSourcePicker('credit')}
                         >
                             <Icon name="invoice" />
                             {t('invoices.new_credit')}
@@ -216,7 +219,7 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
                         <button
                             type="button"
                             className="offacto-brief-btn"
-                            onClick={() => toast.info(t('invoices.create_from_sent_hint'))}
+                            onClick={() => setSourcePicker('recurring')}
                         >
                             <Icon name="repeat" />
                             {t('invoices.new_recurring')}
@@ -407,6 +410,11 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
                     ) : null}
                 </div>
             </div>
+            <SentInvoicePicker
+                open={sourcePicker !== null}
+                mode={sourcePicker || 'credit'}
+                onClose={() => setSourcePicker(null)}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -225,7 +225,11 @@ class InvoiceController extends Controller
                     ->where('due_date', '<', now()->startOfDay());
                 break;
             case 'credit':
-                $query->whereNotNull('parent_invoice_id');
+                $query->where('is_recurring', false)
+                    ->whereNotNull('parent_invoice_id')
+                    ->whereHas('items', function ($items) {
+                        $items->where('quantity', '<', 0);
+                    });
                 break;
             case 'rec':
                 $query->where('is_recurring', true);
@@ -531,7 +535,7 @@ class InvoiceController extends Controller
         DB::beginTransaction();
         try {
             // Update invoice
-            $invoice->update([
+            $invoice->update(array_merge([
                 'customer_id' => $request->validated()['customer_id'] ?? null,
                 'invoice_date' => $request->validated()['invoice_date'] ?? $invoice->invoice_date,
                 'due_date' => $request->validated()['due_date'] ?? null,
@@ -543,7 +547,7 @@ class InvoiceController extends Controller
                 'email_message' => $request->validated()['email_message'] ?? $invoice->email_message,
                 'status' => $request->validated()['status'],
                 'ip_transfer_type' => $request->validated()['ip_transfer_type'] ?? null,
-            ]);
+            ], $this->recurringAttributes($request, $invoice)));
 
             $this->replaceInvoiceItems($invoice, $request->validated()['items'] ?? []);
 
@@ -1117,6 +1121,43 @@ class InvoiceController extends Controller
         return back()->with('status', 'attachment-deleted');
     }
 
+    public function issuedSources(Request $request): JsonResponse
+    {
+        $company = $request->user()?->activeCompany();
+        if (! $company) {
+            return response()->json([
+                'message' => 'Select or create a company first.',
+            ], 422);
+        }
+
+        $rows = Invoice::query()
+            ->where('company_id', $company->id)
+            ->where('is_recurring', false)
+            ->whereNull('parent_invoice_id')
+            ->whereHas('statusRelation', function ($status) {
+                $status->whereRaw('LOWER(name) != ?', ['draft']);
+            })
+            ->with(['customer:id,first_name,surname,org_name', 'items'])
+            ->latest('id')
+            ->limit(100)
+            ->get()
+            ->map(function (Invoice $invoice) {
+                $customer = $invoice->customer;
+                $name = trim((string) ($customer?->org_name ?: trim(($customer?->first_name ?? '').' '.($customer?->surname ?? ''))));
+
+                return [
+                    'id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'customer_name' => $name !== '' ? $name : null,
+                    'total' => $invoice->total,
+                    'invoice_date' => $invoice->invoice_date?->toDateString(),
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $rows]);
+    }
+
     public function createCreditNote(Request $request, $invoice): RedirectResponse
     {
         $user = $request->user();
@@ -1470,6 +1511,35 @@ class InvoiceController extends Controller
         $invoice->update($payload);
 
         return back()->with('status', 'recurring-updated');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function recurringAttributes(Request $request, Invoice $invoice): array
+    {
+        if (! $request->exists('is_recurring') || $invoice->parent_invoice_id) {
+            return [];
+        }
+
+        $enabled = $request->boolean('is_recurring');
+        $interval = $enabled ? (string) $request->input('recurring_interval', 'monthly') : null;
+        if (! in_array($interval, ['weekly', 'monthly', 'yearly'], true)) {
+            $interval = $enabled ? 'monthly' : null;
+        }
+
+        $attributes = [
+            'is_recurring' => $enabled,
+            'recurring_interval' => $interval,
+        ];
+
+        if (! $enabled) {
+            $attributes['next_run_at'] = null;
+        } elseif (! $invoice->is_recurring || ! $invoice->next_run_at || $invoice->recurring_interval !== $interval) {
+            $attributes['next_run_at'] = RecurringInvoice::initialNextRun($interval);
+        }
+
+        return $attributes;
     }
 
     /**

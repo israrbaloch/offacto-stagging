@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Offer;
 use App\Services\PurchaseFinanceService;
+use App\Support\CompanyIntegrations;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -34,6 +35,7 @@ class DashboardController extends Controller
                 'recentResponses' => collect(),
                 'recentActivity' => [],
                 'hasCompany' => false,
+                'peppolConfigured' => false,
             ];
 
             return Inertia::render('Dashboard', $payload);
@@ -95,6 +97,7 @@ class DashboardController extends Controller
             'recentResponses' => $recentResponses,
             'recentActivity' => $activity,
             'hasCompany' => true,
+            'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),
         ]);
     }
 

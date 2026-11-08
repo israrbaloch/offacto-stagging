@@ -2800,6 +2800,43 @@ html.dark .offacto-search-layer-panel {
     color: var(--dash-ok);
 }
 
+.offacto-dash-badge.warn {
+    background: #fff4e5;
+    color: #9a6700;
+}
+
+.offacto-source-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.offacto-source-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    padding: 12px 14px;
+    border: 1px solid #e6e8f2;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.offacto-source-row:hover {
+    border-color: #6b59dc;
+}
+
+.offacto-source-row:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
 .offacto-dash-promo h3 {
     margin: 14px 0 4px;
     font-size: 15px;
