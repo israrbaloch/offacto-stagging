@@ -368,9 +368,11 @@ class InvoiceController extends Controller
                 'invoice_number' => null,
                 'invoice_date' => $validated['invoice_date'] ?? now(),
                 'due_date' => $validated['due_date'] ?? now()->addDays(30),
+                'payment_term' => $validated['payment_term'] ?? null,
                 'intro' => $validated['intro'] ?? null,
                 'desc' => $validated['desc'] ?? null,
                 'notes' => $validated['notes'] ?? null,
+                'customer_reference' => $validated['customer_reference'] ?? null,
                 'email_message' => $validated['email_message'] ?? null,
                 'status' => $validated['status'],
                 'payment_status' => Invoice::PAYMENT_UNPAID,
@@ -380,17 +382,7 @@ class InvoiceController extends Controller
                 'next_run_at' => $recurring ? RecurringInvoice::initialNextRun($interval) : null,
             ]);
 
-            // Create invoice items
-            foreach ($request->validated()['items'] ?? [] as $itemData) {
-                $item = new InvoiceItem([
-                    'service_id' => $itemData['service_id'],
-                    'description' => $itemData['description'] ?? null,
-                    'quantity' => $itemData['quantity'],
-                    'price' => $itemData['price'],
-                ]);
-                $item->calculateTotal();
-                $invoice->items()->save($item);
-            }
+            $this->replaceInvoiceItems($invoice, $request->validated()['items'] ?? []);
 
             DB::commit();
 
@@ -535,28 +527,17 @@ class InvoiceController extends Controller
                 'customer_id' => $request->validated()['customer_id'] ?? null,
                 'invoice_date' => $request->validated()['invoice_date'] ?? $invoice->invoice_date,
                 'due_date' => $request->validated()['due_date'] ?? null,
+                'payment_term' => $request->validated()['payment_term'] ?? null,
                 'intro' => $request->validated()['intro'] ?? null,
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
+                'customer_reference' => $request->validated()['customer_reference'] ?? null,
                 'email_message' => $request->validated()['email_message'] ?? $invoice->email_message,
                 'status' => $request->validated()['status'],
                 'ip_transfer_type' => $request->validated()['ip_transfer_type'] ?? null,
             ]);
 
-            // Delete existing items
-            $invoice->items()->delete();
-
-            // Create new items
-            foreach ($request->validated()['items'] ?? [] as $itemData) {
-                $item = new InvoiceItem([
-                    'service_id' => $itemData['service_id'],
-                    'description' => $itemData['description'] ?? null,
-                    'quantity' => $itemData['quantity'],
-                    'price' => $itemData['price'],
-                ]);
-                $item->calculateTotal();
-                $invoice->items()->save($item);
-            }
+            $this->replaceInvoiceItems($invoice, $request->validated()['items'] ?? []);
 
             DB::commit();
 
@@ -1514,8 +1495,8 @@ class InvoiceController extends Controller
             ? $invoice->items->map(function ($item, $index) {
                 return [
                     'id' => $index,
-                    'service_id' => $item->service_id,
-                    'service_name' => $item->service->name ?? 'N/A',
+                    'service_id' => $item->service_id ? (string) $item->service_id : '',
+                    'service_name' => $item->service?->name ?? '',
                     'description' => $item->description ?? '',
                     'kind' => $item->service_id ? 'product' : 'custom',
                     'quantity' => $item->quantity,
@@ -1568,6 +1549,32 @@ class InvoiceController extends Controller
                 ])
                 ->values(),
         ]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function replaceInvoiceItems(Invoice $invoice, array $items): void
+    {
+        $invoice->items()->delete();
+
+        foreach ($items as $itemData) {
+            $description = trim((string) ($itemData['description'] ?? ''));
+            $serviceId = $itemData['service_id'] ?? null;
+            $price = (float) ($itemData['price'] ?? 0);
+            if (! $serviceId && $description === '' && $price == 0.0) {
+                continue;
+            }
+
+            $item = new InvoiceItem([
+                'service_id' => $serviceId ?: null,
+                'description' => $description !== '' ? $description : null,
+                'quantity' => $itemData['quantity'],
+                'price' => $itemData['price'],
+            ]);
+            $item->calculateTotal();
+            $invoice->items()->save($item);
+        }
     }
 
     /**

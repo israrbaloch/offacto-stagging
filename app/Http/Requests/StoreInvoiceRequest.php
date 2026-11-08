@@ -25,6 +25,23 @@ class StoreInvoiceRequest extends FormRequest
         if ($this->ip_transfer_type === '') {
             $this->merge(['ip_transfer_type' => null]);
         }
+
+        if ($this->customer_reference === '') {
+            $this->merge(['customer_reference' => null]);
+        }
+
+        $this->merge([
+            'items' => collect($this->input('items', []))->map(function ($item) {
+                if (! is_array($item)) {
+                    return $item;
+                }
+                if (($item['service_id'] ?? '') === '' || ($item['service_id'] ?? null) === '0') {
+                    $item['service_id'] = null;
+                }
+
+                return $item;
+            })->all(),
+        ]);
     }
 
     public function rules(): array
@@ -49,6 +66,8 @@ class StoreInvoiceRequest extends FormRequest
             ],
             'invoice_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:invoice_date'],
+            'payment_term' => ['nullable', 'string', Rule::in(['30', '14', 'immediate'])],
+            'customer_reference' => ['nullable', 'string', 'max:120'],
             'intro' => ['nullable', 'string'],
             'desc' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
@@ -68,14 +87,14 @@ class StoreInvoiceRequest extends FormRequest
             'open_send' => ['sometimes', 'boolean'],
             'items' => ['nullable', 'array'],
             'items.*.service_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('services', 'id')->where(function ($query) use ($activeCompany) {
                     return $query->where('company_id', $activeCompany?->id);
                 }),
             ],
             'items.*.description' => ['nullable', 'string', 'max:500'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'numeric', 'not_in:0'],
             'items.*.price' => ['required', 'numeric', 'min:0'],
             'action' => ['nullable', 'string', Rule::in(['draft', 'send'])],
         ];

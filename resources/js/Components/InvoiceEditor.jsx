@@ -63,6 +63,33 @@ function dueFromTerm(invoiceDate, term) {
     return dateValue(base);
 }
 
+function inferPaymentTerm(invoice) {
+    if (invoice?.payment_term) {
+        return invoice.payment_term;
+    }
+    const start = dateValue(invoice?.invoice_date);
+    const due = dateValue(invoice?.due_date);
+    if (!start || !due) {
+        return '30';
+    }
+    if (due === start) {
+        return 'immediate';
+    }
+    if (due === dueFromTerm(start, '14')) {
+        return '14';
+    }
+    return '30';
+}
+
+function lineShouldPersist(item) {
+    if (item.kind === 'text') {
+        return false;
+    }
+    const description = String(item.description || '').trim();
+    const price = Number(item.price || 0);
+    return Boolean(item.service_id || description || price);
+}
+
 function resolveHeadingDocType(invoice) {
     if (invoice?.parent_invoice_id) {
         return 'credit';
@@ -127,8 +154,8 @@ export default function InvoiceEditor({
     const isDraft = String(invoice?.status_relation?.name || 'draft').toLowerCase() === 'draft';
     const readOnly = !isDraft;
     const [typeTab, setTypeTab] = useState(() => initialTypeTab(invoice, isDraft));
-    const [paymentTerm, setPaymentTerm] = useState('30');
-    const [customerRef, setCustomerRef] = useState('');
+    const [paymentTerm, setPaymentTerm] = useState(() => inferPaymentTerm(invoice));
+    const [customerRef, setCustomerRef] = useState(invoice?.customer_reference || '');
     const [creditReason, setCreditReason] = useState('');
     const [recurringInterval, setRecurringInterval] = useState(invoice?.recurring_interval || 'monthly');
     const [molliePaymentToggle, setMolliePaymentToggle] = useState(Boolean(mollieConfigured));
@@ -154,10 +181,10 @@ export default function InvoiceEditor({
     const isPaid = String(invoice?.payment_status || '').toLowerCase() === 'paid';
 
     const form = useForm({
-        customer_id: invoice?.customer_id || '',
+        customer_id: invoice?.customer_id ? String(invoice.customer_id) : '',
         offer_id: invoice?.offer_id || '',
-        invoice_date: isDraft ? todayISO() : dateValue(invoice?.invoice_date) || todayISO(),
-        due_date: dateValue(invoice?.due_date),
+        invoice_date: dateValue(invoice?.invoice_date) || todayISO(),
+        due_date: dateValue(invoice?.due_date) || dueFromTerm(todayISO(), inferPaymentTerm(invoice)),
         intro: parsed.intro,
         desc: invoice?.desc || '',
         notes: parsedNotes.comments,
@@ -166,12 +193,14 @@ export default function InvoiceEditor({
     });
 
     const payloadFromState = () => {
-        const invoiceDate = isDraft ? todayISO() : form.data.invoice_date || null;
+        const invoiceDate = form.data.invoice_date || todayISO();
         return {
             customer_id: form.data.customer_id || null,
             offer_id: form.data.offer_id || null,
             invoice_date: invoiceDate,
-            due_date: form.data.due_date || null,
+            due_date: form.data.due_date || dueFromTerm(invoiceDate, paymentTerm),
+            payment_term: paymentTerm,
+            customer_reference: customerRef || null,
             intro: title ? `${title}\n\n${form.data.intro || ''}`.trim() : form.data.intro,
             desc: form.data.desc,
             notes: [conditions && `Special conditions: ${conditions}`, form.data.notes].filter(Boolean).join('\n\n'),
@@ -179,12 +208,12 @@ export default function InvoiceEditor({
             ip_transfer_type: form.data.ip_transfer_type || null,
             email_message: emailMessage,
             items: items
-                .filter((item) => item.service_id)
+                .filter(lineShouldPersist)
                 .map((item) => ({
-                    service_id: item.service_id,
+                    service_id: item.service_id || null,
                     description: item.description,
-                    quantity: item.kind === 'text' ? 1 : item.quantity,
-                    price: item.kind === 'text' ? 0 : item.price,
+                    quantity: Number(item.quantity),
+                    price: Number(item.price || 0),
                 })),
         };
     };
@@ -214,7 +243,7 @@ export default function InvoiceEditor({
     }, []);
 
     useEffect(() => {
-        if (!isDraft) {
+        if (!isDraft || invoice?.id) {
             return;
         }
         const today = todayISO();
@@ -245,12 +274,12 @@ export default function InvoiceEditor({
         }, 1500);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.data, items, invoice?.id]);
+    }, [form.data, items, customerRef, paymentTerm, invoice?.id]);
 
     const customerOptions = optionsFromMap(customers);
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
     const canRemind = readOnly && !isPaid && Boolean(selectedCustomer?.email);
-    const issueDate = isDraft ? todayISO() : dateValue(form.data.invoice_date);
+    const issueDate = dateValue(form.data.invoice_date) || todayISO();
     const copyrightLabel = ipTransferTypes[form.data.ip_transfer_type] || '';
     const brand = activeCompany?.theme?.primary || '#6B59DC';
 

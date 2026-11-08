@@ -259,7 +259,7 @@ export default function LineItemsEditor({
                                                     onChange={(e) => changeService(index, e.target.value)}
                                                     placeholder={t('invoices.select_service')}
                                                     disabled={readOnly}
-                                                    options={services.map((service) => ({ value: service.id, label: service.name }))}
+                                                    options={services.map((service) => ({ value: String(service.id), label: service.name }))}
                                                 />
                                             </div>
                                         ) : null}
@@ -273,7 +273,7 @@ export default function LineItemsEditor({
                                                     onChange={(e) => changeService(index, e.target.value)}
                                                     placeholder={t('invoices.select_service')}
                                                     disabled={readOnly}
-                                                    options={services.map((service) => ({ value: service.id, label: service.name }))}
+                                                    options={services.map((service) => ({ value: String(service.id), label: service.name }))}
                                                 />
                                             </div>
                                         )}
