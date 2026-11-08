@@ -816,6 +816,8 @@
     "invoices.section_basic": "Informations de base",
     "invoices.section_assignment": "Mission",
     "invoices.section_lines": "Lignes de facture",
+    "invoices.select_service": "Choisir une prestation",
+    "invoices.line_placeholder": "Décrivez cette ligne",
     "invoices.section_copyright": "Droits d'auteur",
     "invoices.section_comments": "Commentaires",
     "invoices.section_attachments": "Pièces jointes",

@@ -9,9 +9,8 @@ import InvoiceReminderModal from './InvoiceReminderModal';
 import SendInvoiceModal from './SendInvoiceModal';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useUi } from '../context/UiContext';
-import { attachServiceFields } from '../lib/serviceBilling';
 import { t } from '../lib/i18n';
-import { customerName, formatDate, money, optionsFromMap } from '../lib/utils';
+import { calendarDate, customerName, formatDate, money, optionsFromMap } from '../lib/utils';
 
 function dateValue(value) {
     if (!value) {
@@ -29,7 +28,7 @@ function dateValue(value) {
 }
 
 function todayISO() {
-    return new Date().toISOString().slice(0, 10);
+    return dateValue(new Date());
 }
 
 function parseIntro(value = '') {
@@ -52,8 +51,8 @@ function parseNotes(value = '') {
 }
 
 function dueFromTerm(invoiceDate, term) {
-    const base = invoiceDate ? new Date(invoiceDate) : new Date();
-    if (Number.isNaN(base.getTime())) {
+    const base = calendarDate(invoiceDate) || calendarDate(new Date());
+    if (!base) {
         return '';
     }
     if (term === 'immediate') {
@@ -201,19 +200,15 @@ export default function InvoiceEditor({
         if (readOnly || items.length > 0 || !servicesData?.length) {
             return;
         }
-        const first = servicesData[0];
         setItems([
-            attachServiceFields(
-                {
-                    kind: 'custom',
-                    service_id: first?.id || '',
-                    service_name: first?.name || 'Custom line',
-                    description: '',
-                    quantity: 1,
-                    price: 0,
-                },
-                first,
-            ),
+            {
+                kind: 'custom',
+                service_id: '',
+                service_name: '',
+                description: '',
+                quantity: 1,
+                price: 0,
+            },
         ]);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -393,20 +388,16 @@ export default function InvoiceEditor({
         if (readOnly) {
             return;
         }
-        const first = servicesData[0];
         setItems([
             ...items,
-            attachServiceFields(
-                {
-                    kind: 'custom',
-                    service_id: first?.id || '',
-                    service_name: first?.name || 'Custom line',
-                    description: '',
-                    quantity: 1,
-                    price: 0,
-                },
-                first,
-            ),
+            {
+                kind: 'custom',
+                service_id: '',
+                service_name: '',
+                description: '',
+                quantity: 1,
+                price: 0,
+            },
         ]);
     };
 

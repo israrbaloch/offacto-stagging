@@ -1774,6 +1774,8 @@
     "invoices.section_basic": "Basic information",
     "invoices.section_assignment": "Assignment",
     "invoices.section_lines": "Invoice lines",
+    "invoices.select_service": "Select a service",
+    "invoices.line_placeholder": "Describe this line",
     "invoices.section_copyright": "Copyright",
     "invoices.section_comments": "Comments",
     "invoices.section_attachments": "Attachments",

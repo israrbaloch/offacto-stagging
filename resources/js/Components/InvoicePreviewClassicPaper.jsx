@@ -2,18 +2,12 @@ import Logo from './Logo';
 import DocumentPaperWave from './DocumentPaperWave';
 import { DEFAULT_BRAND_PRIMARY, DEFAULT_BRAND_SECONDARY, themeCssVars } from '../lib/brand';
 import { formatQuantityDisplay, lineIsHourly, priceColumnLabel, quantityColumnLabel } from '../lib/serviceBilling';
-import { money } from '../lib/utils';
+import { formatCalendarDate, money } from '../lib/utils';
 import { t } from '../lib/i18n';
+import InvoiceLineLabel, { visiblePreviewLines } from './InvoiceLineLabel';
 
 function demoDate(value) {
-    if (!value) {
-        return '—';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return value;
-    }
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return formatCalendarDate(value);
 }
 
 export default function InvoicePreviewClassicPaper({
@@ -36,7 +30,7 @@ export default function InvoicePreviewClassicPaper({
     const accent = theme.secondary || DEFAULT_BRAND_SECONDARY;
     const cssVars = themeCssVars(theme);
 
-    const priced = items.filter((item) => item.kind !== 'text');
+    const priced = visiblePreviewLines(items);
     const qtyHeader = quantityColumnLabel(items, []);
     const priceHeader = priceColumnLabel(items, []).replace(' (excl. VAT)', '');
     const calcSubtotal = priced.reduce(
@@ -58,7 +52,6 @@ export default function InvoicePreviewClassicPaper({
     const fromCity = [from.postal_code, from.city].filter(Boolean).join(' ');
 
     const lineAmount = (item) => Number(item.quantity || 0) * Number(item.price ?? item.unit_price ?? 0);
-    const lineLabel = (item) => item.service_name || item.description || '—';
 
     return (
         <div className="offacto-demo-paper offacto-demo-paper-classic" style={cssVars}>
@@ -150,7 +143,9 @@ export default function InvoicePreviewClassicPaper({
                         ) : (
                             priced.map((item, index) => (
                                 <tr key={index}>
-                                    <td>{lineLabel(item)}</td>
+                                    <td>
+                                        <InvoiceLineLabel item={item} />
+                                    </td>
                                     <td className="num">{formatQuantityDisplay(item, [])}</td>
                                     <td className="num">
                                         {`${money(item.price ?? item.unit_price)}${lineIsHourly(item, []) ? '/h' : ''}`}

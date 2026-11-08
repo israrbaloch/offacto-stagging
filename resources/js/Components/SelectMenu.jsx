@@ -13,6 +13,7 @@ export default function SelectMenu({
     allowEmpty = true,
     variant = 'default',
     style,
+    disabled = false,
 }) {
     const demo = variant === 'demo';
     const [open, setOpen] = useState(false);
@@ -79,7 +80,12 @@ export default function SelectMenu({
         <div ref={rootRef} className="relative">
             <button
                 type="button"
-                onClick={() => setOpen((current) => !current)}
+                disabled={disabled}
+                onClick={() => {
+                    if (!disabled) {
+                        setOpen((current) => !current);
+                    }
+                }}
                 className={`${demo ? 'offacto-select-menu-trigger' : 'flex w-full items-center gap-2 text-left'} ${className} ${error ? 'border-rose-400' : ''}`}
                 style={style}
             >
@@ -106,25 +112,25 @@ export default function SelectMenu({
                 <div
                     id="select-menu-portal"
                     style={{ position: 'fixed', top: menuStyle.top, left: menuStyle.left, width: menuStyle.width, zIndex: 9999 }}
-                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+                    className={demo ? 'offacto-line-service-panel' : 'overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl'}
                 >
                     {enableSearch && (
-                        <div className="border-b border-slate-100 p-2">
+                        <div className={demo ? 'offacto-line-service-search-wrap' : 'border-b border-slate-100 p-2'}>
                             <input
                                 ref={searchRef}
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                                className={demo ? 'offacto-brief-inp offacto-line-service-search' : 'w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100'}
                                 placeholder="Search…"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                             />
                         </div>
                     )}
-                    <div className="max-h-60 overflow-auto p-1">
+                    <div className={demo ? 'offacto-line-service-options' : 'max-h-60 overflow-auto p-1'}>
                         {allowEmpty && (
                             <button
                                 type="button"
                                 onClick={() => emit('')}
-                                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50"
+                                className={demo ? 'offacto-quote-line-menu-item is-placeholder' : 'flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50'}
                             >
                                 {placeholder}
                             </button>
@@ -138,9 +144,13 @@ export default function SelectMenu({
                                     type="button"
                                     onClick={() => emit(option.value)}
                                     style={option.fontFamily ? { fontFamily: option.fontFamily } : undefined}
-                                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm ${
-                                        active ? 'bg-indigo-50 font-medium text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
-                                    }`}
+                                    className={
+                                        demo
+                                            ? `offacto-quote-line-menu-item${active ? ' is-active' : ''}`
+                                            : `flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm ${
+                                                active ? 'bg-indigo-50 font-medium text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
+                                            }`
+                                    }
                                 >
                                     <span className="truncate">{option.label}</span>
                                     {active && <Icon name="check" className="h-4 w-4 shrink-0" />}

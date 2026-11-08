@@ -1,17 +1,11 @@
 import Logo from './Logo';
 import { DEFAULT_BRAND_PRIMARY, themeCssVars } from '../lib/brand';
-import { money } from '../lib/utils';
+import { formatCalendarDate, money } from '../lib/utils';
 import { t } from '../lib/i18n';
+import InvoiceLineLabel, { visiblePreviewLines } from './InvoiceLineLabel';
 
 function demoDate(value) {
-    if (!value) {
-        return '—';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return value;
-    }
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return formatCalendarDate(value);
 }
 
 export default function InvoicePreviewMinimal({
@@ -41,7 +35,7 @@ export default function InvoicePreviewMinimal({
     const isCredit = documentType === 'credit';
     const sign = isCredit ? -1 : 1;
 
-    const priced = items.filter((item) => item.kind !== 'text');
+    const priced = visiblePreviewLines(items);
     const calcSubtotal = priced.reduce(
         (sum, item) => sum + Number(item.quantity || 0) * Number(item.price || item.unit_price || 0),
         0,
@@ -61,7 +55,6 @@ export default function InvoicePreviewMinimal({
     const fromLine = [from.street, from.house].filter(Boolean).join(' ');
     const fromCity = [from.postal_code, from.city].filter(Boolean).join(' ');
 
-    const lineLabel = (item) => item.description || item.service_name || '—';
     const lineTotal = (item) => Number(item.quantity || 0) * Number(item.price || item.unit_price || 0);
 
     return (
@@ -141,7 +134,9 @@ export default function InvoicePreviewMinimal({
                     ) : (
                         priced.map((item, index) => (
                             <tr key={index}>
-                                <td>{lineLabel(item)}</td>
+                                <td>
+                                    <InvoiceLineLabel item={item} />
+                                </td>
                                 <td className="num">{item.quantity ?? '—'}</td>
                                 <td className="num">{money(sign * lineTotal(item))}</td>
                             </tr>

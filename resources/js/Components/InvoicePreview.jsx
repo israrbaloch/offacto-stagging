@@ -2,13 +2,10 @@ import Logo from './Logo';
 import SafeHtml from './SafeHtml';
 import { DEFAULT_BRAND_PRIMARY, DEFAULT_BRAND_SECONDARY } from '../lib/brand';
 import { formatQuantityDisplay, lineIsHourly, priceColumnLabel, quantityColumnLabel } from '../lib/serviceBilling';
-import { money } from '../lib/utils';
+import { formatCalendarDate, money } from '../lib/utils';
 
 function prettyDate(value) {
-    if (!value) return '—';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return formatCalendarDate(value);
 }
 
 function DocumentWave({ primary, secondary }) {
@@ -149,13 +146,15 @@ export default function InvoicePreview({
                             )}
                             {items.map((item, index) => {
                                 const amount = lineAmount(item);
-                                const label = item.service_name || item.description || 'Line item';
+                                const description = String(item.description || '').trim();
+                                const serviceName = String(item.service_name || '').trim();
+                                const label = serviceName || description || 'Line item';
                                 return (
                                     <tr key={index} className="border-t border-slate-100">
                                         <td className="px-4 py-3 font-medium text-slate-800">
                                             {label}
-                                            {item.service_name && item.description && item.description !== item.service_name && (
-                                                <span className="mt-0.5 block text-xs font-normal text-slate-500">{item.description}</span>
+                                            {serviceName && description && description !== serviceName && (
+                                                <span className="mt-0.5 block text-xs font-normal text-slate-500">{description}</span>
                                             )}
                                         </td>
                                         <td className="px-4 py-3 text-right text-slate-700">

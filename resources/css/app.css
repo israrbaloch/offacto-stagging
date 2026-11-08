@@ -6448,6 +6448,57 @@ html.dark .offacto-demo-page-surface {
     color: var(--dash-navy);
 }
 
+.offacto-invoice-builder-page .offacto-quote-lines-editor .offacto-select-menu-trigger:disabled {
+    background: #f5f7ff;
+    color: #48537f;
+    cursor: default;
+}
+
+.offacto-demo-line-label {
+    display: block;
+}
+
+.offacto-demo-line-detail {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.offacto-line-service-panel {
+    overflow: hidden;
+    border-radius: 18px;
+    border: 0;
+    background: #fff;
+    box-shadow: 0 18px 40px rgb(14 18 80 / 0.16);
+}
+
+.offacto-line-service-search-wrap {
+    padding: 8px 8px 0;
+}
+
+.offacto-line-service-search {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.offacto-line-service-options {
+    max-height: 240px;
+    overflow: auto;
+    padding: 8px;
+}
+
+.offacto-line-service-panel .offacto-quote-line-menu-item.is-placeholder {
+    color: var(--dash-muted);
+}
+
+.offacto-line-service-panel .offacto-quote-line-menu-item.is-active {
+    background: #e7edfb;
+    font-weight: 600;
+}
+
 .offacto-invoice-builder-page .offacto-quote-lines-editor .offacto-select-menu-label.is-selected {
     color: var(--dash-navy);
     font-weight: 600;

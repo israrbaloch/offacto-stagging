@@ -816,6 +816,8 @@
     "invoices.section_basic": "Basisinformatie",
     "invoices.section_assignment": "Opdracht",
     "invoices.section_lines": "Factuurregels",
+    "invoices.select_service": "Kies een dienst",
+    "invoices.line_placeholder": "Beschrijf deze regel",
     "invoices.section_copyright": "Auteursrecht",
     "invoices.section_comments": "Opmerkingen",
     "invoices.section_attachments": "Bijlagen",

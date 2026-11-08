@@ -7,6 +7,7 @@ import {
     quantityColumnLabel,
 } from '../lib/serviceBilling';
 import { money } from '../lib/utils';
+import { t } from '../lib/i18n';
 
 export default function LineItemsEditor({
     items,
@@ -134,10 +135,14 @@ export default function LineItemsEditor({
                 const next = {
                     ...item,
                     service_id: service?.id || '',
-                    service_name: service?.name || item.service_name,
-                    description: item.description || service?.description || '',
-                    price: service ? Number(service.price || 0) : item.price,
+                    service_name: service?.name || '',
+                    description: invoiceLines ? item.description || '' : item.description || service?.description || '',
+                    price: service ? Number(service.price || 0) : 0,
                 };
+                if (!service) {
+                    next.billing_mode = 'fixed';
+                    next.unit = '';
+                }
                 return service ? attachServiceFields(next, service) : next;
             }),
         );
@@ -244,33 +249,41 @@ export default function LineItemsEditor({
                             return (
                                 <tr key={index} className={builder ? 'offacto-quote-line-row' : 'border-b border-slate-100'}>
                                     <td {...(builder ? { 'data-label': 'Description' } : {})}>
+                                        {!isText && invoiceLines ? (
+                                            <div className="offacto-quote-line-svc">
+                                                <SelectMenu
+                                                    className={`${inpClass} offacto-select-menu-trigger`}
+                                                    variant="demo"
+                                                    searchable
+                                                    value={item.service_id || ''}
+                                                    onChange={(e) => changeService(index, e.target.value)}
+                                                    placeholder={t('invoices.select_service')}
+                                                    disabled={readOnly}
+                                                    options={services.map((service) => ({ value: service.id, label: service.name }))}
+                                                />
+                                            </div>
+                                        ) : null}
                                         {!isText && !invoiceLines && !builder && (
                                             <div className="mb-2">
                                                 <SelectMenu
                                                     className={selectClass}
                                                     variant="default"
+                                                    searchable
                                                     value={item.service_id}
                                                     onChange={(e) => changeService(index, e.target.value)}
-                                                    placeholder="Select a service"
+                                                    placeholder={t('invoices.select_service')}
+                                                    disabled={readOnly}
                                                     options={services.map((service) => ({ value: service.id, label: service.name }))}
                                                 />
                                             </div>
                                         )}
                                         <input
                                             className={inpClass}
-                                            list={
-                                                !isText && !readOnly
-                                                    ? builder
-                                                        ? 'offacto-quote-svc-list'
-                                                        : invoiceLines
-                                                          ? 'offacto-invoice-svc-list'
-                                                          : undefined
-                                                    : undefined
-                                            }
-                                            placeholder={isText ? 'Add a note for the client' : 'Describe this line'}
-                                            value={builder && !isText ? linePrimaryLabel(item) : item.description || ''}
+                                            list={!isText && !invoiceLines && !readOnly && builder ? 'offacto-quote-svc-list' : undefined}
+                                            placeholder={isText ? 'Add a note for the client' : t('invoices.line_placeholder')}
+                                            value={invoiceLines || !builder || isText ? item.description || '' : linePrimaryLabel(item)}
                                             onChange={(e) =>
-                                                builder && !isText
+                                                !invoiceLines && builder && !isText
                                                     ? updateLinePrimaryLabel(index, e.target.value)
                                                     : update(index, 'description', e.target.value)
                                             }
@@ -355,14 +368,6 @@ export default function LineItemsEditor({
 
             {builder && !readOnly ? (
                 <datalist id="offacto-quote-svc-list">
-                    {services.map((service) => (
-                        <option key={service.id} value={service.name} />
-                    ))}
-                </datalist>
-            ) : null}
-
-            {invoiceLines ? (
-                <datalist id="offacto-invoice-svc-list">
                     {services.map((service) => (
                         <option key={service.id} value={service.name} />
                     ))}
