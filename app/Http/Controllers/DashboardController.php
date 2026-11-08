@@ -234,8 +234,9 @@ class DashboardController extends Controller
     private function getChartData(int $companyId): array
     {
         $invoices = Invoice::where('company_id', $companyId)
-            ->with(['items', 'payments'])
-            ->get();
+            ->with(['items', 'payments', 'statusRelation'])
+            ->get()
+            ->reject(fn (Invoice $invoice) => $invoice->isDraft());
 
         $labels = [];
         $paidSeries = [];

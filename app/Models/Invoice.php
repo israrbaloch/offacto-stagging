@@ -308,7 +308,7 @@ class Invoice extends Model
      */
     public function isOverdue(): bool
     {
-        return $this->due_date && $this->due_date->isPast() && !$this->isPaid();
+        return $this->due_date && $this->due_date->isPast() && ! $this->isPaid() && ! $this->isDraft();
     }
 
     /**
