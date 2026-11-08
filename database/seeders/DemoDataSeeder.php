@@ -12,11 +12,13 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
+use App\Models\NumberingSeries;
 use App\Models\Offer;
 use App\Models\OfferAttachment;
 use App\Models\OfferItem;
 use App\Models\Service;
 use App\Models\Status;
+use App\Services\NumberingSeriesService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
@@ -128,7 +130,8 @@ class DemoDataSeeder extends Seeder
             ]);
         });
 
-        $year = now()->format('Y');
+        $this->prepareDocumentSeries($company);
+        $numbering = app(NumberingSeriesService::class);
 
         $quotes = [
             ['status' => 'Draft', 'customer' => 0, 'days' => -3, 'valid' => 21],
@@ -136,13 +139,13 @@ class DemoDataSeeder extends Seeder
             ['status' => 'Accepted', 'customer' => 2, 'days' => -28, 'valid' => 30],
         ];
 
-        foreach ($quotes as $index => $quote) {
+        foreach ($quotes as $quote) {
             $customer = $customers[$quote['customer']];
             $date = now()->addDays($quote['days']);
             $offer = Offer::create([
                 'company_id' => $company->id,
                 'customer_id' => $customer->id,
-                'offer_number' => 'OFF'.$year.'-'.$company->id.'-'.str_pad((string) ($index + 1), 4, '0', STR_PAD_LEFT),
+                'offer_number' => $numbering->nextForCompany($company->id, 'offers'),
                 'offer_date' => $date,
                 'valid_until' => $date->copy()->addDays($quote['valid']),
                 'intro' => '<p>Thank you for considering Offacto for your next project.</p>',
@@ -167,7 +170,9 @@ class DemoDataSeeder extends Seeder
             $invoice = Invoice::create([
                 'company_id' => $company->id,
                 'customer_id' => $customer->id,
-                'invoice_number' => 'INV'.$year.'-'.$company->id.'-'.str_pad((string) ($index + 1), 4, '0', STR_PAD_LEFT),
+                'invoice_number' => $plan['status'] === 'Draft'
+                    ? null
+                    : $numbering->nextForCompany($company->id, 'invoices'),
                 'invoice_date' => $date,
                 'due_date' => $date->copy()->addDays($plan['due']),
                 'intro' => '<p>Please find the invoice for the work completed.</p>',
@@ -273,6 +278,50 @@ class DemoDataSeeder extends Seeder
             'question_id' => $qtyQuestion->id,
             'value' => ['value' => 12],
         ]);
+    }
+
+    /**
+     * Demo documents are wiped first, so each series starts again at 1.
+     * Quotes use the offer series. Only issued invoices take an invoice number.
+     */
+    private function prepareDocumentSeries(Company $company): void
+    {
+        if (! $company->numberingSeries()->whereIn('type', ['invoices', 'both'])->exists()) {
+            $series = $company->numberingSeries()->create([
+                'name' => 'INV-'.$company->id,
+                'type' => 'invoices',
+                'prefix' => 'INV',
+                'year_month' => 'year',
+                'separator' => '-',
+                'digits' => '4',
+                'next_number' => '1',
+                'restart_count' => 'annual',
+            ]);
+
+            if ($company->companySetting && ! $company->companySetting->numbering_series) {
+                $company->companySetting->update(['numbering_series' => $series->id]);
+            }
+        }
+
+        if (! $company->numberingSeries()->whereIn('type', ['offers', 'both'])->exists()) {
+            $company->numberingSeries()->create([
+                'name' => 'OFF-'.$company->id,
+                'type' => 'offers',
+                'prefix' => 'OFF',
+                'year_month' => 'year',
+                'separator' => '-',
+                'digits' => '4',
+                'next_number' => '1',
+                'restart_count' => 'annual',
+            ]);
+        }
+
+        $company->numberingSeries()
+            ->whereIn('type', ['invoices', 'offers', 'both'])
+            ->update([
+                'next_number' => '1',
+                'last_period' => null,
+            ]);
     }
 
     private function addLineItems($parent, string $itemClass, $services): void

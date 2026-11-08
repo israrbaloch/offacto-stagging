@@ -57,7 +57,7 @@ class AddCompanyForStaff extends Seeder
             'city' => 'Business City',
         ]);
 
-        // Create numbering series for the company
+        // Invoices and quotes keep separate counters. Draft invoices take a number only when sent.
         $numberingSeries = NumberingSeries::create([
             'company_id' => $company->id,
             'name' => 'INV-001',
@@ -66,7 +66,20 @@ class AddCompanyForStaff extends Seeder
             'year_month' => 'year',
             'separator' => '-',
             'digits' => '4',
-            'next_number' => '0001',
+            'next_number' => '1',
+            'restart_count' => 'annual',
+        ]);
+
+        NumberingSeries::create([
+            'company_id' => $company->id,
+            'name' => 'OFF-001',
+            'type' => 'offers',
+            'prefix' => 'OFF',
+            'year_month' => 'year',
+            'separator' => '-',
+            'digits' => '4',
+            'next_number' => '1',
+            'restart_count' => 'annual',
         ]);
 
         // Create company settings

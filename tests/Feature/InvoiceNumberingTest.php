@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Mail\InvoiceSent;
 use App\Models\Company;
+use Database\Seeders\AddCountries;
+use Database\Seeders\AddStatuses;
+use Database\Seeders\DemoDataSeeder;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -221,6 +224,57 @@ class InvoiceNumberingTest extends TestCase
         $this->assertSame('DOC'.$year.'-0004', $offer->offer_number);
         $this->assertSame('5', (string) $series->fresh()->next_number);
         $this->assertSame(1, NumberingSeries::query()->where('company_id', $this->company->id)->count());
+    }
+
+    public function test_demo_seeder_uses_separate_series_and_leaves_draft_invoices_unnumbered(): void
+    {
+        $this->seed(AddCountries::class);
+        $this->seed(AddStatuses::class);
+
+        $this->series()->update([
+            'name' => 'INV-001',
+            'type' => 'invoices',
+            'prefix' => 'INV',
+            'next_number' => '9',
+        ]);
+        NumberingSeries::create([
+            'company_id' => $this->company->id,
+            'name' => 'OFF-001',
+            'type' => 'offers',
+            'prefix' => 'OFF',
+            'year_month' => 'year',
+            'separator' => '-',
+            'digits' => '4',
+            'next_number' => '9',
+            'restart_count' => 'annual',
+        ]);
+
+        $this->seed(DemoDataSeeder::class);
+
+        $year = now()->format('Y');
+        $offers = Offer::query()->where('company_id', $this->company->id)->orderBy('id')->pluck('offer_number')->all();
+        $this->assertSame([
+            'OFF'.$year.'-0001',
+            'OFF'.$year.'-0002',
+            'OFF'.$year.'-0003',
+        ], $offers);
+
+        $this->assertSame(1, Invoice::query()->where('company_id', $this->company->id)->whereNull('invoice_number')->count());
+        $numbers = Invoice::query()
+            ->where('company_id', $this->company->id)
+            ->whereNotNull('invoice_number')
+            ->orderBy('id')
+            ->pluck('invoice_number')
+            ->all();
+        $this->assertSame([
+            'INV'.$year.'-0001',
+            'INV'.$year.'-0002',
+            'INV'.$year.'-0003',
+            'INV'.$year.'-0004',
+        ], $numbers);
+
+        $this->assertSame('5', (string) NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'invoices')->value('next_number'));
+        $this->assertSame('4', (string) NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'offers')->value('next_number'));
     }
 
     private function series(): NumberingSeries
