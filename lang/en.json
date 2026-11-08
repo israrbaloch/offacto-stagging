@@ -1095,6 +1095,7 @@
     "numbering.restart_monthly": "Monthly",
     "numbering.next_preview": "The next number in this series is",
     "numbering.type_invoices": "Invoices",
+    "numbering.type_offers": "Quotes",
     "numbering.type_credit_notes": "Credit notes",
     "numbering.type_both": "Invoices & quotes",
     "numbering.active": "Active",

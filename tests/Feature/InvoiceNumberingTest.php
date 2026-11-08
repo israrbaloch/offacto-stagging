@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Language;
 use App\Models\NumberingSeries;
+use App\Models\Offer;
 use App\Models\Service;
 use App\Models\Status;
 use App\Models\User;
@@ -161,6 +162,65 @@ class InvoiceNumberingTest extends TestCase
         $this->assertSame('OFF_'.$year.'-0001', $invoice->fresh()->invoice_number);
         $this->assertSame('2', (string) $this->series()->fresh()->next_number);
         Mail::assertSent(InvoiceSent::class);
+    }
+
+    public function test_quotes_do_not_consume_an_invoices_only_series(): void
+    {
+        $invoiceSeries = $this->series();
+        $invoiceSeries->update([
+            'type' => 'invoices',
+            'prefix' => 'INV',
+            'next_number' => '7',
+        ]);
+        Status::query()->create(['name' => 'Draft', 'for' => 'offers']);
+
+        $this->actingAs($this->user)
+            ->get(route('offers.create'))
+            ->assertRedirect();
+
+        $year = now()->format('Y');
+        $offer = Offer::query()->where('company_id', $this->company->id)->first();
+        $this->assertNotNull($offer);
+        $this->assertSame('OFF'.$year.'-0001', $offer->offer_number);
+        $this->assertSame('7', (string) $invoiceSeries->fresh()->next_number);
+
+        $offerSeries = NumberingSeries::query()
+            ->where('company_id', $this->company->id)
+            ->where('type', 'offers')
+            ->first();
+        $this->assertNotNull($offerSeries);
+        $this->assertSame('OFF', $offerSeries->prefix);
+        $this->assertSame('2', (string) $offerSeries->next_number);
+
+        $this->actingAs($this->user)
+            ->get(route('offers.create'))
+            ->assertRedirect();
+
+        $second = Offer::query()->where('company_id', $this->company->id)->orderByDesc('id')->first();
+        $this->assertSame('OFF'.$year.'-0002', $second->offer_number);
+        $this->assertSame('7', (string) $invoiceSeries->fresh()->next_number);
+        $this->assertSame('3', (string) $offerSeries->fresh()->next_number);
+    }
+
+    public function test_a_shared_series_still_numbers_quotes_and_invoices_together(): void
+    {
+        $series = $this->series();
+        $series->update([
+            'type' => 'both',
+            'prefix' => 'DOC',
+            'next_number' => '4',
+        ]);
+        Status::query()->create(['name' => 'Draft', 'for' => 'offers']);
+
+        $this->actingAs($this->user)
+            ->get(route('offers.create'))
+            ->assertRedirect();
+
+        $year = now()->format('Y');
+        $offer = Offer::query()->where('company_id', $this->company->id)->first();
+        $this->assertSame('DOC'.$year.'-0004', $offer->offer_number);
+        $this->assertSame('5', (string) $series->fresh()->next_number);
+        $this->assertSame(1, NumberingSeries::query()->where('company_id', $this->company->id)->count());
     }
 
     private function series(): NumberingSeries

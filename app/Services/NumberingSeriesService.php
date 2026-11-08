@@ -69,9 +69,47 @@ class NumberingSeriesService
             }
         }
 
-        return $company->numberingSeries()
+        $match = $company->numberingSeries()
             ->orderBy('id')
+            ->get()
             ->first(fn (NumberingSeries $series) => $this->seriesMatchesContext($series, $context));
+
+        if ($match) {
+            return $match;
+        }
+
+        if ($context === 'offers') {
+            return $this->ensureOfferSeries($company);
+        }
+
+        return null;
+    }
+
+    /**
+     * Quotes never share an invoices-only counter. A company that has no
+     * quote series gets its own OFF sequence, starting at 1.
+     */
+    protected function ensureOfferSeries(Company $company): NumberingSeries
+    {
+        $existing = $company->numberingSeries()
+            ->where('type', 'offers')
+            ->orderBy('id')
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return $company->numberingSeries()->create([
+            'name' => 'Quotes-'.$company->id,
+            'type' => 'offers',
+            'prefix' => 'OFF',
+            'year_month' => 'year',
+            'separator' => '-',
+            'digits' => '4',
+            'next_number' => '1',
+            'restart_count' => 'annual',
+        ]);
     }
 
     protected function seriesMatchesContext(NumberingSeries $series, string $context): bool
@@ -79,7 +117,7 @@ class NumberingSeriesService
         return match ($context) {
             'invoices' => in_array($series->type, ['invoices', 'both'], true),
             'credit_notes' => in_array($series->type, ['credit_notes', 'both'], true),
-            'offers' => in_array($series->type, ['both', 'invoices'], true),
+            'offers' => in_array($series->type, ['offers', 'both'], true),
             default => true,
         };
     }

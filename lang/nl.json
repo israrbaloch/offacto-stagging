@@ -433,6 +433,7 @@
     "numbering.restart_monthly": "Maandelijks",
     "numbering.next_preview": "Het volgende nummer in deze reeks is",
     "numbering.type_invoices": "Facturen",
+    "numbering.type_offers": "Offertes",
     "numbering.type_credit_notes": "Creditnota’s",
     "numbering.type_both": "Facturen en offertes",
     "numbering.active": "Actief",

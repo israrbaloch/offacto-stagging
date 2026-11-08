@@ -157,6 +157,7 @@ function SeriesForm({ series, onCancel, onSaved, settingsBasePath = '/company/se
                         allowEmpty={false}
                         options={[
                             { value: 'invoices', label: t('numbering.type_invoices') },
+                            { value: 'offers', label: t('numbering.type_offers') },
                             { value: 'credit_notes', label: t('numbering.type_credit_notes') },
                             { value: 'both', label: t('numbering.type_both') },
                         ]}
@@ -232,6 +233,7 @@ export default function NumberingSeriesEditor({ series = [], activeSeriesId = nu
 
     const typeLabel = {
         invoices: t('numbering.type_invoices'),
+        offers: t('numbering.type_offers'),
         credit_notes: t('numbering.type_credit_notes'),
         both: t('numbering.type_both'),
     };

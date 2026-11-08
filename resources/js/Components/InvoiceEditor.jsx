@@ -17,6 +17,14 @@ function dateValue(value) {
     if (!value) {
         return '';
     }
+    if (value instanceof Date) {
+        if (Number.isNaN(value.getTime())) {
+            return '';
+        }
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${value.getFullYear()}-${month}-${day}`;
+    }
     return String(value).slice(0, 10);
 }
 
@@ -278,11 +286,22 @@ export default function InvoiceEditor({
             recurring_interval: recurringInterval,
             ...extra,
         }));
+        const visit = {
+            ...options,
+            onError: (errors) => {
+                const first = Object.values(errors || {})[0];
+                const message = Array.isArray(first) ? first[0] : first;
+                if (message) {
+                    toast.error(String(message));
+                }
+                options.onError?.(errors);
+            },
+        };
         if (!invoice?.id) {
-            form.post('/invoices', options);
+            form.post('/invoices', visit);
             return;
         }
-        form.put(`/invoices/${invoice.id}`, options);
+        form.put(`/invoices/${invoice.id}`, visit);
     };
 
     const submit = (event) => {

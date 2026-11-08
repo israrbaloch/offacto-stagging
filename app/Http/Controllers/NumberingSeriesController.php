@@ -96,7 +96,7 @@ class NumberingSeriesController extends Controller
                     ->where(fn ($query) => $query->where('company_id', $company->id))
                     ->ignore($series?->id),
             ],
-            'type' => ['required', 'in:invoices,credit_notes,both'],
+            'type' => ['required', 'in:invoices,credit_notes,both,offers'],
             'prefix' => ['nullable', 'string', 'max:100'],
             'year_month' => ['nullable', 'in:year,year_short,year_month,year_short_month'],
             'separator' => ['nullable', 'in:_,-,/,.'],

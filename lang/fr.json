@@ -433,6 +433,7 @@
     "numbering.restart_monthly": "Mensuel",
     "numbering.next_preview": "Le prochain numéro de cette série est",
     "numbering.type_invoices": "Factures",
+    "numbering.type_offers": "Devis",
     "numbering.type_credit_notes": "Notes de crédit",
     "numbering.type_both": "Factures et devis",
     "numbering.active": "Active",
