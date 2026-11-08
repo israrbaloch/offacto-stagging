@@ -1815,5 +1815,6 @@
     "invoices.recurring_from_template": "Generated from a recurring template",
     "invoices.recurring_hint": "When enabled, this invoice is the template. A daily job creates new draft copies on the schedule you pick. Nothing is emailed or charged automatically—you review and send each draft yourself.",
     "invoices.resend_required_banner": "This invoice was already sent. Save your edits, then use Send to deliver an updated PDF to your client.",
-    "flash.invoice-updated-resend": "Invoice saved. Send again so your client receives the updated version."
+    "flash.invoice-updated-resend": "Invoice saved. Send again so your client receives the updated version.",
+    "offers.send_need_customer": "Select a customer before sending."
 }

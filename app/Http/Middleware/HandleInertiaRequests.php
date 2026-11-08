@@ -205,9 +205,22 @@ class HandleInertiaRequests extends Middleware
 
     private function translations(string $locale): array
     {
+        $english = $this->localeFile('en');
+        if ($locale === 'en') {
+            return $english;
+        }
+
+        return array_replace($english, $this->localeFile($locale));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function localeFile(string $locale): array
+    {
         $path = lang_path($locale.'.json');
         if (! is_file($path)) {
-            $path = lang_path('en.json');
+            return [];
         }
 
         $decoded = json_decode((string) file_get_contents($path), true);

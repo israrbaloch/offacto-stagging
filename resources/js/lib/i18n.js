@@ -1,9 +1,15 @@
+import en from '../../../lang/en.json';
+
 let locale = 'en';
 let translations = {};
+let fallback = en;
 
-export function setI18n(nextLocale, nextTranslations = {}) {
+export function setI18n(nextLocale, nextTranslations = {}, nextFallback = null) {
     locale = nextLocale || 'en';
     translations = nextTranslations || {};
+    if (nextFallback && typeof nextFallback === 'object') {
+        fallback = nextFallback;
+    }
 }
 
 export function currentLocale() {
@@ -11,7 +17,8 @@ export function currentLocale() {
 }
 
 export function t(key, replace = {}) {
-    let text = translations[key] ?? key;
+    const translated = translations[key];
+    let text = translated != null && translated !== '' ? translated : (fallback[key] ?? key);
     Object.entries(replace).forEach(([name, value]) => {
         text = String(text).replaceAll(`:${name}`, String(value));
     });
