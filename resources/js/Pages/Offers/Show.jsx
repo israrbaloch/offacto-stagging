@@ -41,8 +41,11 @@ export default function Show({
                     <Button href={`/offers/${offer.id}/edit`} variant="secondary">
                         Edit
                     </Button>
-                    <Button href={`/invoices/from-offer/${offer.id}`} variant="secondary">
-                        Create invoice
+                    <Button
+                        href={offer.converted_invoice_id ? `/invoices/${offer.converted_invoice_id}/edit` : `/invoices/from-offer/${offer.id}`}
+                        variant="secondary"
+                    >
+                        {offer.converted_invoice_id ? t('offers.view_invoice') : t('offers.create_invoice')}
                     </Button>
                     <Button onClick={() => setSendOpen(true)}>Send</Button>
                     <Button

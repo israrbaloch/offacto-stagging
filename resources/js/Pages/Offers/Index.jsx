@@ -299,11 +299,15 @@ export default function Index({ offers, stats = {}, filters = {} }) {
                                                 <td className="num">
                                                     {key === 'accepted' ? (
                                                         <Link
-                                                            href={`/invoices/from-offer/${offer.id}`}
+                                                            href={
+                                                                offer.converted_invoice_id
+                                                                    ? `/invoices/${offer.converted_invoice_id}/edit`
+                                                                    : `/invoices/from-offer/${offer.id}`
+                                                            }
                                                             className="offacto-brief-btn-sm"
                                                             onClick={(event) => event.stopPropagation()}
                                                         >
-                                                            → {t('offers.to_invoice')}
+                                                            → {offer.converted_invoice_id ? t('offers.view_invoice') : t('offers.to_invoice')}
                                                         </Link>
                                                     ) : null}
                                             </td>

@@ -280,6 +280,13 @@ class InvoiceController extends Controller
             ->with(['items.service', 'attachments', 'blocks'])
             ->firstOrFail();
 
+        $existing = $offer->invoices()->latest('id')->first();
+        if ($existing) {
+            return redirect()
+                ->route('invoices.edit', $existing)
+                ->with('error', __('offers.invoice_already_exists'));
+        }
+
         $defaultStatus = Status::where('for', 'invoices')->where('name', 'Draft')->first()
             ?? Status::forTable('invoices')->first();
 

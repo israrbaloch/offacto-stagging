@@ -125,6 +125,11 @@ class Offer extends Model
         return $this->hasMany(OfferBlock::class)->orderBy('sort_order');
     }
 
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function publicUrl(): string
     {
         if (! $this->share_token) {

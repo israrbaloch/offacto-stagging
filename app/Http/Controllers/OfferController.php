@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateOfferRequest;
 use App\Mail\OfferSent;
 use App\Models\CompanyLegalDocument;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Offer;
 use App\Models\OfferAttachment;
 use App\Models\OfferBlock;
@@ -128,9 +129,16 @@ class OfferController extends Controller
 
         // Paginate results
         $offers = $query->latest()->paginate(15)->withQueryString();
-        $offers->getCollection()->transform(function (Offer $offer) {
+        $invoiceByOffer = Invoice::query()
+            ->whereIn('offer_id', $offers->getCollection()->pluck('id'))
+            ->orderByDesc('id')
+            ->get(['id', 'offer_id'])
+            ->unique('offer_id')
+            ->keyBy('offer_id');
+        $offers->getCollection()->transform(function (Offer $offer) use ($invoiceByOffer) {
             $offer->setAttribute('public_url', $offer->publicUrl());
             $offer->setAttribute('from_briefing', filled($offer->briefing_response_id));
+            $offer->setAttribute('converted_invoice_id', $invoiceByOffer->get($offer->id)?->id);
 
             return OfferPresentation::forStaffList($offer);
         });
@@ -271,6 +279,7 @@ class OfferController extends Controller
             ->where('company_id', $activeCompany->id)
             ->with(['customer', 'statusRelation', 'items.service', 'company.companySetting', 'attachments'])
             ->firstOrFail();
+        $offer->setAttribute('converted_invoice_id', $offer->invoices()->latest('id')->value('id'));
 
         return Inertia::render('Offers/Show', [
             'offer' => OfferPresentation::forStaffDetail($offer),
