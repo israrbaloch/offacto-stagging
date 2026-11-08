@@ -157,7 +157,7 @@ class InvoiceController extends Controller
                 return $invoice->amount_due;
             }),
             'outstanding' => $allInvoices->sum(function ($invoice) {
-                return $invoice->isPaid() ? 0 : $invoice->amount_due;
+                return $invoice->isPaid() || $invoice->isDraft() ? 0 : $invoice->amount_due;
             }),
             'paid_ytd' => $allInvoices->filter(function ($invoice) {
                 return $invoice->payment_status === Invoice::PAYMENT_PAID

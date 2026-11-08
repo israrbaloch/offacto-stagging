@@ -320,7 +320,12 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
                                         const key = statusKey(invoice);
                                         const channel = sendChannel(invoice);
                                         const isCredit = Boolean(invoice.parent_invoice_id);
-                                        const negative = Number(invoice.total) < 0;
+                                        const total = Number(invoice.total || 0);
+                                        const due = Number(invoice.amount_due ?? invoice.total ?? 0);
+                                        const paid = Number(invoice.amount_paid || 0);
+                                        const partial = invoice.payment_status === 'partial' && paid > 0;
+                                        const shown = partial ? due : total;
+                                        const negative = shown < 0;
                                         const dueValue =
                                             statusTab === 'rec' && invoice.next_run_at
                                                 ? prettyDateShort(invoice.next_run_at)
@@ -362,8 +367,13 @@ export default function Index({ invoices, stats = {}, filters = {} }) {
                                                 </td>
                                                 <td className="num">
                                                     <b className={negative ? 'offacto-invoice-amount-negative' : undefined}>
-                                                        {money(invoice.total)}
+                                                        {money(shown)}
                                                     </b>
+                                                    {partial ? (
+                                                        <div className="offacto-invoice-amount-sub">
+                                                            {t('invoices.invoice_total_hint', { total: money(total) })}
+                                                        </div>
+                                                    ) : null}
                                                 </td>
                                                 <td>
                                                     <span className={`offacto-demo-badge ${statusBadgeClass(key)}`.trim()}>

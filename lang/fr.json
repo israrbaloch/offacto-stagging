@@ -818,6 +818,7 @@
     "invoices.section_lines": "Lignes de facture",
     "invoices.select_service": "Choisir une prestation",
     "invoices.line_placeholder": "Décrivez cette ligne",
+    "invoices.invoice_total_hint": "Total de la facture :total",
     "invoices.section_copyright": "Droits d'auteur",
     "invoices.section_comments": "Commentaires",
     "invoices.section_attachments": "Pièces jointes",

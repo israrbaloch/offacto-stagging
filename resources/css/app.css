@@ -3658,6 +3658,13 @@ html.dark .offacto-search-layer-panel {
     color: #c23a4b;
 }
 
+.offacto-invoice-amount-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--dash-muted);
+}
+
 .offacto-brief-table-click tr {
     cursor: pointer;
     transition: background 0.12s, box-shadow 0.12s;

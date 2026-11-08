@@ -151,14 +151,14 @@ class DashboardController extends Controller
         $currentYear = now()->year;
         $startOfYear = now()->startOfYear();
 
-        // YTD collected on invoices (matches cashflow chart: paid amounts by invoice date)
         $invoicesYtd = Invoice::where('company_id', $companyId)
             ->whereYear('invoice_date', $currentYear)
-            ->with(['payments', 'items'])
-            ->get();
+            ->with(['payments', 'items', 'statusRelation'])
+            ->get()
+            ->reject(fn (Invoice $invoice) => $invoice->isDraft());
 
         $revenue = round($invoicesYtd->sum(
-            fn (Invoice $invoice) => (float) $invoice->amount_paid
+            fn (Invoice $invoice) => (float) $invoice->subtotal
         ), 2);
 
         // Open offers total
@@ -176,8 +176,9 @@ class DashboardController extends Controller
         $openOffersCount = $openOffers->count();
 
         $invoices = Invoice::where('company_id', $companyId)
-            ->with(['payments', 'items'])
-            ->get();
+            ->with(['payments', 'items', 'statusRelation'])
+            ->get()
+            ->reject(fn (Invoice $invoice) => $invoice->isDraft());
 
         $awaitingPaymentCount = $invoices->filter(fn (Invoice $invoice) => ! $invoice->isPaid())->count();
         $overdueInvoices = $invoices->filter(fn (Invoice $invoice) => $invoice->isOverdue());

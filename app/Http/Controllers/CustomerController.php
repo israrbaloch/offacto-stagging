@@ -40,7 +40,7 @@ class CustomerController extends Controller
                 'country',
                 'invoices' => fn ($q) => $q
                     ->where('payment_status', '!=', Invoice::PAYMENT_PAID)
-                    ->with(['items', 'payments']),
+                    ->with(['items', 'payments', 'statusRelation']),
             ])
             ->get();
 
@@ -53,7 +53,7 @@ class CustomerController extends Controller
                 'creditChecks' => fn ($q) => $q->orderByDesc('checked_at')->limit(1),
                 'invoices' => fn ($q) => $q
                     ->where('payment_status', '!=', Invoice::PAYMENT_PAID)
-                    ->with(['items', 'payments']),
+                    ->with(['items', 'payments', 'statusRelation']),
                 'documents',
             ]);
 
@@ -191,9 +191,10 @@ class CustomerController extends Controller
     {
         $outstanding = 0;
         foreach ($customer->invoices ?? [] as $invoice) {
-            if ($invoice->payment_status !== Invoice::PAYMENT_PAID) {
-                $outstanding += $invoice->amount_due;
+            if ($invoice->isDraft() || $invoice->payment_status === Invoice::PAYMENT_PAID) {
+                continue;
             }
+            $outstanding += $invoice->amount_due;
         }
 
         $latestCheck = $customer->creditChecks->first();

@@ -818,6 +818,7 @@
     "invoices.section_lines": "Factuurregels",
     "invoices.select_service": "Kies een dienst",
     "invoices.line_placeholder": "Beschrijf deze regel",
+    "invoices.invoice_total_hint": "Factuurtotaal :total",
     "invoices.section_copyright": "Auteursrecht",
     "invoices.section_comments": "Opmerkingen",
     "invoices.section_attachments": "Bijlagen",

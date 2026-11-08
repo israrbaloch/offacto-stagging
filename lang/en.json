@@ -726,6 +726,7 @@
     "invoices.preview_mollie_cta": "Or pay online via Mollie →",
     "invoices.edit_template": "Edit template",
     "invoices.outstanding": "Total Outstanding",
+    "invoices.invoice_total_hint": "Invoice total :total",
     "invoices.overdue": "Overdue",
     "invoices.paid_ytd": "Paid YTD",
     "invoices.peppol": "Peppol Sent",
