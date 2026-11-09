@@ -44,12 +44,15 @@ export default function Login({ allowRegistration = true, googleLoginUrl = null 
 
                 <div>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
-                        <span className={authLabelClass.replace('mb-1.5 ', '')}>{t('auth.password')}</span>
+                        <label htmlFor="login-password" className={authLabelClass.replace('mb-1.5 ', '')}>
+                            {t('auth.password')}
+                        </label>
                         <Link href="/forgot-password" className={`text-[12px] font-semibold ${authLinkClass}`}>
                             {t('auth.forgot_password')}
                         </Link>
                     </div>
                     <input
+                        id="login-password"
                         type="password"
                         autoComplete="current-password"
                         className={authInputClass(errors.password)}
@@ -61,6 +64,7 @@ export default function Login({ allowRegistration = true, googleLoginUrl = null 
                 <label className="flex items-center gap-2 text-[13px] text-[#0E1250] dark:text-[#E8ECFF]">
                     <input
                         type="checkbox"
+                        value="1"
                         className="rounded border-[rgba(14,18,80,0.2)] text-[#6B59DC] focus:ring-[#9D8DF1]"
                         checked={data.remember}
                         onChange={(e) => setData('remember', e.target.checked)}

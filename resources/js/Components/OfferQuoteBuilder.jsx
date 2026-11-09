@@ -385,10 +385,35 @@ export default function OfferQuoteBuilder({
 
     const saveManual = (e) => {
         e?.preventDefault?.();
+        const payload = payloadFromState();
         if (!offer?.id) {
+            const hasText = blocks.some((block) => {
+                const content = block.content || {};
+                if (block.type === 'text') {
+                    return String(content.heading || content.body || content.text || '').trim();
+                }
+                if (block.type === 'video') {
+                    return String(content.url || '').trim();
+                }
+                if (block.type === 'image' || block.type === 'attachments') {
+                    return String(content.url || content.path || content.original_name || '').trim();
+                }
+                if (block.type === 'sign') {
+                    return String(content.signer_name || '').trim();
+                }
+                return false;
+            });
+            if (!payload.customer_id && !(payload.items || []).length && !String(payload.intro || '').trim() && !hasText) {
+                toast.error(t('offers.save_need_content'));
+                return;
+            }
+            form.transform(() => ({ ...payload, from_builder: true, blocks: blocksToPayload(blocks) }));
+            form.post('/offers', {
+                onSuccess: () => toast.success(t('offers.builder_saved')),
+            });
             return;
         }
-        form.transform(() => payloadFromState());
+        form.transform(() => payload);
         form.put(`/offers/${offer.id}`, {
             onSuccess: () => {
                 setSavedAt(new Date().toISOString());

@@ -20,14 +20,23 @@ class StoreOfferRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        if ($this->boolean('from_builder') && ($this->customer_id === '' || $this->customer_id === '0')) {
+            $this->merge(['customer_id' => null]);
+        }
+    }
+
     public function rules(): array
     {
         $user = $this->user();
         $activeCompany = $user?->activeCompany();
+        $builder = $this->boolean('from_builder');
 
         return [
+            'from_builder' => ['sometimes', 'boolean'],
             'customer_id' => [
-                'required',
+                $builder ? 'nullable' : 'required',
                 'integer',
                 Rule::exists('customers', 'id')->where(function ($query) use ($activeCompany) {
                     return $query->where('company_id', $activeCompany?->id);
@@ -40,12 +49,21 @@ class StoreOfferRequest extends FormRequest
             'notes' => ['nullable', 'string'],
             'payment_terms' => ['nullable', 'string', 'max:5000'],
             'vat_rate' => ['nullable', 'numeric', 'in:0,6,12,21'],
+            'quote_template' => ['nullable', 'string', 'max:32'],
+            'require_nda_before_open' => ['sometimes', 'boolean'],
+            'mollie_deposit_enabled' => ['sometimes', 'boolean'],
+            'on_acceptance_invoice' => ['nullable', 'string', 'in:draft,send'],
+            'email_message' => ['nullable', 'string'],
+            'blocks' => ['nullable', 'array'],
+            'blocks.*.type' => ['required_with:blocks', 'in:text,image,video,table,sign,voice,attachments'],
+            'blocks.*.content' => ['nullable', 'array'],
+            'blocks.*.sort_order' => ['nullable', 'integer'],
             'status' => [
                 'required',
                 'integer',
                 Rule::exists('status', 'id')->where('for', 'offers'),
             ],
-            'items' => ['required', 'array', 'min:1'],
+            'items' => [$builder ? 'nullable' : 'required', 'array', $builder ? 'min:0' : 'min:1'],
             'items.*.service_id' => [
                 'required',
                 'integer',

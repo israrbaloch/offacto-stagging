@@ -13,6 +13,7 @@ import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useUi } from '../context/UiContext';
 import { t } from '../lib/i18n';
 import { belgianStructuredReference } from '../lib/belgianPayment';
+import { publicCompanyProfile } from '../lib/companyProfile';
 import { lookupPeppolParticipant } from '../lib/peppolLookup';
 import { calendarDate, customerName, formatDate, money, optionsFromMap } from '../lib/utils';
 
@@ -180,6 +181,17 @@ export default function InvoiceEditor({
     recurring = false,
 }) {
     const { activeCompany, flash, defaultReminderMessage: pageReminderMessage = '' } = usePage().props;
+    const companyProfile = publicCompanyProfile(
+        {
+            name: activeCompany?.company_name,
+            street: activeCompany?.street,
+            house: activeCompany?.house,
+            postal_code: activeCompany?.postal_code,
+            city: activeCompany?.city,
+            email: activeCompany?.email,
+        },
+        activeCompany?.vat_number || '',
+    );
     const reminderDefault = defaultReminderMessage || pageReminderMessage || '';
     const { toast, confirm } = useUi();
     const parsed = parseIntro(invoice?.intro || '');
@@ -199,7 +211,7 @@ export default function InvoiceEditor({
     const [molliePaymentToggle, setMolliePaymentToggle] = useState(Boolean(mollieConfigured));
     const [mollieDirectDebitToggle, setMollieDirectDebitToggle] = useState(Boolean(mollieConfigured));
     const [reminderToggle, setReminderToggle] = useState(Boolean(invoice?.reminder_enabled));
-    const [accountantToggle, setAccountantToggle] = useState(true);
+    const [accountantToggle, setAccountantToggle] = useState(() => !companyProfile.emailPlaceholder);
     const [sendOpen, setSendOpen] = useState(false);
     const [reminderOpen, setReminderOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
@@ -1007,7 +1019,11 @@ export default function InvoiceEditor({
                                 <div className="offacto-invoice-toggle-row">
                                     <div>
                                         <b>{t('invoices.copy_accountant')}</b>
-                                        <p className="offacto-invoice-hint">{activeCompany?.email || '—'}</p>
+                                        <p className="offacto-invoice-hint">
+                                            {companyProfile.emailPlaceholder
+                                                ? t('invoices.accountant_email_missing')
+                                                : activeCompany?.email}
+                                        </p>
                                     </div>
                                     <DemoToggle
                                         on={accountantToggle}
@@ -1067,6 +1083,9 @@ export default function InvoiceEditor({
                                 {t('invoices.edit_template')}
                             </Link>
                         </div>
+                        {companyProfile.incomplete ? (
+                            <p className="offacto-invoice-hint">{t('invoices.company_profile_placeholder')}</p>
+                        ) : null}
                         <div
                             className={`offacto-invoice-paper${isMinimalTemplate ? ' offacto-invoice-paper--minimal' : ''}`}
                             style={{ '--brand': brand }}
@@ -1090,15 +1109,8 @@ export default function InvoiceEditor({
                                         invoice?.invoice_number || nextInvoiceNumber,
                                         invoice?.id,
                                     )}
-                                    from={{
-                                        name: activeCompany?.company_name,
-                                        street: activeCompany?.street,
-                                        house: activeCompany?.house,
-                                        postal_code: activeCompany?.postal_code,
-                                        city: activeCompany?.city,
-                                        email: activeCompany?.email,
-                                    }}
-                                    fromVatNumber={activeCompany?.vat_number || ''}
+                                    from={companyProfile.from}
+                                    fromVatNumber={companyProfile.vat}
                                     toVatNumber={selectedCustomer?.vat_number || ''}
                                     to={{
                                         name: selectedCustomer?.org_name || customerName(selectedCustomer),

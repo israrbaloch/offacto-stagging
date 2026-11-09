@@ -282,7 +282,13 @@ export default function Index({
                                     </tr>
                                 ) : (
                                     customers.map((customer) => {
-                                    const status = customer.status_relation?.name || '—';
+                                    const storedStatus = customer.status_relation?.name || '';
+                                    const status = storedStatus.toLowerCase() === 'prospect' && Number(customer.outstanding || 0) > 0
+                                        ? 'Active'
+                                        : storedStatus;
+                                    const statusKey = status ? `customers.status_${status.toLowerCase()}` : '';
+                                    const translated = statusKey ? t(statusKey) : '';
+                                    const statusText = !status ? '—' : (translated === statusKey ? status : translated);
                                     return (
                                             <tr key={customer.id} onClick={() => openCustomerDrawer(customer)}>
                                                 <td>
@@ -342,7 +348,7 @@ export default function Index({
                                                 </td>
                                                 <td>
                                                     <span className={`offacto-demo-badge ${statusBadgeClass(status)}`.trim()}>
-                                                        {status}
+                                                        {statusText}
                                                     </span>
                                             </td>
                                         </tr>

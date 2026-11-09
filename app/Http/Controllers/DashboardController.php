@@ -115,11 +115,11 @@ class DashboardController extends Controller
         $items = [];
 
         foreach ($recentResponses->take(3) as $response) {
-            $title = $response->briefing?->title ?? 'Briefing response';
+            $title = $response->briefing?->title ?? __('dashboard.activity_response');
             $items[] = [
                 'icon' => 'clipboard',
                 'title' => $title,
-                'meta' => $response->offer_id ? 'Draft quote ready' : 'Response received',
+                'meta' => $response->offer_id ? __('dashboard.activity_draft_ready') : __('dashboard.activity_response'),
                 'href' => $response->offer_id ? '/offers/'.$response->offer_id.'/edit' : '/briefings',
             ];
         }
@@ -128,11 +128,11 @@ class DashboardController extends Controller
             $customer = $offer->customer;
             $label = $customer?->org_name
                 ?: trim(($customer?->first_name ?? '').' '.($customer?->surname ?? ''))
-                ?: 'Customer';
+                ?: __('dashboard.activity_no_customer');
             $items[] = [
                 'icon' => 'offers',
-                'title' => "Open quote · {$label}",
-                'meta' => $offer->offer_number ?? 'Draft',
+                'title' => __('dashboard.activity_open_quote', ['customer' => $label]),
+                'meta' => $offer->offer_number ?: __('dashboard.activity_draft'),
                 'href' => '/offers/'.$offer->id.'/edit',
             ];
         }
@@ -141,7 +141,7 @@ class DashboardController extends Controller
             $items[] = [
                 'icon' => 'brief',
                 'title' => $briefing->title,
-                'meta' => 'Awaiting client response',
+                'meta' => __('dashboard.activity_awaiting'),
                 'href' => '/briefings/'.$briefing->id,
             ];
         }
@@ -193,8 +193,19 @@ class DashboardController extends Controller
         $outputVat = round($invoicesYtd->sum(fn (Invoice $invoice) => (float) $invoice->tax_amount), 2);
         $netResult = round($revenue - $expenses, 2);
 
+        $priorYearRevenue = round(Invoice::where('company_id', $companyId)
+            ->whereYear('invoice_date', $currentYear - 1)
+            ->with(['items', 'statusRelation'])
+            ->get()
+            ->reject(fn (Invoice $invoice) => $invoice->isDraft())
+            ->sum(fn (Invoice $invoice) => (float) $invoice->subtotal), 2);
+        $revenueChangePct = $priorYearRevenue > 0
+            ? (int) round((($revenue - $priorYearRevenue) / $priorYearRevenue) * 100)
+            : null;
+
         return [
             'revenue' => $revenue,
+            'revenueChangePct' => $revenueChangePct,
             'expenses' => $expenses,
             'expensesTracked' => true,
             'inputVat' => $inputVat,
@@ -218,6 +229,7 @@ class DashboardController extends Controller
     {
         return [
             'revenue' => 0,
+            'revenueChangePct' => null,
             'expenses' => 0,
             'expensesTracked' => true,
             'inputVat' => 0,
@@ -254,7 +266,7 @@ class DashboardController extends Controller
         for ($i = 11; $i >= 0; $i--) {
             $month = now()->subMonths($i);
             $ym = $month->format('Y-m');
-            $labels[] = $month->format('M');
+            $labels[] = $this->monthLabel($month);
 
             $monthInvoices = $invoices->filter(
                 fn (Invoice $invoice) => $invoice->invoice_date?->format('Y-m') === $ym
@@ -305,7 +317,7 @@ class DashboardController extends Controller
             });
 
             $dso[] = [
-                'label' => $monthStart->format('M Y'),
+                'label' => $this->monthLabel($monthStart).' '.$monthStart->year,
                 'days' => $days->isEmpty() ? 0 : (int) round($days->avg()),
             ];
         }
@@ -323,19 +335,24 @@ class DashboardController extends Controller
         ];
     }
 
+    private function monthLabel(Carbon $month): string
+    {
+        return rtrim($month->locale(app()->getLocale())->translatedFormat('M'), '.');
+    }
+
     private function getEmptyChartData(): array
     {
         $labels = [];
         $zeros = [];
         for ($i = 11; $i >= 0; $i--) {
-            $labels[] = now()->subMonths($i)->format('M');
+            $labels[] = $this->monthLabel(now()->subMonths($i));
             $zeros[] = 0;
         }
 
         $dso = [];
         for ($i = 5; $i >= 0; $i--) {
             $dso[] = [
-                'label' => now()->subMonths($i)->format('M Y'),
+                'label' => $this->monthLabel(now()->subMonths($i)).' '.now()->subMonths($i)->year,
                 'days' => 0,
             ];
         }

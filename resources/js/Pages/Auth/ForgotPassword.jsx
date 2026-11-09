@@ -45,7 +45,7 @@ export default function ForgotPassword() {
             </form>
 
             <p className={`mt-6 text-center ${authMutedClass}`}>
-                {t('auth.back_login')}{' '}
+                {t('auth.have_account')}{' '}
                 <Link href="/login" className={authLinkClass}>
                     {t('auth.sign_in')}
                 </Link>

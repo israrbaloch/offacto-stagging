@@ -99,39 +99,9 @@ class InvoiceController extends Controller
             $query->where('is_recurring', false);
         }
 
-        // Date filter
-        if ($request->filled('date_filter')) {
-            $dateFilter = $request->date_filter;
-            $now = now();
-            
-            switch ($dateFilter) {
-                case 'current_year':
-                    $query->whereYear('invoice_date', $now->year);
-                    break;
-                case 'current_month':
-                    $query->whereYear('invoice_date', $now->year)
-                          ->whereMonth('invoice_date', $now->month);
-                    break;
-                case 'current_quarter':
-                    $query->whereYear('invoice_date', $now->year)
-                          ->whereRaw('QUARTER(invoice_date) = ?', [$now->quarter]);
-                    break;
-                case 'last_quarter':
-                    $lastQuarter = $now->subQuarter();
-                    $query->whereYear('invoice_date', $lastQuarter->year)
-                          ->whereRaw('QUARTER(invoice_date) = ?', [$lastQuarter->quarter]);
-                    break;
-                case 'last_year':
-                    $query->whereYear('invoice_date', $now->year - 1);
-                    break;
-                default:
-                    // Check if it's a specific year
-                    if (is_numeric($dateFilter)) {
-                        $query->whereYear('invoice_date', (int)$dateFilter);
-                    }
-                    break;
-            }
-        }
+        // The period menu shows the current quarter before a choice is posted.
+        $dateFilter = $request->get('date_filter') ?: 'current_quarter';
+        $this->applyInvoiceDateFilter($query, $dateFilter);
 
         // Get all invoices for stats calculation (without filters)
         $allInvoices = Invoice::where('company_id', $activeCompany->id)
@@ -201,7 +171,7 @@ class InvoiceController extends Controller
             'filters' => [
                 'search' => $request->search,
                 'status_tab' => $request->get('status_tab', 'all'),
-                'date_filter' => $request->get('date_filter'),
+                'date_filter' => $dateFilter,
             ],
         ]);
     }
@@ -975,13 +945,17 @@ class InvoiceController extends Controller
                     ->whereMonth('invoice_date', $now->month);
                 break;
             case 'current_quarter':
-                $query->whereYear('invoice_date', $now->year)
-                    ->whereRaw('QUARTER(invoice_date) = ?', [$now->quarter]);
+                $query->whereBetween('invoice_date', [
+                    $now->copy()->firstOfQuarter()->toDateString(),
+                    $now->copy()->lastOfQuarter()->toDateString(),
+                ]);
                 break;
             case 'last_quarter':
                 $lastQuarter = $now->copy()->subQuarter();
-                $query->whereYear('invoice_date', $lastQuarter->year)
-                    ->whereRaw('QUARTER(invoice_date) = ?', [$lastQuarter->quarter]);
+                $query->whereBetween('invoice_date', [
+                    $lastQuarter->copy()->firstOfQuarter()->toDateString(),
+                    $lastQuarter->copy()->lastOfQuarter()->toDateString(),
+                ]);
                 break;
             case 'last_year':
                 $query->whereYear('invoice_date', $now->year - 1);

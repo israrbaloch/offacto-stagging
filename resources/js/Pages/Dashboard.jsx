@@ -9,7 +9,30 @@ import { t } from '../lib/i18n';
 import { money } from '../lib/utils';
 
 const PERIODS = ['Q1', 'Q2', 'Q3', 'Q4', 'Y'];
-const VAT_DUE = { Q1: '20/04', Q2: '20/07', Q3: '20/10', Q4: '20/01', Y: '—' };
+const VAT_DUE = { Q1: '20/04', Q2: '20/07', Q3: '20/10', Q4: '20/01' };
+
+function nextVatDeadline(now = new Date()) {
+    const year = now.getFullYear();
+    const today = new Date(year, now.getMonth(), now.getDate());
+    const points = [
+        new Date(year, 0, 20),
+        new Date(year, 3, 20),
+        new Date(year, 6, 20),
+        new Date(year, 9, 20),
+        new Date(year + 1, 0, 20),
+    ];
+    const next = points.find((point) => point >= today) || points[points.length - 1];
+    const day = String(next.getDate()).padStart(2, '0');
+    const month = String(next.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${next.getFullYear()}`;
+}
+
+function vatDeadlineLabel(period) {
+    if (period === 'Y') {
+        return `${t('dashboard.vat_due')} ${nextVatDeadline()}`;
+    }
+    return `${t('dashboard.vat_due')} ${VAT_DUE[period]}`;
+}
 
 function firstName(name = '') {
     return name.trim().split(/\s+/)[0] || '';
@@ -222,7 +245,13 @@ export default function Dashboard({
                     icon="euro"
                     label={t('dashboard.revenue')}
                     amount={stats.revenue}
-                    trend={stats.revenue > 0 ? `▲ ${t('dashboard.vs_last_year')}` : '—'}
+                    trend={
+                        stats.revenue > 0
+                            ? stats.revenueChangePct == null
+                                ? t('dashboard.no_prior_year')
+                                : `▲ ${stats.revenueChangePct}% ${t('dashboard.vs_last_year')}`
+                            : '—'
+                    }
                 />
                 <DashboardKpi
                     icon="inbox"
@@ -241,11 +270,7 @@ export default function Dashboard({
                     icon="file"
                     label={t('dashboard.vat_payable')}
                     amount={stats.vatPayable ?? 0}
-                    trend={
-                        period === 'Y'
-                            ? t('dashboard.vat_not_available')
-                            : `${t('dashboard.vat_due')} ${VAT_DUE[period]}`
-                    }
+                    trend={vatDeadlineLabel(period)}
                     trendMuted
                 />
             </div>

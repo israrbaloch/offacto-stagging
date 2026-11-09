@@ -9,7 +9,9 @@ import TopBar from '../Components/TopBar';
 import { t } from '../lib/i18n';
 
 export default function AuthenticatedLayout({ title, children, shellClass = '' }) {
-    const { activeCompany, adminWorkspace, auth, flash, appearance, url } = usePage();
+    const page = usePage();
+    const { activeCompany, adminWorkspace, auth, flash, appearance } = page.props;
+    const { url } = page;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const closeSidebar = useCallback(() => setSidebarOpen(false), []);
     const toggleSidebar = useCallback(() => setSidebarOpen((open) => !open), []);

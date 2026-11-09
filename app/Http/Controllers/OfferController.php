@@ -6,6 +6,7 @@ use App\Http\Requests\SendOfferRequest;
 use App\Http\Requests\StoreOfferRequest;
 use App\Http\Requests\UpdateOfferRequest;
 use App\Mail\OfferSent;
+use App\Models\Company;
 use App\Models\CompanyLegalDocument;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -156,8 +157,9 @@ class OfferController extends Controller
 
     /**
      * Show the form for creating a new offer.
+     * Nothing is stored and no quote number is taken until the user saves.
      */
-    public function create(Request $request): RedirectResponse
+    public function create(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $activeCompany = $user->activeCompany();
@@ -170,18 +172,7 @@ class OfferController extends Controller
             return $deny;
         }
 
-        $defaultStatus = Status::where('for', 'offers')->where('name', 'Draft')->first()
-            ?? Status::forTable('offers')->first();
-
-        $offer = Offer::create([
-            'company_id' => $activeCompany->id,
-            'customer_id' => null,
-            'offer_number' => $this->generateOfferNumber($activeCompany->id),
-            'offer_date' => now(),
-            'status' => $defaultStatus?->id,
-        ]);
-
-        return redirect()->route('offers.edit', $offer);
+        return $this->renderQuoteEditor($activeCompany, $user, null);
     }
 
     /**
@@ -206,6 +197,13 @@ class OfferController extends Controller
             return $deny;
         }
 
+        $validated = $request->validated();
+        if ($request->boolean('from_builder') && ! $this->builderHasContent($validated)) {
+            return back()->withErrors([
+                'customer_id' => __('offers.save_need_content'),
+            ])->withInput();
+        }
+
         DB::beginTransaction();
         try {
             // Generate offer number
@@ -214,7 +212,7 @@ class OfferController extends Controller
             // Create offer
             $offer = Offer::create([
                 'company_id' => $activeCompany->id,
-                'customer_id' => $request->validated()['customer_id'],
+                'customer_id' => $validated['customer_id'] ?? null,
                 'offer_number' => $offerNumber,
                 'offer_date' => $request->validated()['offer_date'] ?? now(),
                 'valid_until' => $request->validated()['valid_until'] ?? null,
@@ -222,12 +220,17 @@ class OfferController extends Controller
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
                 'payment_terms' => $request->validated()['payment_terms'] ?? null,
-                'vat_rate' => $request->validated()['vat_rate'] ?? null,
-                'status' => $request->validated()['status'],
+                'vat_rate' => $validated['vat_rate'] ?? null,
+                'quote_template' => $validated['quote_template'] ?? null,
+                'require_nda_before_open' => $request->boolean('require_nda_before_open'),
+                'mollie_deposit_enabled' => $request->boolean('mollie_deposit_enabled'),
+                'on_acceptance_invoice' => $validated['on_acceptance_invoice'] ?? null,
+                'email_message' => $validated['email_message'] ?? null,
+                'status' => $validated['status'],
             ]);
 
             // Create offer items
-            foreach ($request->validated()['items'] as $itemData) {
+            foreach ($validated['items'] ?? [] as $itemData) {
                 $item = new OfferItem([
                     'service_id' => $itemData['service_id'],
                     'description' => $itemData['description'] ?? null,
@@ -236,6 +239,15 @@ class OfferController extends Controller
                 ]);
                 $item->calculateTotal();
                 $offer->items()->save($item);
+            }
+
+            foreach ($validated['blocks'] ?? [] as $index => $block) {
+                OfferBlock::create([
+                    'offer_id' => $offer->id,
+                    'type' => $block['type'],
+                    'sort_order' => $block['sort_order'] ?? $index,
+                    'content' => $block['content'] ?? [],
+                ]);
             }
 
             DB::commit();
@@ -247,6 +259,10 @@ class OfferController extends Controller
                     'message' => 'Offer created successfully.',
                     'data' => $offer,
                 ], 201);
+            }
+
+            if ($request->boolean('from_builder')) {
+                return redirect()->route('offers.edit', $offer)->with('status', 'offer-created');
             }
 
             return redirect()->route('offers.index')->with('status', 'offer-created');
@@ -368,6 +384,11 @@ class OfferController extends Controller
             ->with(['items.service', 'customer', 'statusRelation', 'company.companySetting', 'briefingResponse.briefing', 'attachments', 'blocks'])
             ->firstOrFail();
 
+        return $this->renderQuoteEditor($activeCompany, $user, $offer);
+    }
+
+    private function renderQuoteEditor(Company $activeCompany, $user, ?Offer $offer): Response
+    {
         $customers = Customer::where('company_id', $activeCompany->id)
             ->orderBy('first_name')
             ->get()
@@ -380,45 +401,47 @@ class OfferController extends Controller
             ->get();
 
         $statuses = Status::forTable('offers')->pluck('name', 'id');
+        $defaultStatus = Status::where('for', 'offers')->where('name', 'Draft')->first()
+            ?? Status::forTable('offers')->first();
 
-        // Prepare services data for JavaScript
-        $servicesData = $services->map(function($service) {
+        $servicesData = $services->map(function ($service) {
             return [
                 'id' => $service->id,
                 'name' => $service->name,
                 'description' => $service->description ?? '',
-                'price' => (float)$service->price,
+                'price' => (float) $service->price,
                 'unit' => $service->unit ?? '',
                 'billing_mode' => $service->billing_mode ?? 'fixed',
             ];
         })->values();
 
-        // Prepare existing items data for JavaScript
-        $existingItems = $offer->items->map(function($item, $index) {
-            return [
-                'id' => $index,
-                'service_id' => $item->service_id,
-                'service_name' => $item->service->name ?? 'N/A',
-                'description' => $item->description ?? '',
-                'kind' => $item->service_id ? 'product' : ((float) $item->price === 0.0 && (float) $item->quantity === 0.0 ? 'text' : 'custom'),
-                'quantity' => $item->quantity,
-                'price' => (float)$item->price,
-                'total' => (float)$item->total,
-                'billing_mode' => $item->service->billing_mode ?? 'fixed',
-                'unit' => $item->service->unit ?? '',
-            ];
-        })->values();
+        $existingItems = $offer
+            ? $offer->items->map(function ($item, $index) {
+                return [
+                    'id' => $index,
+                    'service_id' => $item->service_id,
+                    'service_name' => $item->service->name ?? 'N/A',
+                    'description' => $item->description ?? '',
+                    'kind' => $item->service_id ? 'product' : ((float) $item->price === 0.0 && (float) $item->quantity === 0.0 ? 'text' : 'custom'),
+                    'quantity' => $item->quantity,
+                    'price' => (float) $item->price,
+                    'total' => (float) $item->total,
+                    'billing_mode' => $item->service->billing_mode ?? 'fixed',
+                    'unit' => $item->service->unit ?? '',
+                ];
+            })->values()
+            : collect();
 
         return Inertia::render('Offers/Create', [
-            'offer' => OfferPresentation::forStaffDetail($offer),
+            'offer' => $offer ? OfferPresentation::forStaffDetail($offer) : null,
             'customers' => $customers,
             'services' => $services,
             'statuses' => $statuses,
-            'defaultStatusId' => $offer->status,
+            'defaultStatusId' => $offer?->status ?: $defaultStatus?->id,
             'servicesData' => $servicesData,
             'existingItems' => $existingItems,
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
-            'nextOfferNumber' => $offer->offer_number,
+            'nextOfferNumber' => $offer?->offer_number ?: app(NumberingSeriesService::class)->previewForCompany($activeCompany->id, 'offers'),
             'customersData' => Customer::where('company_id', $activeCompany->id)
                 ->with('country:id,code')
                 ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email', 'vat_number', 'country_id'])
@@ -434,7 +457,7 @@ class OfferController extends Controller
                 ])
                 ->values(),
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
-            'publicQuoteUrl' => $offer->publicUrl(),
+            'publicQuoteUrl' => $offer?->publicUrl(),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
             'whatsappConfigured' => CompanyIntegrations::whatsappConfigured($activeCompany, $user),
             'whatsappShareUrl' => $offer ? (WhatsAppShare::shareUrlForOffer($offer) ?? '') : '',
@@ -970,6 +993,39 @@ class OfferController extends Controller
     private function generateOfferNumber(int $companyId): string
     {
         return app(NumberingSeriesService::class)->nextForCompany($companyId, 'offers');
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function builderHasContent(array $validated): bool
+    {
+        if (filled($validated['customer_id'] ?? null)) {
+            return true;
+        }
+        if (count($validated['items'] ?? []) > 0) {
+            return true;
+        }
+        if (filled($validated['intro'] ?? null) || filled($validated['desc'] ?? null)) {
+            return true;
+        }
+
+        foreach ($validated['blocks'] ?? [] as $block) {
+            $content = is_array($block['content'] ?? null) ? $block['content'] : [];
+            $type = $block['type'] ?? '';
+            $text = match ($type) {
+                'text' => trim(($content['heading'] ?? '').' '.($content['body'] ?? '').' '.($content['text'] ?? '')),
+                'video' => trim((string) ($content['url'] ?? '')),
+                'image', 'attachments' => trim((string) (($content['url'] ?? '').($content['path'] ?? '').($content['original_name'] ?? ''))),
+                'sign' => trim((string) ($content['signer_name'] ?? '')),
+                default => '',
+            };
+            if ($text !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

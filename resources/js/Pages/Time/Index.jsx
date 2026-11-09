@@ -12,10 +12,15 @@ function xsrfToken() {
 }
 
 function formatHm(seconds) {
-    const minutes = Math.floor(Number(seconds || 0) / 60);
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return `${h}${t('time.hour_suffix')} ${String(m).padStart(2, '0')}m`;
+    const total = Math.max(0, Math.floor(Number(seconds || 0)));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const hours = `${h}${t('time.hour_suffix')} ${String(m).padStart(2, '0')}m`;
+    if (h === 0 && m === 0) {
+        return `${hours} ${String(s).padStart(2, '0')}s`;
+    }
+    return hours;
 }
 
 function formatClockFromStart(startedAtIso) {

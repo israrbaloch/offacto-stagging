@@ -81,7 +81,15 @@ class TimeEntryController extends Controller
         $end = now()->endOfWeek(Carbon::SUNDAY)->endOfDay();
         $today = now()->toDateString();
 
-        $dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+        $dayLabels = [
+            __('time.day_mo'),
+            __('time.day_tu'),
+            __('time.day_we'),
+            __('time.day_th'),
+            __('time.day_fr'),
+            __('time.day_sa'),
+            __('time.day_su'),
+        ];
         $days = [];
         for ($i = 0; $i < 7; $i++) {
             $date = $start->copy()->addDays($i);
@@ -137,9 +145,13 @@ class TimeEntryController extends Controller
 
     private function formatDurationShort(int $seconds): string
     {
-        $minutes = (int) floor($seconds / 60);
-        $h = intdiv($minutes, 60);
-        $m = $minutes % 60;
+        $seconds = max(0, $seconds);
+        $h = intdiv($seconds, 3600);
+        $m = intdiv($seconds % 3600, 60);
+        $s = $seconds % 60;
+        if ($h === 0 && $m === 0) {
+            return sprintf('0h 00m %02ds', $s);
+        }
 
         return sprintf('%dh %02dm', $h, $m);
     }
