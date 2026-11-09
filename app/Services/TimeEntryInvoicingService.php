@@ -99,6 +99,62 @@ class TimeEntryInvoicingService
         });
     }
 
+    /**
+     * Mark the given entries as invoiced on this draft and point them at the
+     * matching line. Entries already linked to the invoice are re-linked after
+     * the line list is replaced.
+     *
+     * @param  list<int>  $ids
+     */
+    public function linkEntries(Invoice $invoice, array $ids): void
+    {
+        $invoice->loadMissing('items');
+        $existing = TimeEntry::query()->where('invoice_id', $invoice->id)->pluck('id')->all();
+        $wanted = array_values(array_unique(array_map('intval', [...$existing, ...$ids])));
+        $wanted = array_values(array_filter($wanted));
+        if ($wanted === []) {
+            return;
+        }
+
+        $entries = TimeEntry::query()
+            ->forCompany($invoice->company_id)
+            ->whereIn('id', $wanted)
+            ->get();
+
+        if ($entries->count() !== count($wanted)) {
+            throw ValidationException::withMessages([
+                'time_entry_ids' => ['One or more time entries are invalid.'],
+            ]);
+        }
+
+        foreach ($entries as $entry) {
+            $alreadyOnInvoice = (int) $entry->invoice_id === (int) $invoice->id;
+            $canAttach = $entry->billable
+                && $entry->status === TimeEntry::STATUS_COMPLETED
+                && $entry->service_id
+                && (int) $entry->customer_id === (int) $invoice->customer_id;
+
+            if (! $alreadyOnInvoice && ! $canAttach) {
+                throw ValidationException::withMessages([
+                    'time_entry_ids' => ['One or more time entries are already invoiced or belong to another customer.'],
+                ]);
+            }
+
+            $item = $invoice->items->first(fn (InvoiceItem $line) => (int) $line->service_id === (int) $entry->service_id);
+            $entry->update([
+                'status' => TimeEntry::STATUS_INVOICED,
+                'invoice_id' => $invoice->id,
+                'invoice_item_id' => $item?->id,
+                'invoiced_at' => $entry->invoiced_at ?? now(),
+            ]);
+
+            DB::table('invoice_item_time_entry')->where('time_entry_id', $entry->id)->delete();
+            if ($item) {
+                $item->timeEntries()->attach($entry->id);
+            }
+        }
+    }
+
     public function releaseEntriesForInvoice(Invoice $invoice): void
     {
         $entryIds = TimeEntry::query()->where('invoice_id', $invoice->id)->pluck('id');

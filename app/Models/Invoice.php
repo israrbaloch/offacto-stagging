@@ -44,6 +44,7 @@ class Invoice extends Model
         'invoice_date',
         'due_date',
         'payment_term',
+        'vat_rate',
         'intro',
         'desc',
         'attachment',
@@ -86,6 +87,7 @@ class Invoice extends Model
         return [
             'invoice_date' => 'date',
             'due_date' => 'date',
+            'vat_rate' => 'float',
             'next_run_at' => 'date',
             'reminder_send_on' => 'date',
             'reminder_sent_at' => 'datetime',
@@ -191,9 +193,18 @@ class Invoice extends Model
     /**
      * Calculate the tax amount based on site settings.
      */
+    public function appliedVatRate(): float
+    {
+        if ($this->vat_rate !== null) {
+            return (float) $this->vat_rate;
+        }
+
+        return (float) SiteSetting::getInteger('default_vat_rate', 21);
+    }
+
     public function getTaxAmountAttribute(): float
     {
-        return Money::vat($this->subtotal, SiteSetting::getInteger('default_vat_rate', 21));
+        return Money::vat($this->subtotal, $this->appliedVatRate());
     }
 
     /**

@@ -69,6 +69,8 @@ export default function QuoteBuilderBlockBody({
     setItems,
     servicesData,
     vatRate,
+    onVatRateChange,
+    invoiceStyle = false,
     onImageUpload,
     onDocumentUpload,
     uploading,
@@ -159,6 +161,8 @@ export default function QuoteBuilderBlockBody({
                     setItems={setItems}
                     services={servicesData}
                     vatRate={vatRate}
+                    onVatRateChange={onVatRateChange}
+                    invoiceStyle={invoiceStyle}
                     variant="builder"
                 />
                 <p className="offacto-quote-hint">{t('offers.block_table_optional_hint')}</p>

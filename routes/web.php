@@ -244,6 +244,7 @@ Route::middleware(['auth', 'verified.email', 'mfa.verified', 'redirect.admin'])-
     // Invoices
     Route::get('invoices/export-zip', [InvoiceController::class, 'exportZip'])->name('invoices.export-zip');
     Route::get('invoices/issued-sources', [InvoiceController::class, 'issuedSources'])->name('invoices.issued-sources');
+    Route::get('invoices/uninvoiced-time', [InvoiceController::class, 'uninvoicedTime'])->name('invoices.uninvoiced-time');
     Route::get('invoices/from-offer/{offer}', [InvoiceController::class, 'createFromOffer'])->name('invoices.from-offer');
     Route::post('invoices/from-time-entries', [InvoiceFromTimeController::class, 'store'])->name('invoices.from-time');
     Route::resource('invoices', InvoiceController::class);

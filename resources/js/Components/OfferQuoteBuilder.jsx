@@ -92,6 +92,7 @@ export default function OfferQuoteBuilder({
     const [sendOpen, setSendOpen] = useState(false);
     const [savedAt, setSavedAt] = useState(offer?.updated_at || null);
     const [saving, setSaving] = useState(false);
+    const [documentVat, setDocumentVat] = useState(() => String(offer?.vat_rate ?? vatRate ?? 21));
     const [emailMessage] = useState(
         offer?.email_message ||
             'Hi #CLIENTNAME#,\n\n#COMPANY# has prepared an offer for you. Please review it here: #OFFERLINK#.\n\nBest regards,\n#COMPANY#',
@@ -118,6 +119,11 @@ export default function OfferQuoteBuilder({
     });
 
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
+    const intraEu =
+        selectedCustomer?.vat_number &&
+        selectedCustomer?.country_code &&
+        String(selectedCustomer.country_code).toUpperCase() !== 'BE';
+    const effectiveVat = intraEu ? 0 : Number(documentVat);
     const customerOptions = optionsFromMap(customers);
     const statusName = offer?.status_relation?.name || 'Draft';
     const brand = activeCompany?.theme?.primary || '#6B59DC';
@@ -144,6 +150,7 @@ export default function OfferQuoteBuilder({
             mollie_deposit_enabled: form.data.mollie_deposit_enabled,
             on_acceptance_invoice: form.data.on_acceptance_invoice,
             email_message: emailMessage,
+            vat_rate: effectiveVat,
             items: items
                 .filter((item) => item.service_id)
                 .map((item) => ({
@@ -153,7 +160,7 @@ export default function OfferQuoteBuilder({
                     price: item.kind === 'text' ? 0 : Number(item.price || 0),
                 })),
         };
-    }, [blocks, emailMessage, form.data, items]);
+    }, [blocks, documentVat, effectiveVat, emailMessage, form.data, items]);
 
     const blocksPayload = useMemo(() => blocksToPayload(blocks), [blocks]);
     const itemsSignature = useMemo(() => JSON.stringify(items), [items]);
@@ -531,7 +538,22 @@ export default function OfferQuoteBuilder({
 
                     <div className="offacto-brief-edit-card offacto-quote-canvas-card offacto-quote-center-card">
                         <div className="offacto-quote-canvas-bar" style={{ background: `linear-gradient(90deg, ${brand}, ${mid})` }} />
-                        <div className="offacto-quote-canvas">
+                            <div className="offacto-quote-canvas">
+                            <label className="mb-4 block">
+                                <span className="offacto-brief-edit-lbl">{t('dashboard.customer')}</span>
+                                <select
+                                    className="offacto-brief-inp"
+                                    value={form.data.customer_id}
+                                    onChange={(e) => form.setData('customer_id', e.target.value)}
+                                >
+                                    <option value="">{t('offers.select_customer')}</option>
+                                    {customerOptions.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
                             <div className="offacto-quote-canvas-head offacto-quote-canvas-head-demo">
                                 <div className="offacto-quote-canvas-brand">
                                     {activeCompany?.invoice_logo_url ? (
@@ -594,7 +616,9 @@ export default function OfferQuoteBuilder({
                                             items={items}
                                             setItems={setItems}
                                             servicesData={servicesData}
-                                            vatRate={vatRate}
+                                            vatRate={effectiveVat}
+                                            onVatRateChange={setDocumentVat}
+                                            invoiceStyle
                                             uploading={uploadingKey === block.clientKey}
                                             onImageUpload={(file) => uploadBlockImage(block.clientKey, file)}
                                             onDocumentUpload={(file) => uploadBlockDocument(block.clientKey, file)}
@@ -624,21 +648,6 @@ export default function OfferQuoteBuilder({
                                 <h3>{t('offers.builder_quote_settings')}</h3>
                             </div>
                             <div className="offacto-brief-edit-card-b offacto-brief-edit-fg">
-                                <label>
-                                    <span className="offacto-brief-edit-lbl">{t('dashboard.customer')}</span>
-                                    <select
-                                        className="offacto-brief-inp"
-                                        value={form.data.customer_id}
-                                        onChange={(e) => form.setData('customer_id', e.target.value)}
-                                    >
-                                        <option value="">{t('offers.select_customer')}</option>
-                                        {customerOptions.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
                                 <p className="offacto-quote-hint">
                                     {t('company_settings.template_company_hint')}{' '}
                                     <Link href="/company/settings?section=branding" className="text-indigo-600 underline">
@@ -828,7 +837,7 @@ export default function OfferQuoteBuilder({
                                               from={{ name: activeCompany?.company_name }}
                                               to={{ name: selectedCustomer?.org_name || '' }}
                                               items={items}
-                                              vatRate={vatRate}
+                                              vatRate={effectiveVat}
                                               theme={activeCompany?.theme}
                                               logoUrl={activeCompany?.invoice_logo_url}
                                           />

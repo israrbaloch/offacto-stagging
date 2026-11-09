@@ -35,6 +35,7 @@ class Offer extends Model
         'attachment',
         'notes',
         'payment_terms',
+        'vat_rate',
         'quote_template',
         'require_nda_before_open',
         'mollie_deposit_enabled',
@@ -62,6 +63,7 @@ class Offer extends Model
         return [
             'offer_date' => 'date',
             'valid_until' => 'date',
+            'vat_rate' => 'float',
             'accepted_at' => 'datetime',
             'declined_at' => 'datetime',
             'postbode_sent_at' => 'datetime',
@@ -152,9 +154,18 @@ class Offer extends Model
     /**
      * Calculate the tax amount based on site settings.
      */
+    public function appliedVatRate(): float
+    {
+        if ($this->vat_rate !== null) {
+            return (float) $this->vat_rate;
+        }
+
+        return (float) SiteSetting::getInteger('default_vat_rate', 21);
+    }
+
     public function getTaxAmountAttribute(): float
     {
-        return Money::vat($this->subtotal, SiteSetting::getInteger('default_vat_rate', 21));
+        return Money::vat($this->subtotal, $this->appliedVatRate());
     }
 
     /**

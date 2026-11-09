@@ -19,7 +19,9 @@ use App\Models\Offer;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Status;
+use App\Models\TimeEntry;
 use App\Services\NumberingSeriesService;
+use App\Services\TimeEntryInvoicingService;
 use App\Support\CommunicationDeliveryLogger;
 use App\Support\CompanyAccess;
 use App\Support\InvoiceMessage;
@@ -37,6 +39,7 @@ use App\Services\WhatsAppApiService;
 use App\Support\WhatsAppShare;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdf;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -381,6 +384,7 @@ class InvoiceController extends Controller
                 'invoice_date' => $validated['invoice_date'] ?? now(),
                 'due_date' => $validated['due_date'] ?? now()->addDays(30),
                 'payment_term' => $validated['payment_term'] ?? null,
+                'vat_rate' => $validated['vat_rate'] ?? null,
                 'intro' => $validated['intro'] ?? null,
                 'desc' => $validated['desc'] ?? null,
                 'notes' => $validated['notes'] ?? null,
@@ -395,6 +399,8 @@ class InvoiceController extends Controller
             ]);
 
             $this->replaceInvoiceItems($invoice, $request->validated()['items'] ?? []);
+            $invoice->unsetRelation('items');
+            app(TimeEntryInvoicingService::class)->linkEntries($invoice, $validated['time_entry_ids'] ?? []);
 
             DB::commit();
 
@@ -414,6 +420,9 @@ class InvoiceController extends Controller
             }
 
             return $redirect;
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -540,6 +549,7 @@ class InvoiceController extends Controller
                 'invoice_date' => $request->validated()['invoice_date'] ?? $invoice->invoice_date,
                 'due_date' => $request->validated()['due_date'] ?? null,
                 'payment_term' => $request->validated()['payment_term'] ?? null,
+                'vat_rate' => $request->validated()['vat_rate'] ?? $invoice->vat_rate,
                 'intro' => $request->validated()['intro'] ?? null,
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
@@ -550,6 +560,8 @@ class InvoiceController extends Controller
             ], $this->recurringAttributes($request, $invoice)));
 
             $this->replaceInvoiceItems($invoice, $request->validated()['items'] ?? []);
+            $invoice->unsetRelation('items');
+            app(TimeEntryInvoicingService::class)->linkEntries($invoice, $request->validated()['time_entry_ids'] ?? []);
 
             DB::commit();
 
@@ -567,6 +579,9 @@ class InvoiceController extends Controller
             }
 
             return redirect()->route('invoices.edit', $invoice->id)->with('status', 'invoice-updated');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -1066,7 +1081,7 @@ class InvoiceController extends Controller
                 ]);
             }
 
-            return redirect()->route('invoices.show', $invoice->id)->with('status', 'payment-recorded');
+            return back()->with('status', 'payment-recorded');
         } catch (\Exception $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -1119,6 +1134,40 @@ class InvoiceController extends Controller
         $attachment->delete();
 
         return back()->with('status', 'attachment-deleted');
+    }
+
+    public function uninvoicedTime(Request $request): JsonResponse
+    {
+        $company = $request->user()?->activeCompany();
+        if (! $company) {
+            return response()->json(['message' => 'Select or create a company first.'], 422);
+        }
+
+        $customerId = (int) $request->query('customer_id');
+        if ($customerId < 1) {
+            return response()->json(['data' => []]);
+        }
+
+        $rows = TimeEntry::query()
+            ->forCompany($company->id)
+            ->uninvoicedBillable()
+            ->where('customer_id', $customerId)
+            ->with('service:id,name,price')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get();
+
+        return response()->json([
+            'data' => $rows->map(fn (TimeEntry $entry) => [
+                'id' => $entry->id,
+                'service_id' => $entry->service_id,
+                'service_name' => $entry->service?->name ?? '',
+                'description' => $entry->description ?? '',
+                'hours' => $entry->hours(),
+                'price' => (float) ($entry->service?->price ?? 0),
+                'started_at' => $entry->started_at?->toDateString(),
+            ])->values(),
+        ]);
     }
 
     public function issuedSources(Request $request): JsonResponse
@@ -1617,7 +1666,7 @@ class InvoiceController extends Controller
 
         return Inertia::render('Invoices/Create', [
             'invoice' => $invoice?->loadMissing(['offer', 'customer.documents']),
-            'defaultReminderMessage' => $invoice ? InvoiceReminderMessage::resolve($invoice)['body'] : '',
+            'defaultReminderMessage' => $invoice ? InvoiceReminderMessage::editorBody($invoice) : '',
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
             'peppolConfigured' => CompanyIntegrations::peppolConfigured($activeCompany),

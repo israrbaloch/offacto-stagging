@@ -222,6 +222,7 @@ class OfferController extends Controller
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
                 'payment_terms' => $request->validated()['payment_terms'] ?? null,
+                'vat_rate' => $request->validated()['vat_rate'] ?? null,
                 'status' => $request->validated()['status'],
             ]);
 
@@ -419,7 +420,19 @@ class OfferController extends Controller
             'vatRate' => SiteSetting::getInteger('default_vat_rate', 21),
             'nextOfferNumber' => $offer->offer_number,
             'customersData' => Customer::where('company_id', $activeCompany->id)
-                ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email']),
+                ->with('country:id,code')
+                ->get(['id', 'first_name', 'surname', 'org_name', 'office_address', 'email', 'vat_number', 'country_id'])
+                ->map(fn (Customer $customer) => [
+                    'id' => $customer->id,
+                    'first_name' => $customer->first_name,
+                    'surname' => $customer->surname,
+                    'org_name' => $customer->org_name,
+                    'office_address' => $customer->office_address,
+                    'email' => $customer->email,
+                    'vat_number' => $customer->vat_number,
+                    'country_code' => $customer->country?->code,
+                ])
+                ->values(),
             'legalDocuments' => $activeCompany->legalDocuments()->latest()->get(),
             'publicQuoteUrl' => $offer->publicUrl(),
             'postbodeConfigured' => CompanyIntegrations::postbodeConfigured($activeCompany),
@@ -471,6 +484,9 @@ class OfferController extends Controller
                 'desc' => $request->validated()['desc'] ?? null,
                 'notes' => $request->validated()['notes'] ?? null,
                 'payment_terms' => $request->validated()['payment_terms'] ?? null,
+                'vat_rate' => array_key_exists('vat_rate', $request->validated())
+                    ? $request->validated()['vat_rate']
+                    : $offer->vat_rate,
                 'quote_template' => $request->validated()['quote_template'] ?? $offer->quote_template,
                 'require_nda_before_open' => $request->has('require_nda_before_open')
                     ? $request->boolean('require_nda_before_open')

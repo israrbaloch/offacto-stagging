@@ -1231,6 +1231,10 @@ html.dark .text-slate-900 { color: #f1f5f9; }
 html.dark .text-slate-800 { color: #e2e8f0; }
 html.dark .text-slate-700 { color: #cbd5e1; }
 html.dark .text-slate-600 { color: #94a3b8; }
+html.dark .text-indigo-900 { color: #e0e7ff; }
+html.dark .text-emerald-600 { color: #6ee7b7; }
+html.dark .bg-slate-50\/40 { background-color: rgb(30 41 59 / 0.55); }
+html.dark .offacto-quote-tot .big { color: var(--offacto-text); }
 html.dark .divide-slate-100 > :not(:last-child) { border-color: #1e293b; }
 html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 
@@ -5394,7 +5398,7 @@ html.dark .offacto-demo-page-surface {
         width: 100%;
         max-width: 100%;
         min-width: 0;
-        overflow: visible;
+        overflow-x: auto;
         box-shadow: none;
     }
 
@@ -6152,6 +6156,59 @@ html.dark .offacto-demo-page-surface {
     width: 100%;
     min-width: 520px;
     border-collapse: collapse;
+}
+
+.offacto-quote-line-desc-lbl {
+    display: block;
+    margin: 6px 0 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--dash-muted);
+}
+
+@media (max-width: 640px) {
+    .offacto-quote-lines-editor .offacto-quote-lines {
+        min-width: 0;
+        display: block;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines thead {
+        display: none;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines tbody,
+    .offacto-quote-lines-editor .offacto-quote-lines tr,
+    .offacto-quote-lines-editor .offacto-quote-lines td {
+        display: block;
+        width: 100%;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines tr {
+        padding: 8px 0 12px;
+        border-bottom: 1px solid var(--dash-line, rgb(14 18 80 / 0.08));
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--dash-muted);
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines td.num,
+    .offacto-quote-lines-editor .offacto-quote-lines th.num {
+        text-align: left !important;
+    }
+
+    .offacto-quote-lines-editor .offacto-quote-lines-scroll {
+        overflow: visible;
+    }
 }
 
 .offacto-quote-lines th {

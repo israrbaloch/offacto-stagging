@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import Icon from './Icon';
 
 const SIZE_CLASS = {
@@ -8,6 +9,19 @@ const SIZE_CLASS = {
 };
 
 export default function Modal({ open, title, onClose, children, footer, size = 'md' }) {
+    useEffect(() => {
+        if (!open) {
+            return undefined;
+        }
+        const onKey = (event) => {
+            if (event.key === 'Escape') {
+                onClose?.();
+            }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [open, onClose]);
+
     if (!open) return null;
 
     const widthClass = SIZE_CLASS[size] || SIZE_CLASS.md;

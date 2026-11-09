@@ -1,7 +1,21 @@
+import { useEffect } from 'react';
 import Icon from './Icon';
 import { t } from '../lib/i18n';
 
 export function SendModalFrame({ open, onClose, title, documentNumber, hint, footer, children }) {
+    useEffect(() => {
+        if (!open) {
+            return undefined;
+        }
+        const onKey = (event) => {
+            if (event.key === 'Escape') {
+                onClose?.();
+            }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [open, onClose]);
+
     if (!open) return null;
 
     return (

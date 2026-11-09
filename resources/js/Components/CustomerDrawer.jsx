@@ -316,12 +316,19 @@ export default function CustomerDrawer({
             if (result.vat_number) {
                 setData('vat_number', result.vat_number);
             }
+            const next = { ...data };
             if (result.name && isOrgLikeType(data.type) && !data.org_name) {
-                setData('org_name', result.name);
+                next.org_name = result.name;
+            }
+            if (result.name && !isOrgLikeType(data.type) && !data.first_name && !data.surname) {
+                const parts = splitPersonName(result.name);
+                next.first_name = parts.first_name;
+                next.surname = parts.surname;
             }
             if (result.address && !data.office_address) {
-                setData('office_address', result.address.replace(/\n+/g, ', '));
+                next.office_address = result.address.replace(/\n+/g, ', ');
             }
+            setData(next);
         } catch {
             setViesState('invalid');
             setViesError(t('customers.vies_service_unavailable'));
@@ -566,7 +573,9 @@ export default function CustomerDrawer({
                                         }
                                     }}
                                 />
-                                {errors.first_name ? <p className="offacto-drawer-hint bad">{errors.first_name}</p> : null}
+                                {isOrgLikeType(data.type) && errors.first_name ? (
+                                    <p className="offacto-drawer-hint bad">{errors.first_name}</p>
+                                ) : null}
                                 {!isOrgLikeType(data.type) && errors.phone ? (
                                     <p className="offacto-drawer-hint bad">{errors.phone}</p>
                                 ) : null}
@@ -576,7 +585,33 @@ export default function CustomerDrawer({
                                 <select
                                     className="offacto-drawer-inp"
                                     value={data.type}
-                                    onChange={(e) => setData('type', e.target.value)}
+                                    onChange={(e) => {
+                                        const nextType = e.target.value;
+                                        const becomingOrg = isOrgLikeType(nextType) && !isOrgLikeType(data.type);
+                                        const becomingPerson = !isOrgLikeType(nextType) && isOrgLikeType(data.type);
+                                        if (becomingOrg) {
+                                            const typed = joinPersonName(data.first_name, data.surname);
+                                            setData({
+                                                ...data,
+                                                type: nextType,
+                                                org_name: data.org_name || typed,
+                                                first_name: '',
+                                                surname: '',
+                                            });
+                                            return;
+                                        }
+                                        if (becomingPerson) {
+                                            const parts = splitPersonName(data.org_name || '');
+                                            setData({
+                                                ...data,
+                                                type: nextType,
+                                                first_name: data.first_name || parts.first_name,
+                                                surname: data.surname || parts.surname,
+                                            });
+                                            return;
+                                        }
+                                        setData('type', nextType);
+                                    }}
                                 >
                                     {customerTypeOptions().map((opt) => (
                                         <option key={opt.value} value={opt.value}>
@@ -586,6 +621,17 @@ export default function CustomerDrawer({
                                 </select>
                                 {errors.type ? <p className="offacto-drawer-hint bad">{errors.type}</p> : null}
                             </div>
+                        </div>
+
+                        <div className="offacto-drawer-field">
+                            <label className="offacto-drawer-lbl">{t('customers.office')}</label>
+                            <textarea
+                                className="offacto-drawer-inp"
+                                rows={2}
+                                value={data.office_address || ''}
+                                onChange={(e) => setData('office_address', e.target.value)}
+                            />
+                            {errors.office_address ? <p className="offacto-drawer-hint bad">{errors.office_address}</p> : null}
                         </div>
 
                         <div className="offacto-drawer-fg2">

@@ -8,6 +8,7 @@ import InvoiceAcknowledgmentPanel from './InvoiceAcknowledgmentPanel';
 import InvoiceReminderModal from './InvoiceReminderModal';
 import SendInvoiceModal from './SendInvoiceModal';
 import SentInvoicePicker from './SentInvoicePicker';
+import ImportHoursModal from './ImportHoursModal';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useUi } from '../context/UiContext';
 import { t } from '../lib/i18n';
@@ -67,25 +68,51 @@ function dueFromTerm(invoiceDate, term) {
     if (term === 'immediate') {
         return dateValue(base);
     }
-    const days = term === '14' ? 14 : 30;
+    const days = term === '14' ? 14 : termDayCount(term) || 30;
     base.setDate(base.getDate() + days);
     return dateValue(base);
 }
 
-function inferPaymentTerm(invoice) {
-    if (invoice?.payment_term) {
-        return invoice.payment_term;
+function termDayCount(term) {
+    const value = String(term || '');
+    if (value.startsWith('days:')) {
+        return Number(value.slice(5));
     }
+    if (/^\d+$/.test(value)) {
+        return Number(value);
+    }
+    return null;
+}
+
+function calendarDaysBetween(start, due) {
+    const from = calendarDate(start);
+    const to = calendarDate(due);
+    if (!from || !to) {
+        return null;
+    }
+    return Math.round((to.getTime() - from.getTime()) / 86400000);
+}
+
+function inferPaymentTerm(invoice) {
     const start = dateValue(invoice?.invoice_date);
     const due = dateValue(invoice?.due_date);
-    if (!start || !due) {
-        return '30';
+    if (start && due) {
+        if (due === start) {
+            return 'immediate';
+        }
+        if (due === dueFromTerm(start, '14')) {
+            return '14';
+        }
+        if (due === dueFromTerm(start, '30')) {
+            return '30';
+        }
+        const days = calendarDaysBetween(start, due);
+        if (days > 0) {
+            return `days:${days}`;
+        }
     }
-    if (due === start) {
-        return 'immediate';
-    }
-    if (due === dueFromTerm(start, '14')) {
-        return '14';
+    if (invoice?.payment_term) {
+        return invoice.payment_term;
     }
     return '30';
 }
@@ -175,10 +202,10 @@ export default function InvoiceEditor({
     const [accountantToggle, setAccountantToggle] = useState(true);
     const [sendOpen, setSendOpen] = useState(false);
     const [reminderOpen, setReminderOpen] = useState(false);
-    const [emailMessage] = useState(
-        invoice?.email_message ||
-            'Hi #CLIENTNAME#,\n\nPlease find invoice #INVOICENUMBER# from #COMPANY# attached.\n\nPay online: #PAYLINK#\n\nThank you,\n#COMPANY#',
-    );
+    const [importOpen, setImportOpen] = useState(false);
+    const [documentVat, setDocumentVat] = useState(() => String(invoice?.vat_rate ?? vatRate ?? 21));
+    const [timeEntryIds, setTimeEntryIds] = useState([]);
+    const [emailMessage] = useState(() => invoice?.email_message || t('invoices.send_default_message'));
     const [selectedLegal] = useState(() =>
         legalDocuments.filter((doc) => doc.attach_to_invoices_default).map((doc) => doc.id),
     );
@@ -222,6 +249,8 @@ export default function InvoiceEditor({
             status: form.data.status,
             ip_transfer_type: form.data.ip_transfer_type || null,
             email_message: emailMessage,
+            vat_rate: intraEu ? 0 : Number(documentVat),
+            time_entry_ids: timeEntryIds,
             is_recurring: recurringDraft,
             recurring_interval: recurringDraft ? recurringInterval : null,
             items: items
@@ -291,7 +320,7 @@ export default function InvoiceEditor({
         }, 1500);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.data, items, customerRef, paymentTerm, invoice?.id, sendOpen, typeTab, recurringInterval, creditReason]);
+    }, [form.data, items, customerRef, paymentTerm, invoice?.id, sendOpen, typeTab, recurringInterval, creditReason, documentVat, timeEntryIds]);
 
     const customerOptions = optionsFromMap(customers);
     const selectedCustomer = customersData.find((item) => String(item.id) === String(form.data.customer_id));
@@ -330,6 +359,7 @@ export default function InvoiceEditor({
         selectedCustomer?.vat_number &&
         selectedCustomer?.country_code &&
         String(selectedCustomer.country_code).toUpperCase() !== 'BE';
+    const effectiveVat = intraEu ? 0 : Number(documentVat);
 
     const autoAttachments = useMemo(() => {
         const legal = legalDocuments
@@ -473,11 +503,55 @@ export default function InvoiceEditor({
 
     const onPaymentTermChange = (term) => {
         setPaymentTerm(term);
+        if (String(term).startsWith('days:')) {
+            return;
+        }
         const base = isDraft ? todayISO() : form.data.invoice_date;
         if (isDraft) {
             form.setData('invoice_date', todayISO());
         }
         form.setData('due_date', dueFromTerm(base, term));
+    };
+
+    const markPaid = () => {
+        if (!invoice?.id || isPaid) {
+            return;
+        }
+        router.post(`/invoices/${invoice.id}/payment`, {
+            amount: invoice.amount_due,
+            payment_date: todayISO(),
+            payment_method: 'bank_transfer',
+        }, { preserveScroll: true });
+    };
+
+    const addImportedHours = (entries) => {
+        const groups = new Map();
+        entries.forEach((entry) => {
+            const key = String(entry.service_id);
+            const group = groups.get(key) || {
+                service_id: entry.service_id,
+                service_name: entry.service_name,
+                price: entry.price,
+                hours: 0,
+                notes: [],
+            };
+            group.hours += Number(entry.hours || 0);
+            if (entry.description) {
+                group.notes.push(entry.description);
+            }
+            groups.set(key, group);
+        });
+        const lines = [...groups.values()].map((group) => ({
+            kind: 'product',
+            service_id: group.service_id,
+            service_name: group.service_name,
+            description: [...new Set(group.notes)].join('\n'),
+            quantity: Math.round(group.hours * 100) / 100,
+            price: group.price,
+        }));
+        setItems((current) => [...current.filter(lineShouldPersist), ...lines]);
+        setTimeEntryIds((current) => [...new Set([...current, ...entries.map((entry) => entry.id)])]);
+        setImportOpen(false);
     };
 
     const savedLabel = !invoice?.id
@@ -593,6 +667,12 @@ export default function InvoiceEditor({
                             <button type="button" className="offacto-brief-btn" onClick={() => setReminderOpen(true)}>
                                 <Icon name="bell" />
                                 {t('invoices.reminder_send')}
+                            </button>
+                        ) : null}
+                        {readOnly && !isPaid && Number(invoice?.amount_due) > 0 ? (
+                            <button type="button" className="offacto-btn-p" onClick={markPaid}>
+                                <Icon name="check" />
+                                {t('invoices.mark_paid')}
                             </button>
                         ) : null}
                         {isDraft ? (
@@ -812,6 +892,11 @@ export default function InvoiceEditor({
                                             onChange={(e) => onPaymentTermChange(e.target.value)}
                                             disabled={readOnly}
                                         >
+                                            {String(paymentTerm).startsWith('days:') ? (
+                                                <option value={paymentTerm}>
+                                                    {t('invoices.term_days', { days: paymentTerm.slice(5) })}
+                                                </option>
+                                            ) : null}
                                             <option value="30">{t('invoices.term_30')}</option>
                                             <option value="14">{t('invoices.term_14')}</option>
                                             <option value="immediate">{t('invoices.term_immediate')}</option>
@@ -851,7 +936,13 @@ export default function InvoiceEditor({
                                         <button
                                             type="button"
                                             className="offacto-brief-btn-sm"
-                                            onClick={() => toast.info(t('invoices.import_hours_toast'))}
+                                            onClick={() => {
+                                                if (!form.data.customer_id) {
+                                                    toast.info(t('invoices.import_hours_need_customer'));
+                                                    return;
+                                                }
+                                                setImportOpen(true);
+                                            }}
                                         >
                                             <Icon name="clock" />
                                             {t('invoices.import_hours')}
@@ -868,7 +959,9 @@ export default function InvoiceEditor({
                                     items={items}
                                     setItems={setItems}
                                     services={servicesData}
-                                    vatRate={intraEu ? 0 : vatRate}
+                                    vatRate={effectiveVat}
+                                    onVatRateChange={setDocumentVat}
+                                    vatLocked={Boolean(intraEu)}
                                     error={form.errors.items}
                                     variant="builder"
                                     invoiceStyle
@@ -1019,7 +1112,9 @@ export default function InvoiceEditor({
                                     items={items}
                                     notes={form.data.notes}
                                     copyrightLabel={copyrightLabel}
-                                    vatRate={intraEu ? 0 : vatRate}
+                                    vatRate={effectiveVat}
+                                    onVatRateChange={setDocumentVat}
+                                    vatLocked={Boolean(intraEu)}
                                     theme={activeCompany?.theme}
                                     logoUrl={activeCompany?.invoice_logo_url}
                                 />
@@ -1062,6 +1157,12 @@ export default function InvoiceEditor({
                 invoiceId={invoice?.id}
                 defaultEmail={selectedCustomer?.email || ''}
                 defaultMessage={reminderDefault}
+            />
+            <ImportHoursModal
+                open={importOpen}
+                customerId={form.data.customer_id}
+                onClose={() => setImportOpen(false)}
+                onConfirm={addImportedHours}
             />
         </AuthenticatedLayout>
     );

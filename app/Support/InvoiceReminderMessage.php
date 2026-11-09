@@ -25,8 +25,9 @@ final class InvoiceReminderMessage
             ? $customMessage
             : ($templateBody !== ''
                 ? $templateBody
-                : self::defaultBody($invoice));
+                : self::editorBody($invoice));
 
+        $body = self::plainToHtml($body);
         $body = InvoiceMessage::merge($body, $invoice);
 
         return [
@@ -35,15 +36,41 @@ final class InvoiceReminderMessage
         ];
     }
 
-    private static function defaultBody(Invoice $invoice): string
+    /**
+     * Plain text shown in the reminder box. The mailer turns it into HTML.
+     */
+    public static function editorBody(Invoice $invoice): string
     {
-        $due = $invoice->due_date?->format('F j, Y') ?? '—';
-        $amount = number_format((float) $invoice->amount_due, 2);
+        $due = $invoice->due_date
+            ? $invoice->due_date->copy()->locale(app()->getLocale())->translatedFormat('j F Y')
+            : '—';
+        $amount = number_format((float) $invoice->amount_due, 2, '.', '');
+        $number = $invoice->invoice_number ?: '—';
 
-        return '<p>This is a friendly reminder that invoice <strong>#'.e($invoice->invoice_number).'</strong> '
-            .'is due on '.$due.'.</p>'
-            .'<p>Outstanding amount: <strong>€ '.$amount.'</strong></p>'
-            .'<p>View invoice: #INVOICELINK#</p>'
-            .(filled($invoice->mollie_checkout_url) ? '<p>Pay online: #PAYLINK#</p>' : '');
+        $body = __('invoices.reminder_default_body', [
+            'number' => $number,
+            'due' => $due,
+            'amount' => $amount,
+        ]);
+
+        if (filled($invoice->mollie_checkout_url)) {
+            $body .= "\n\n".__('invoices.reminder_default_pay');
+        }
+
+        return $body;
+    }
+
+    public static function plainToHtml(string $body): string
+    {
+        if (str_contains($body, '<')) {
+            return $body;
+        }
+
+        $escaped = e($body);
+        $paragraphs = preg_split("/\n{2,}/", $escaped) ?: [];
+
+        return collect($paragraphs)
+            ->map(fn (string $paragraph) => '<p>'.nl2br($paragraph, false).'</p>')
+            ->implode('');
     }
 }

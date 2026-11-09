@@ -39,6 +39,7 @@ class StoreOfferRequest extends FormRequest
             'desc' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'payment_terms' => ['nullable', 'string', 'max:5000'],
+            'vat_rate' => ['nullable', 'numeric', 'in:0,6,12,21'],
             'status' => [
                 'required',
                 'integer',

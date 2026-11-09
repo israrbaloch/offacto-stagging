@@ -15,6 +15,8 @@ export default function LineItemsEditor({
     setItems,
     services = [],
     vatRate = 21,
+    onVatRateChange,
+    vatLocked = false,
     error,
     variant = 'default',
     invoiceStyle = false,
@@ -215,7 +217,7 @@ export default function LineItemsEditor({
                             const isText = item.kind === 'text';
                             return (
                                 <tr key={index} className={builder ? 'offacto-quote-line-row' : 'border-b border-slate-100'}>
-                                    <td {...(builder ? { 'data-label': 'Description' } : {})}>
+                                    <td {...(builder ? { 'data-label': t('invoices.line_description') } : {})}>
                                         {!isText ? (
                                             <div className={builder ? 'offacto-quote-line-svc' : 'mb-2'}>
                                                 <SelectMenu
@@ -230,8 +232,12 @@ export default function LineItemsEditor({
                                                 />
                                             </div>
                                         ) : null}
+                                        {builder && !isText ? (
+                                            <span className="offacto-quote-line-desc-lbl">{t('invoices.line_description')}</span>
+                                        ) : null}
                                         <input
                                             className={inpClass}
+                                            aria-label={t('invoices.line_description')}
                                             placeholder={isText ? 'Add a note for the client' : t('invoices.line_placeholder')}
                                             value={item.description || ''}
                                             onChange={(e) => update(index, 'description', e.target.value)}
@@ -272,14 +278,17 @@ export default function LineItemsEditor({
                                         )}
                                     </td>
                                     {invoiceLines ? (
-                                        <td className={builder ? undefined : 'py-3 pr-3 align-top'}>
+                                        <td
+                                            className={builder ? undefined : 'py-3 pr-3 align-top'}
+                                            {...(builder ? { 'data-label': t('invoices.vat') } : {})}
+                                        >
                                             {!isText && (
                                                 <select
                                                     className={`${inpClass} offacto-invoice-vat-inp`}
                                                     value={String(vatRate)}
-                                                    aria-label="VAT"
-                                                    onChange={() => {}}
-                                                    disabled={readOnly}
+                                                    aria-label={t('invoices.vat')}
+                                                    onChange={(e) => onVatRateChange?.(e.target.value)}
+                                                    disabled={readOnly || vatLocked}
                                                 >
                                                     <option value="21">21%</option>
                                                     <option value="12">12%</option>
@@ -291,7 +300,7 @@ export default function LineItemsEditor({
                                     ) : null}
                                     <td
                                         className={builder ? 'num' : 'py-3 pr-3 align-top font-medium text-slate-800'}
-                                        {...(builder ? { 'data-label': 'Total' } : {})}
+                                        {...(builder ? { 'data-label': t('invoices.total') } : {})}
                                     >
                                         {isText ? '—' : <b>{money(line)}</b>}
                                     </td>
