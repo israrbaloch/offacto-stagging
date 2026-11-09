@@ -82,7 +82,62 @@ class NumberingSeriesService
             return $this->ensureOfferSeries($company);
         }
 
+        if ($context === 'credit_notes') {
+            return $this->ensureCreditNoteSeries($company);
+        }
+
         return null;
+    }
+
+    /**
+     * A company with no series starts with three counters: invoices, quotes,
+     * and credit notes. Returns the invoice series.
+     */
+    public function ensureDefaultSeries(Company $company): NumberingSeries
+    {
+        $existing = $company->numberingSeries()->orderBy('id')->get();
+        if ($existing->isNotEmpty()) {
+            return $existing->first(fn (NumberingSeries $series) => in_array($series->type, ['invoices', 'both'], true))
+                ?? $existing->first();
+        }
+
+        $invoices = $this->createSeries($company, 'INV-'.$company->id, 'invoices', 'INV');
+        $this->createSeries($company, 'Quotes-'.$company->id, 'offers', 'OFF');
+        $this->createSeries($company, 'CRN-'.$company->id, 'credit_notes', 'CRN');
+
+        return $invoices;
+    }
+
+    /**
+     * Fill in a missing document counter. A legacy shared series (type both)
+     * is left as the single counter. Existing next numbers are not changed.
+     */
+    public function ensureMissingDocumentSeries(Company $company): void
+    {
+        $series = $company->numberingSeries()->get();
+        if ($series->contains(fn (NumberingSeries $item) => $item->type === 'both')) {
+            return;
+        }
+
+        if ($series->isEmpty()) {
+            $invoices = $this->ensureDefaultSeries($company);
+            $settings = $company->companySetting;
+            if ($settings && ! $settings->numbering_series) {
+                $settings->update(['numbering_series' => $invoices->id]);
+            }
+
+            return;
+        }
+
+        if (! $series->contains(fn (NumberingSeries $item) => $item->type === 'invoices')) {
+            $this->createSeries($company, 'INV-'.$company->id, 'invoices', 'INV');
+        }
+        if (! $series->contains(fn (NumberingSeries $item) => $item->type === 'offers')) {
+            $this->createSeries($company, 'Quotes-'.$company->id, 'offers', 'OFF');
+        }
+        if (! $series->contains(fn (NumberingSeries $item) => $item->type === 'credit_notes')) {
+            $this->createSeries($company, 'CRN-'.$company->id, 'credit_notes', 'CRN');
+        }
     }
 
     /**
@@ -100,10 +155,43 @@ class NumberingSeriesService
             return $existing;
         }
 
+        $shared = $company->numberingSeries()->where('type', 'both')->orderBy('id')->first();
+        if ($shared) {
+            return $shared;
+        }
+
+        return $this->createSeries($company, 'Quotes-'.$company->id, 'offers', 'OFF');
+    }
+
+    /**
+     * Credit notes never share an invoices-only counter. A company that has
+     * no credit-note series gets its own CRN sequence, starting at 1.
+     */
+    protected function ensureCreditNoteSeries(Company $company): NumberingSeries
+    {
+        $existing = $company->numberingSeries()
+            ->where('type', 'credit_notes')
+            ->orderBy('id')
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        $shared = $company->numberingSeries()->where('type', 'both')->orderBy('id')->first();
+        if ($shared) {
+            return $shared;
+        }
+
+        return $this->createSeries($company, 'CRN-'.$company->id, 'credit_notes', 'CRN');
+    }
+
+    protected function createSeries(Company $company, string $name, string $type, string $prefix): NumberingSeries
+    {
         return $company->numberingSeries()->create([
-            'name' => 'Quotes-'.$company->id,
-            'type' => 'offers',
-            'prefix' => 'OFF',
+            'name' => $name,
+            'type' => $type,
+            'prefix' => $prefix,
             'year_month' => 'year',
             'separator' => '-',
             'digits' => '4',

@@ -446,20 +446,7 @@ class Company extends Model
     {
         $this->startTrial();
 
-        $series = $this->numberingSeries()->first();
-        if (! $series) {
-            $series = NumberingSeries::create([
-                'company_id' => $this->id,
-                'name' => 'Default-'.$this->id,
-                'type' => 'both',
-                'prefix' => 'OFF_',
-                'year_month' => 'year',
-                'separator' => '-',
-                'digits' => '4',
-                'next_number' => '1',
-                'restart_count' => 'annual',
-            ]);
-        }
+        $series = app(\App\Services\NumberingSeriesService::class)->ensureDefaultSeries($this);
 
         if (! $this->companySetting) {
             CompanySetting::create([

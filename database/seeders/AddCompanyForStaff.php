@@ -82,6 +82,18 @@ class AddCompanyForStaff extends Seeder
             'restart_count' => 'annual',
         ]);
 
+        NumberingSeries::create([
+            'company_id' => $company->id,
+            'name' => 'CRN-001',
+            'type' => 'credit_notes',
+            'prefix' => 'CRN',
+            'year_month' => 'year',
+            'separator' => '-',
+            'digits' => '4',
+            'next_number' => '1',
+            'restart_count' => 'annual',
+        ]);
+
         // Create company settings
         CompanySetting::create([
             'company_id' => $company->id,

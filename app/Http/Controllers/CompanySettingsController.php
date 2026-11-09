@@ -201,6 +201,7 @@ class CompanySettingsController extends Controller
     private function sharedProps(\App\Models\Company $company): array
     {
         $companySettings = $this->ensureCompanySettings($company);
+        app(NumberingSeriesService::class)->ensureMissingDocumentSeries($company);
 
         $numberingSeriesList = $company->numberingSeries()->orderBy('name')->get()->map(fn ($series) => [
             'id' => $series->id,

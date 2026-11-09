@@ -1,7 +1,7 @@
 import '../css/app.css';
 import '../css/admin-shell.css';
 import './bootstrap';
-import { createInertiaApp, router } from '@inertiajs/react';
+import { createInertiaApp, router, usePage } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import { UiProvider } from './context/UiContext';
 import { applyTheme } from './lib/applyTheme';
@@ -16,14 +16,29 @@ createInertiaApp({
             throw new Error(`Inertia page not found: ${name}`);
         }
 
-        return page;
+        const Page = page.default;
+
+        function LocalizedPage(props) {
+            const { locale, translations } = usePage().props;
+            setI18n(locale, translations);
+
+            return <Page {...props} />;
+        }
+
+        LocalizedPage.layout = Page.layout;
+
+        return { default: LocalizedPage };
     },
     setup({ el, App, props }) {
         setI18n(props.initialPage?.props?.locale, props.initialPage?.props?.translations);
         applyTheme(props.initialPage?.props?.appearance ?? 'light');
 
         router.on('success', (event) => {
-            const next = event.detail.page?.props?.appearance;
+            const pageProps = event.detail.page?.props;
+            if (pageProps) {
+                setI18n(pageProps.locale, pageProps.translations);
+            }
+            const next = pageProps?.appearance;
             if (next != null) {
                 applyTheme(next);
             }

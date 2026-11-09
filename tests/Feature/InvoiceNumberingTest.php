@@ -90,7 +90,7 @@ class InvoiceNumberingTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Invoices/Create')
                 ->where('invoice', null)
-                ->where('nextInvoiceNumber', 'OFF_'.$year.'-0001'));
+                ->where('nextInvoiceNumber', 'INV'.$year.'-0001'));
 
         $this->assertDatabaseCount('invoices', 0);
         $this->assertSame('1', (string) $this->series()->next_number);
@@ -152,7 +152,7 @@ class InvoiceNumberingTest extends TestCase
 
         $year = now()->format('Y');
         $invoice->refresh();
-        $this->assertSame('OFF_'.$year.'-0001', $invoice->invoice_number);
+        $this->assertSame('INV'.$year.'-0001', $invoice->invoice_number);
         $this->assertSame('2', (string) $this->series()->next_number);
 
         $this->actingAs($this->user)
@@ -163,7 +163,7 @@ class InvoiceNumberingTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame('OFF_'.$year.'-0001', $invoice->fresh()->invoice_number);
+        $this->assertSame('INV'.$year.'-0001', $invoice->fresh()->invoice_number);
         $this->assertSame('2', (string) $this->series()->fresh()->next_number);
         Mail::assertSent(InvoiceSent::class);
         $this->assertSame('sent', CommunicationDeliveryLog::query()->value('status'));
@@ -260,6 +260,10 @@ class InvoiceNumberingTest extends TestCase
     public function test_a_shared_series_still_numbers_quotes_and_invoices_together(): void
     {
         $series = $this->series();
+        NumberingSeries::query()
+            ->where('company_id', $this->company->id)
+            ->where('id', '!=', $series->id)
+            ->delete();
         $series->update([
             'type' => 'both',
             'prefix' => 'DOC',
@@ -289,17 +293,10 @@ class InvoiceNumberingTest extends TestCase
             'prefix' => 'INV',
             'next_number' => '9',
         ]);
-        NumberingSeries::create([
-            'company_id' => $this->company->id,
-            'name' => 'OFF-001',
-            'type' => 'offers',
-            'prefix' => 'OFF',
-            'year_month' => 'year',
-            'separator' => '-',
-            'digits' => '4',
-            'next_number' => '9',
-            'restart_count' => 'annual',
-        ]);
+        NumberingSeries::query()
+            ->where('company_id', $this->company->id)
+            ->where('type', 'offers')
+            ->update(['next_number' => '9']);
 
         $this->seed(DemoDataSeeder::class);
 
@@ -329,8 +326,56 @@ class InvoiceNumberingTest extends TestCase
         $this->assertSame('4', (string) NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'offers')->value('next_number'));
     }
 
+    public function test_a_new_company_starts_with_separate_invoice_quote_and_credit_note_series(): void
+    {
+        $types = NumberingSeries::query()
+            ->where('company_id', $this->company->id)
+            ->orderBy('id')
+            ->pluck('type')
+            ->all();
+
+        $this->assertSame(['invoices', 'offers', 'credit_notes'], $types);
+        $this->assertSame('INV', NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'invoices')->value('prefix'));
+        $this->assertSame('OFF', NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'offers')->value('prefix'));
+        $this->assertSame('CRN', NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'credit_notes')->value('prefix'));
+    }
+
+    public function test_a_missing_credit_note_series_is_added_without_moving_existing_counters(): void
+    {
+        $invoice = $this->series();
+        $invoice->update(['next_number' => '2']);
+        NumberingSeries::query()
+            ->where('company_id', $this->company->id)
+            ->where('type', 'offers')
+            ->update(['next_number' => '4']);
+        NumberingSeries::query()
+            ->where('company_id', $this->company->id)
+            ->where('type', 'credit_notes')
+            ->delete();
+
+        $year = now()->format('Y');
+        $service = app(\App\Services\NumberingSeriesService::class);
+
+        $this->assertSame('CRN'.$year.'-0001', $service->previewForCompany($this->company->id, 'credit_notes'));
+        $this->assertSame('2', (string) $invoice->fresh()->next_number);
+        $this->assertSame('4', (string) NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'offers')->value('next_number'));
+        $this->assertSame('1', (string) NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'credit_notes')->value('next_number'));
+
+        $this->actingAs($this->user)
+            ->get(route('company.settings.index', ['section' => 'numbering']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Company/Settings/Index')
+                ->has('numberingSeriesList', 3));
+
+        $this->assertSame('2', (string) $invoice->fresh()->next_number);
+        $this->assertSame('4', (string) NumberingSeries::query()->where('company_id', $this->company->id)->where('type', 'offers')->value('next_number'));
+    }
+
     private function series(): NumberingSeries
     {
-        return NumberingSeries::query()->where('company_id', $this->company->id)->firstOrFail();
+        $id = $this->company->companySetting()->value('numbering_series');
+
+        return NumberingSeries::query()->findOrFail($id);
     }
 }

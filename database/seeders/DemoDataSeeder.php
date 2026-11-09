@@ -316,6 +316,19 @@ class DemoDataSeeder extends Seeder
             ]);
         }
 
+        if (! $company->numberingSeries()->whereIn('type', ['credit_notes', 'both'])->exists()) {
+            $company->numberingSeries()->create([
+                'name' => 'CRN-'.$company->id,
+                'type' => 'credit_notes',
+                'prefix' => 'CRN',
+                'year_month' => 'year',
+                'separator' => '-',
+                'digits' => '4',
+                'next_number' => '1',
+                'restart_count' => 'annual',
+            ]);
+        }
+
         $company->numberingSeries()
             ->whereIn('type', ['invoices', 'offers', 'both'])
             ->update([
