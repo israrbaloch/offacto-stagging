@@ -27,7 +27,10 @@ export default function Public({ invoice, token, canAcknowledge }) {
 
     const submitAck = () => {
         ack.clearErrors();
-        ack.setData('signature', signature);
+        ack.transform((data) => ({
+            ...data,
+            signature: signature || '',
+        }));
         ack.post(`/i/${token}/acknowledge`, { forceFormData: true, onSuccess: () => setAckOpen(false) });
     };
 
@@ -158,6 +161,9 @@ export default function Public({ invoice, token, canAcknowledge }) {
 
             <Modal open={ackOpen} onClose={() => setAckOpen(false)} title={t('invoices.acknowledge_modal_title')} size="lg">
                 <p className="mb-4 text-sm text-slate-600">{t('invoices.acknowledge_modal_hint')}</p>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    {t('invoices.acknowledge_optional')}
+                </p>
                 <SignatureField value={signature} onChange={setSignature} />
                 <div className="mt-4">
                     <VoiceNoteField

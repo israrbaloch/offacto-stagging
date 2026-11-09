@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Company;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Language;
@@ -125,6 +126,56 @@ class OpenFindingsFixesTest extends TestCase
                         && $item['meta'] === 'OFF2026-0003');
                 })
                 ->where('chartData.cashflow.labels.11', 'nov'));
+    }
+
+    public function test_a_public_invoice_can_be_acknowledged_without_a_signature(): void
+    {
+        [, $company] = $this->workspace();
+        $status = Status::query()->create(['name' => 'Sent', 'for' => 'invoices']);
+        $invoice = Invoice::create([
+            'company_id' => $company->id,
+            'invoice_number' => 'INV2026-0002',
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'status' => $status->id,
+            'payment_status' => Invoice::PAYMENT_UNPAID,
+            'share_token' => 'ack-without-signature',
+        ]);
+
+        $this->post('/i/ack-without-signature/acknowledge', [])
+            ->assertRedirect();
+
+        $this->assertNotNull($invoice->fresh()->customer_acknowledged_at);
+        $this->assertNull($invoice->fresh()->signature_data);
+    }
+
+    public function test_search_returns_the_customer_together_with_a_matching_invoice(): void
+    {
+        [$user, $company] = $this->workspace();
+        $status = Status::query()->create(['name' => 'Sent', 'for' => 'invoices']);
+        Customer::create([
+            'company_id' => $company->id,
+            'first_name' => 'North',
+            'surname' => 'Wind',
+            'org_name' => 'Northwind',
+            'email' => 'north@example.test',
+            'type' => 'company',
+            'status' => 1,
+        ]);
+        Invoice::create([
+            'company_id' => $company->id,
+            'invoice_number' => 'INV-NORTH-1',
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'status' => $status->id,
+            'payment_status' => Invoice::PAYMENT_UNPAID,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/search?suggest=1&q=North')
+            ->assertOk()
+            ->assertJsonPath('invoices.0.label', 'INV-NORTH-1')
+            ->assertJsonPath('customers.0.label', 'Northwind');
     }
 
     /**

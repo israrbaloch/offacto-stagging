@@ -4,7 +4,7 @@ import { t } from '../lib/i18n';
 import Icon from './Icon';
 import LocaleSelect from './LocaleSelect';
 import TopBarNotifications from './TopBarNotifications';
-import TopBarSearchOverlay from './TopBarSearchOverlay';
+import TopBarSearchOverlay, { SearchHits } from './TopBarSearchOverlay';
 import { applyTheme } from '../lib/applyTheme';
 import { COMPANY_PLAN_SETTINGS_PATH } from '../lib/companyPlanSettingsPath';
 
@@ -27,6 +27,8 @@ export default function TopBar({ onMenuClick }) {
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
+    const [searchHits, setSearchHits] = useState(null);
+    const [searchOpen, setSearchOpen] = useState(false);
     const profileRef = useRef(null);
     const bellRef = useRef(null);
     const searchRef = useRef(null);
@@ -39,12 +41,43 @@ export default function TopBar({ onMenuClick }) {
 
     const submitSearch = (event) => {
         event.preventDefault();
-        if (!searchQuery.trim()) {
+        const q = searchQuery.trim();
+        if (!q) {
             return;
         }
         setSearchOverlayOpen(false);
-        router.get('/search', { q: searchQuery.trim() });
+        setSearchOpen(false);
+        const first = searchHits?.invoices?.[0] || searchHits?.offers?.[0] || searchHits?.customers?.[0];
+        if (first?.href) {
+            router.visit(first.href);
+            return;
+        }
+        router.get('/search', { q });
     };
+
+    useEffect(() => {
+        const q = searchQuery.trim();
+        if (q.length < 2) {
+            setSearchHits(null);
+            return undefined;
+        }
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`/search?suggest=1&q=${encodeURIComponent(q)}`, {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) {
+                    return;
+                }
+                setSearchHits(await res.json());
+                setSearchOpen(true);
+            } catch {
+                setSearchHits(null);
+            }
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     useEffect(() => {
         function onClick(event) {
@@ -117,17 +150,31 @@ export default function TopBar({ onMenuClick }) {
                 >
                     <Icon name="search" />
                 </button>
-                <form className="offacto-topbar-search offacto-topbar-search-desktop" onSubmit={submitSearch}>
+                <form className="offacto-topbar-search offacto-topbar-search-desktop relative" onSubmit={submitSearch}>
                     <Icon name="search" />
                     <input
                         ref={searchRef}
                         type="search"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
+                        onFocus={() => {
+                            if (searchHits) setSearchOpen(true);
+                        }}
                         placeholder={t('topbar.search')}
                         aria-label={t('topbar.search')}
+                        aria-expanded={searchOpen}
+                        autoComplete="off"
                     />
                     <span className="offacto-topbar-kbd hidden md:inline">⌘K</span>
+                    {searchOpen && searchHits ? (
+                        <SearchHits
+                            hits={searchHits}
+                            onPick={(href) => {
+                                setSearchOpen(false);
+                                router.visit(href);
+                            }}
+                        />
+                    ) : null}
                 </form>
 
                 <div className="offacto-topbar-spacer" aria-hidden="true" />
@@ -230,9 +277,11 @@ export default function TopBar({ onMenuClick }) {
             <TopBarSearchOverlay
                 open={searchOverlayOpen}
                 query={searchQuery}
+                hits={searchHits}
                 onQueryChange={setSearchQuery}
                 onClose={() => setSearchOverlayOpen(false)}
             />
         </div>
     );
 }
+

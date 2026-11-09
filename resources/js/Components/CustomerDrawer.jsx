@@ -109,6 +109,7 @@ export default function CustomerDrawer({
     const [viesError, setViesError] = useState('');
     const [docs, setDocs] = useState([]);
     const [uploadingNames, setUploadingNames] = useState([]);
+    const [formError, setFormError] = useState('');
 
     const { data, setData, post, put, processing, errors, reset, clearErrors, transform } = useForm({
         first_name: customer?.first_name || '',
@@ -244,12 +245,28 @@ export default function CustomerDrawer({
 
     const submit = (event) => {
         event.preventDefault();
+        if (!isOrgLikeType(data.type) && !String(data.first_name || '').trim()) {
+            setFormError(t('customers.first_name_required'));
+            return;
+        }
+        if (isOrgLikeType(data.type) && !String(data.org_name || '').trim()) {
+            setFormError(t('customers.org_name_required'));
+            return;
+        }
+        setFormError('');
         const opts = {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success(editing ? t('customers.saved_toast') : t('customers.created_toast'));
                 if (editing) {
                     onClose();
+                }
+            },
+            onError: (errs) => {
+                const first = Object.values(errs || {})[0];
+                const message = Array.isArray(first) ? first[0] : first;
+                if (message) {
+                    setFormError(String(message));
                 }
             },
         };
@@ -313,10 +330,10 @@ export default function CustomerDrawer({
 
             setViesState('valid');
             setViesResult(result);
-            if (result.vat_number) {
-                setData('vat_number', result.vat_number);
-            }
             const next = { ...data };
+            if (result.vat_number) {
+                next.vat_number = result.vat_number;
+            }
             if (result.name && isOrgLikeType(data.type) && !data.org_name) {
                 next.org_name = result.name;
             }
@@ -477,6 +494,11 @@ export default function CustomerDrawer({
 
                 <form className="offacto-drawer-form" onSubmit={submit}>
                     <div className="offacto-drawer-body">
+                        {formError || Object.values(errors).filter(Boolean).length ? (
+                            <p className="offacto-drawer-hint bad">
+                                {formError || Object.values(errors).filter(Boolean)[0]}
+                            </p>
+                        ) : null}
                         <div className="offacto-drawer-field">
                             <label className="offacto-drawer-lbl">{t('customers.vat_number')}</label>
                             <div className="offacto-drawer-inrow">
@@ -547,8 +569,8 @@ export default function CustomerDrawer({
                                 />
                             )}
                             {errors.org_name ? <p className="offacto-drawer-hint bad">{errors.org_name}</p> : null}
-                            {!isOrgLikeType(data.type) && (errors.first_name || errors.surname) ? (
-                                <p className="offacto-drawer-hint bad">{errors.first_name || errors.surname}</p>
+                            {!isOrgLikeType(data.type) && (errors.first_name || errors.surname || (!data.first_name && formError)) ? (
+                                <p className="offacto-drawer-hint bad">{errors.first_name || errors.surname || formError}</p>
                             ) : null}
                         </div>
 

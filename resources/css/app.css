@@ -1670,6 +1670,62 @@ html.dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
 
 .offacto-topbar-search-desktop {
     display: none;
+    position: relative;
+    overflow: visible;
+}
+
+.offacto-search-hits {
+    position: absolute;
+    z-index: 60;
+    top: calc(100% + 8px);
+    left: 0;
+    width: min(440px, 80vw);
+    max-height: 360px;
+    overflow: auto;
+    border-radius: 16px;
+    background: #fff;
+    color: #0e1250;
+    box-shadow: 0 16px 40px rgb(14 18 80 / 0.18);
+}
+
+.offacto-search-layer .offacto-search-hits {
+    position: static;
+    width: 100%;
+    box-shadow: none;
+    border-radius: 0 0 16px 16px;
+}
+
+.offacto-search-hit-label {
+    margin: 0;
+    padding: 10px 14px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8b90b5;
+}
+
+.offacto-search-hit {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0e1250;
+}
+
+.offacto-search-hit:hover {
+    background: #f3f5ff;
+}
+
+.offacto-search-hit-meta {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6d7398;
 }
 
 .offacto-topbar-search-trigger {
